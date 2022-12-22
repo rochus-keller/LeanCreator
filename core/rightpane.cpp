@@ -1,0 +1,211 @@
+/****************************************************************************
+**
+** Copyright (C) 2015 The Qt Company Ltd.
+** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+**
+** This file is part of Qt Creator.
+**
+** $QT_BEGIN_LICENSE:LGPL21$
+** GNU Lesser General Public License Usage
+** This file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, The Qt Company gives you certain additional
+** rights.  These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+****************************************************************************/
+
+#include "rightpane.h"
+
+#include <core/imode.h>
+#include <core/modemanager.h>
+
+#include <QSettings>
+
+#include <QVBoxLayout>
+#include <QSplitter>
+#include <QResizeEvent>
+
+
+using namespace Core;
+using namespace Core::Internal;
+
+RightPanePlaceHolder *RightPanePlaceHolder::m_current = 0;
+
+RightPanePlaceHolder* RightPanePlaceHolder::current()
+{
+    return m_current;
+}
+
+RightPanePlaceHolder::RightPanePlaceHolder(IMode *mode, QWidget *parent)
+    :QWidget(parent), m_mode(mode)
+{
+    setLayout(new QVBoxLayout);
+    layout()->setMargin(0);
+    connect(ModeManager::instance(), &ModeManager::currentModeChanged,
+            this, &RightPanePlaceHolder::currentModeChanged);
+}
+
+RightPanePlaceHolder::~RightPanePlaceHolder()
+{
+    if (m_current == this) {
+        RightPaneWidget::instance()->setParent(0);
+        RightPaneWidget::instance()->hide();
+    }
+}
+
+void RightPanePlaceHolder::applyStoredSize(int width)
+{
+    if (width) {
+        QSplitter *splitter = qobject_cast<QSplitter *>(parentWidget());
+        if (splitter) {
+            // A splitter we need to resize the splitter sizes
+            QList<int> sizes = splitter->sizes();
+            int index = splitter->indexOf(this);
+            int diff = width - sizes.at(index);
+            int adjust = sizes.count() > 1 ? (diff / (sizes.count() - 1)) : 0;
+            for (int i = 0; i < sizes.count(); ++i) {
+                if (i != index)
+                    sizes[i] -= adjust;
+            }
+            sizes[index]= width;
+            splitter->setSizes(sizes);
+        } else {
+            QSize s = size();
+            s.setWidth(width);
+            resize(s);
+        }
+    }
+}
+
+// This function does work even though the order in which
+// the placeHolder get the signal is undefined.
+// It does ensure that after all PlaceHolders got the signal
+// m_current points to the current PlaceHolder, or zero if there
+// is no PlaceHolder in this mode
+// And that the parent of the RightPaneWidget gets the correct parent
+void RightPanePlaceHolder::currentModeChanged(IMode *mode)
+{
+    if (m_current == this) {
+        m_current = 0;
+        RightPaneWidget::instance()->setParent(0);
+        RightPaneWidget::instance()->hide();
+    }
+    if (m_mode == mode) {
+        m_current = this;
+
+        int width = RightPaneWidget::instance()->storedWidth();
+
+        layout()->addWidget(RightPaneWidget::instance());
+        RightPaneWidget::instance()->show();
+
+        applyStoredSize(width);
+        setVisible(RightPaneWidget::instance()->isShown());
+    }
+}
+
+/////
+// RightPaneWidget
+/////
+
+
+RightPaneWidget *RightPaneWidget::m_instance = 0;
+
+RightPaneWidget::RightPaneWidget()
+    : m_shown(true), m_width(0)
+{
+    m_instance = this;
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->setMargin(0);
+    setLayout(layout);
+}
+
+RightPaneWidget::~RightPaneWidget()
+{
+    clearWidget();
+    m_instance = 0;
+}
+
+RightPaneWidget *RightPaneWidget::instance()
+{
+    return m_instance;
+}
+
+void RightPaneWidget::setWidget(QWidget *widget)
+{
+    if (widget == m_widget)
+        return;
+    clearWidget();
+    m_widget = widget;
+    if (m_widget) {
+        m_widget->setParent(this);
+        layout()->addWidget(m_widget);
+        setFocusProxy(m_widget);
+        m_widget->show();
+    }
+}
+
+int RightPaneWidget::storedWidth()
+{
+    return m_width;
+}
+
+void RightPaneWidget::resizeEvent(QResizeEvent *re)
+{
+    if (m_width && re->size().width())
+        m_width = re->size().width();
+    QWidget::resizeEvent(re);
+}
+
+void RightPaneWidget::saveSettings(QSettings *settings)
+{
+    settings->setValue(QLatin1String("RightPane/Visible"), isShown());
+    settings->setValue(QLatin1String("RightPane/Width"), m_width);
+}
+
+void RightPaneWidget::readSettings(QSettings *settings)
+{
+    if (settings->contains(QLatin1String("RightPane/Visible")))
+        setShown(settings->value(QLatin1String("RightPane/Visible")).toBool());
+    else
+        setShown(false);
+
+    if (settings->contains(QLatin1String("RightPane/Width"))) {
+        m_width = settings->value(QLatin1String("RightPane/Width")).toInt();
+        if (!m_width)
+            m_width = 500;
+    } else {
+        m_width = 500; //pixel
+    }
+    // Apply
+    if (RightPanePlaceHolder::m_current)
+        RightPanePlaceHolder::m_current->applyStoredSize(m_width);
+}
+
+void RightPaneWidget::setShown(bool b)
+{
+    if (RightPanePlaceHolder::m_current)
+        RightPanePlaceHolder::m_current->setVisible(b);
+    m_shown = b;
+}
+
+bool RightPaneWidget::isShown()
+{
+    return m_shown;
+}
+
+void RightPaneWidget::clearWidget()
+{
+    if (m_widget) {
+        m_widget->hide();
+        m_widget->setParent(0);
+        m_widget = 0;
+    }
+}

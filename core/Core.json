@@ -1,0 +1,34 @@
+{
+    "Name" : "Core",
+    "Version" : "3.6.3",
+    "CompatVersion" : "3.6.0",
+    "Required" : true,
+    "Vendor" : "The Qt Company Ltd",
+    "Copyright" : "(C) 2015 The Qt Company Ltd",
+    "License" : [ "GNU Lesser General Public License Usage",
+                  "",
+                  "This plugin may be used under the terms of the GNU Lesser General Public License version 2.1 or version 3 as published by the Free Software Foundation.  Please review the following information to ensure the GNU Lesser General Public License requirements will be met: https://www.gnu.org/licenses/lgpl.html and http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html."
+    ],
+    "Category" : "Qt Creator",
+    "Description" : "The core plugin for the Qt IDE.",
+    "Url" : "http://www.qt.io",
+    "Arguments" : [
+        {
+            "Name" : "-color",
+            "Parameter" : "color",
+            "Description" : "Override selected UI color"
+        },
+        {
+            "Name" : "-theme",
+            "Parameter" : "default|dark",
+            "Description" : "Choose a built-in theme or pass a .creatortheme file"
+        },
+        {
+            "Name" : "-presentationMode",
+            "Description" : "Enable presentation mode with pop-ups for key combos"
+        }
+    ],
+    "Dependencies" : [
+
+    ]
+}

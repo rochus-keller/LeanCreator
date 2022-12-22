@@ -1,0 +1,204 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.defines += [ "QTCREATOR_UTILS_STATIC_LIB" # TODO QTCREATOR_UTILS_LIB
+					"QT_NO_JSENGINE"
+					"QTC_REL_TOOLS_PATH=\"TODO\""
+				]
+	.include_dirs += ..
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ ./utils.qrc ./theme.qrc ]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./wizard.cpp
+		./qtcolorbutton.cpp
+		./crumblepath.cpp
+		./basetreeview.cpp	
+		./appmainwindow.h
+		./basetreeview.h
+		./checkablemessagebox.h
+		./classnamevalidatinglineedit.h
+		./completinglineedit.h
+		./completingtextedit.h
+		./consoleprocess.h
+		./crumblepath.h
+		./detailsbutton.h
+		./detailswidget.h
+		./dropsupport.h
+		./elidinglabel.h
+		./environmentmodel.h
+		./faketooltip.h
+		./fancylineedit.h
+		./fancymainwindow.h
+		./filenamevalidatinglineedit.h
+		./filesystemwatcher.h
+		./filewizardpage.h
+		./historycompleter.h
+		./itemviews.h
+		./linecolumnlabel.h
+		./multitask.h
+		./navigationtreeview.h
+		./networkaccessmanager.h
+		./newclasswidget.h
+		./outputformatter.h
+		./parameteraction.h
+		./pathchooser.h
+		./pathlisteditor.h
+		./progressindicator.h
+		./projectintropage.h
+		./proxyaction.h
+		./proxycredentialsdialog.h
+		./qtcolorbutton.h
+		./qtcprocess.h
+		./savedaction.h
+		./settingsselector.h
+		./shellcommand.h
+		./shellcommandpage.h
+		./statuslabel.h
+		./styledbar.h
+		./synchronousprocess.h
+		./textfieldcheckbox.h
+		./textfieldcombobox.h
+		./theme.h
+		./tips.h
+		./tips.h
+		./tooltip.h
+		./treemodel.h
+		./treeviewcombobox.h
+		./wizard.h
+		./wizardpage.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./filewizardpage.ui
+		./newclasswidget.ui
+		./projectintropage.ui
+		./proxycredentialsdialog.ui
+	]
+}
+
+let lib * : Library {
+	.name = "utils"
+	.sources = [
+		./environment.cpp 
+    	./environmentmodel.cpp 
+    	./qtcprocess.cpp 
+    	./reloadpromptutils.cpp 
+    	./shellcommand.cpp 
+    	./shellcommandpage.cpp 
+    	./settingsselector.cpp 
+    	./stringutils.cpp 
+    	./templateengine.cpp 
+    	./textfieldcheckbox.cpp 
+    	./textfieldcombobox.cpp 
+    	./filesearch.cpp 
+    	./pathchooser.cpp 
+    	./pathlisteditor.cpp 
+    	./wizard.cpp 
+    	./wizardpage.cpp 
+    	./filewizardpage.cpp 
+    	./filesystemwatcher.cpp 
+    	./projectintropage.cpp 
+    	./filenamevalidatinglineedit.cpp 
+    	./codegeneration.cpp 
+    	./newclasswidget.cpp 
+    	./classnamevalidatinglineedit.cpp 
+    	./linecolumnlabel.cpp 
+    	./fancylineedit.cpp 
+    	./qtcolorbutton.cpp 
+    	./savedaction.cpp 
+    	./synchronousprocess.cpp 
+    	./savefile.cpp 
+    	./fileutils.cpp 
+    	./textfileformat.cpp 
+    	./consoleprocess.cpp 
+    	./uncommentselection.cpp 
+    	./parameteraction.cpp 
+    	./headerviewstretcher.cpp 
+    	./checkablemessagebox.cpp 
+    	./styledbar.cpp 
+    	./stylehelper.cpp 
+    	./fancymainwindow.cpp 
+    	./detailsbutton.cpp 
+    	./detailswidget.cpp 
+    	./changeset.cpp 
+    	./faketooltip.cpp 
+    	./htmldocextractor.cpp 
+    	./navigationtreeview.cpp 
+    	./crumblepath.cpp 
+    	./historycompleter.cpp 
+    	./buildablehelperlibrary.cpp 
+    	./annotateditemdelegate.cpp 
+    	./fileinprojectfinder.cpp 
+    	./statuslabel.cpp 
+    	./outputformatter.cpp 
+    	./flowlayout.cpp 
+    	./networkaccessmanager.cpp 
+    	./persistentsettings.cpp 
+    	./completingtextedit.cpp 
+    	./json.cpp 
+    	./portlist.cpp 
+    	./tcpportsgatherer.cpp 
+    	./appmainwindow.cpp 
+    	./sleep.cpp 
+    	./basetreeview.cpp 
+    	./qtcassert.cpp 
+    	./elfreader.cpp 
+    	./bracematcher.cpp 
+    	./proxyaction.cpp 
+    	./elidinglabel.cpp 
+    	./hostosinfo.cpp 
+    	./tooltip.cpp 
+    	./tips.cpp 
+    	./unixutils.cpp 
+    	./ansiescapecodehandler.cpp 
+    	./execmenu.cpp 
+    	./completinglineedit.cpp 
+    	./winutils.cpp 
+    	./itemviews.cpp 
+    	./treemodel.cpp 
+    	./treeviewcombobox.cpp 
+    	./proxycredentialsdialog.cpp 
+    	./macroexpander.cpp 
+    	./theme.cpp 
+    	./progressindicator.cpp 
+    	./fadingindicator.cpp 
+    	./overridecursor.cpp 
+    	./categorysortfiltermodel.cpp 
+    	./dropsupport.cpp
+    	
+    	# TODO replace by regular Qt mimetypes
+    	/*
+    	./mimetypes/mimedatabase.cpp
+        ./mimetypes/mimetype.cpp
+        ./mimetypes/mimemagicrulematcher.cpp
+        ./mimetypes/mimetypeparser.cpp
+        ./mimetypes/mimemagicrule.cpp
+        ./mimetypes/mimeglobpattern.cpp
+        ./mimetypes/mimeprovider.cpp
+        */
+
+	]
+	if target_os == `win32 {
+		.sources += ./consoleprocess_win.cpp
+	}else{
+		.sources += ./consoleprocess_unix.cpp 
+		if target_os == `macos {
+			.sources += ./fileutils_mac.mm
+		}
+	}
+	
+	
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

@@ -1,0 +1,33 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let run_moc : Moc {
+	.sources += [
+		./qtlocalpeer.h
+		./qtsingleapplication.h
+	]
+}
+
+let run_rcc : Rcc {
+	.sources += ../fonts/fonts.qrc
+}
+
+let exe * : Executable {
+	.name = "leancreator"
+	.sources += [
+		./main.cpp
+		./crashhandlersetup.cpp
+		./qtsingleapplication.cpp
+		./qtlocalpeer.cpp
+		./qtlockedfile.cpp
+	]
+	if target_os == `win32 {
+		.sources += ./qtlockedfile_win.cpp
+	}else{
+		.sources += ./qtlockedfile_unix.cpp
+	}
+	.deps += [ ^qt.libqt ^utils.lib ^extensionsystem.lib ^core.lib run_moc run_rcc ]
+	.configs += [ ^qt.qt_client_config ^cpp11conf ]
+	.include_dirs += ..
+	.defines += "IDE_LIBRARY_BASENAME=\"<not used>\""
+}

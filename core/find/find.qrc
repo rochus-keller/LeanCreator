@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/find">
+        <file>images/casesensitively.png</file>
+        <file>images/wholewords.png</file>
+        <file>images/regexp.png</file>
+        <file>images/expand.png</file>
+        <file>images/wrapindicator.png</file>
+        <file>images/preservecase.png</file>
+    </qresource>
+</RCC>

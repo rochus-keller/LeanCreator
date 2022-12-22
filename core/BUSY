@@ -1,0 +1,333 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "CORE_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP"
+				  "QT_STATICPLUGIN" # enable static load when compiling CorePlugin, so Q_IMPORT_PLUGIN can see it
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [
+		./core.qrc
+		./fancyactionbar.qrc
+		./find/find.qrc
+		./locator/locator.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	# grep -r Q_OBJECT . | uniq
+	.sources += [
+		./editormanager/documentmodel.cpp
+		./progressmanager/futureprogress.cpp
+		./mimetypesettings.cpp
+		./find/searchresultwidget.cpp
+		./find/searchresultwindow.cpp
+		./sidebarwidget.h
+		./opendocumentstreeview.h
+		./icontext.h
+		./textdocument.h
+		./themeeditor/themecolorstableview.h
+		./themeeditor/themesettingstablemodel.h
+		./themeeditor/sectionedtablemodel.h
+		./themeeditor/themeeditorwidget.h
+		./themeeditor/themesettingsitemdelegate.h
+		./messageoutputwindow.h
+		./systemsettings.h
+		./themesettingswidget.h
+		./removefiledialog.h
+		./infobar.h
+		./designmode.h
+		./idocument.h
+		./navigationsubwidget.h
+		./editortoolbar.h
+		./vcsmanager.h
+		./find/searchresultwidget.h
+		./find/ifindsupport.h
+		./find/searchresulttreemodel.h
+		./find/searchresulttreeview.h
+		./find/findtoolwindow.h
+		./find/itemviewfind.h
+		./find/findtoolbar.h
+		./find/searchresultwindow.h
+		./find/highlightscrollbar.h
+		./find/basetextfind.h
+		./find/ifindfilter.h
+		./find/findplugin.h
+		./find/currentdocumentfind.h
+		./idocumentfactory.h
+		./statusbarmanager.h
+		./outputpane.h
+		./mimetypesettings.h
+		./progressmanager/progressbar.h
+		./progressmanager/progressview.h
+		./progressmanager/progressmanager.h
+		./progressmanager/futureprogress.h
+		./progressmanager/progressmanager_p.h
+		./navigationwidget.h
+		./statusbarwidget.h
+		./ifilewizardextension.h
+		./locator/locatorfiltersfilter.h
+		./locator/basefilefilter.h
+		./locator/filesystemfilter.h
+		./locator/externaltoolsfilter.h
+		./locator/commandlocator.h
+		./locator/directoryfilter.h
+		./locator/locatorsettingspage.h
+		./locator/locatorwidget.h
+		./locator/executefilter.h
+		./locator/locatormanager.h
+		./locator/opendocumentsfilter.h
+		./locator/locator.h
+		./locator/ilocatorfilter.h
+		./inavigationwidgetfactory.h
+		./ioutputpane.h
+		./styleanimator.h
+		./basefilewizard.h
+		./versiondialog.h
+		./iwizardfactory.h
+		./fancytabwidget.h
+		./documentmanager.h
+		./icorelistener.h
+		./shellcommand.h
+		./plugindialog.h
+		./findplaceholder.h
+		./iversioncontrol.h
+		./externaltoolmanager.h
+		./sidebar.h
+		./dialogs/openwithdialog.h
+		./dialogs/settingsdialog.h
+		./dialogs/promptoverwritedialog.h
+		./dialogs/ioptionspage.h
+		./dialogs/shortcutsettings.h
+		./dialogs/readonlyfilesdialog.h
+		./dialogs/newdialog.h
+		./dialogs/addtovcsdialog.h
+		./dialogs/saveitemsdialog.h
+		./dialogs/externaltoolconfig.h
+		./manhattanstyle.h
+		./modemanager.h
+		./rightpane.h
+		./iwelcomepage.h
+		./themesettings.h
+		./externaltool.h
+		./icore.h
+		./imode.h
+		./variablechooser.h
+		./mainwindow.h
+		./fancyactionbar.h
+		./outputpanemanager.h
+		./helpmanager.h
+		./windowsupport.h
+		./outputwindow.h
+		./toolsettings.h
+		./editmode.h
+		./actionmanager/commandbutton.h
+		./actionmanager/commandmappings.h
+		./actionmanager/actionmanager_p.h
+		./actionmanager/command_p.h
+		./actionmanager/actionmanager.h
+		./actionmanager/command.h
+		./actionmanager/actioncontainer.h
+		./actionmanager/actioncontainer_p.h
+		./actionmanager/commandsfile.h
+		./coreplugin.h
+		./corejsextensions.h
+		./messagemanager.h
+		./generalsettings.h
+		./basefilewizardfactory.h
+		./editormanager/iexternaleditor.h
+		./editormanager/systemeditor.h
+		./editormanager/openeditorswindow.h
+		./editormanager/editorwindow.h
+		./editormanager/editorarea.h
+		./editormanager/editorview.h
+		./editormanager/ieditor.h
+		./editormanager/ieditorfactory.h
+		./editormanager/editormanager.h
+		./editormanager/editormanager_p.h
+		./editormanager/openeditorsview.h
+		
+		../aggregation/aggregate.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./generalsettings.ui
+		./mimetypemagicdialog.ui
+		./mimetypesettingspage.ui
+		./removefiledialog.ui
+		./systemsettings.ui
+		./themesettings.ui
+		./dialogs/addtovcsdialog.ui
+		./dialogs/externaltoolconfig.ui
+		./dialogs/newdialog.ui
+		./dialogs/openwithdialog.ui
+		./dialogs/readonlyfilesdialog.ui
+		./dialogs/saveitemsdialog.ui
+		./find/finddialog.ui
+		./find/findwidget.ui
+		./locator/directoryfilter.ui
+		./locator/filesystemfilter.ui
+		./locator/locatorsettingspage.ui
+		./themeeditor/themeeditorwidget.ui	
+	]
+}
+
+let lib * : Library {
+	.sources += [
+		./mainwindow.cpp 
+		./shellcommand.cpp 
+		./editmode.cpp 
+		./iwizardfactory.cpp 
+		./fancyactionbar.cpp 
+		./fancytabwidget.cpp 
+		./generalsettings.cpp 
+		./themesettings.cpp 
+		./themesettingswidget.cpp 
+		./id.cpp 
+		./icontext.cpp 
+		./messagemanager.cpp 
+		./messageoutputwindow.cpp 
+		./outputpane.cpp 
+		./outputwindow.cpp 
+		./vcsmanager.cpp 
+		./statusbarmanager.cpp 
+		./versiondialog.cpp 
+		./editormanager/editorarea.cpp 
+		./editormanager/editormanager.cpp 
+		./editormanager/editorview.cpp 
+		./editormanager/editorwindow.cpp 
+		./editormanager/documentmodel.cpp 
+		./editormanager/openeditorsview.cpp 
+		./editormanager/openeditorswindow.cpp 
+		./editormanager/ieditorfactory.cpp 
+		./editormanager/iexternaleditor.cpp 
+		./actionmanager/actionmanager.cpp 
+		./actionmanager/command.cpp 
+		./actionmanager/commandbutton.cpp 
+		./actionmanager/actioncontainer.cpp 
+		./actionmanager/commandsfile.cpp 
+		./dialogs/saveitemsdialog.cpp 
+		./dialogs/newdialog.cpp 
+		./dialogs/settingsdialog.cpp 
+		./actionmanager/commandmappings.cpp 
+		./dialogs/shortcutsettings.cpp 
+		./dialogs/readonlyfilesdialog.cpp 
+		./dialogs/openwithdialog.cpp 
+		./progressmanager/progressmanager.cpp 
+		./progressmanager/progressview.cpp 
+		./progressmanager/progressbar.cpp 
+		./progressmanager/futureprogress.cpp 
+		./statusbarwidget.cpp 
+		./coreplugin.cpp 
+		./modemanager.cpp 
+		./basefilewizard.cpp 
+		./basefilewizardfactory.cpp 
+		./generatedfile.cpp 
+		./plugindialog.cpp 
+		./inavigationwidgetfactory.cpp 
+		./navigationwidget.cpp 
+		./manhattanstyle.cpp 
+		./minisplitter.cpp 
+		./styleanimator.cpp 
+		./findplaceholder.cpp 
+		./rightpane.cpp 
+		./sidebar.cpp 
+		./fileiconprovider.cpp 
+		./icore.cpp 
+		./infobar.cpp 
+		./editormanager/ieditor.cpp 
+		./dialogs/ioptionspage.cpp 
+		./settingsdatabase.cpp 
+		./imode.cpp 
+		./editormanager/systemeditor.cpp 
+		./designmode.cpp 
+		./editortoolbar.cpp 
+		./helpmanager.cpp 
+		./outputpanemanager.cpp 
+		./navigationsubwidget.cpp 
+		./sidebarwidget.cpp 
+		./externaltool.cpp 
+		./dialogs/externaltoolconfig.cpp 
+		./toolsettings.cpp 
+		./variablechooser.cpp 
+		./mimetypemagicdialog.cpp 
+		./mimetypesettings.cpp 
+		./dialogs/promptoverwritedialog.cpp 
+		./fileutils.cpp 
+		./featureprovider.cpp 
+		./idocument.cpp 
+		./idocumentfactory.cpp 
+		./textdocument.cpp 
+		./documentmanager.cpp 
+		./removefiledialog.cpp 
+		./iversioncontrol.cpp 
+		./dialogs/addtovcsdialog.cpp 
+		./icorelistener.cpp 
+		./ioutputpane.cpp 
+		./patchtool.cpp 
+		./windowsupport.cpp 
+		./opendocumentstreeview.cpp 
+		./themeeditor/themecolors.cpp 
+		./themeeditor/themecolorstableview.cpp 
+		./themeeditor/colorvariable.cpp 
+		./themeeditor/themeeditorwidget.cpp 
+		./themeeditor/colorrole.cpp 
+		./themeeditor/themesettingstablemodel.cpp 
+		./themeeditor/sectionedtablemodel.cpp 
+		./themeeditor/themesettingsitemdelegate.cpp 
+		./messagebox.cpp 
+		./iwelcomepage.cpp 
+		./externaltoolmanager.cpp 
+		./systemsettings.cpp
+		
+		./find/basetextfind.cpp
+		./find/currentdocumentfind.cpp
+		./find/findplugin.cpp
+		./find/findtoolbar.cpp
+		./find/findtoolwindow.cpp
+		./find/ifindfilter.cpp
+		./find/ifindsupport.cpp
+		./find/itemviewfind.cpp
+		./find/searchresulttreeitemdelegate.cpp
+		./find/searchresulttreeitems.cpp
+		./find/searchresulttreemodel.cpp
+		./find/searchresulttreeview.cpp
+		./find/searchresultwidget.cpp
+		./find/searchresultwindow.cpp
+		./find/highlightscrollbar.cpp
+		
+		./locator/locator.cpp
+		./locator/commandlocator.cpp
+		./locator/locatorwidget.cpp
+		./locator/locatorfiltersfilter.cpp
+		./locator/opendocumentsfilter.cpp
+		./locator/filesystemfilter.cpp
+		./locator/directoryfilter.cpp
+		./locator/locatormanager.cpp
+		./locator/basefilefilter.cpp
+		./locator/ilocatorfilter.cpp
+		./locator/executefilter.cpp
+		./locator/locatorsearchutils.cpp
+		./locator/locatorsettingspage.cpp
+		./locator/externaltoolsfilter.cpp
+		
+		../aggregation/aggregate.cpp
+	]
+	if target_os == `macos {
+		.sources += [ ./locator/spotlightlocatorfilter.mm ./progressmanager/progressmanager_mac.mm ]
+	}else if target_os == `win32 {
+		.sources += ./progressmanager/progressmanager_win.cpp
+	}else{
+		.sources += ./progressmanager/progressmanager_x11.cpp
+	}
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}
