@@ -88,26 +88,9 @@ const char PLUGINPATH_OPTION[] = "-pluginpath";
 
 typedef QList<PluginSpec *> PluginSpecSet;
 
-#if 0
-#include <core/coreplugin.h>
-#define STATIC_PLUGIN_INSTANCE(PLUGIN, CLS) \
-    class Static##PLUGIN##PluginInstance{ \
-    public: \
-        static QObject * instanceFunc() { return new CLS(); } \
-        static const char * metaDataFunc() { return ""; } \
-        Static##PLUGIN##PluginInstance() { \
-            QStaticPlugin inst = { instanceFunc, metaDataFunc}; \
-            qRegisterStaticPluginFunction(inst); \
-        } \
-    }; \
-   static Static##PLUGIN##PluginInstance static##PLUGIN##Instance;
-
-
-STATIC_PLUGIN_INSTANCE(CorePlugin,Core::Internal::CorePlugin)
-#endif
 
 Q_IMPORT_PLUGIN(CorePlugin)
-
+Q_IMPORT_PLUGIN(TextEditorPlugin)
 
 // Helpers for displaying messages. Note that there is no console on Windows.
 

@@ -1,23 +1,16 @@
 /****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
-** Contact: http://www.qt.io/licensing
+** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
 ** This file is part of Qt Creator.
 **
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company.  For licensing terms and
-** conditions see http://www.qt.io/terms-conditions.  For further information
-** use the contact form at http://www.qt.io/contact-us.
-**
+** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
+** This file may be used under the terms of the GNU Lesser
 ** General Public License version 2.1 or version 3 as published by the Free
 ** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file.  Please review the
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
 ** following information to ensure the GNU Lesser General Public License
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
@@ -114,19 +107,20 @@ struct IdCache : public QHash<StringHolder, int>
 
 static int firstUnusedId = Id::IdsPerPlugin * Id::ReservedPlugins;
 
-static QHash<int, StringHolder> stringFromId;
-static IdCache idFromString;
+typedef QHash<int, StringHolder> StringFromId;
+Q_GLOBAL_STATIC(StringFromId, stringFromId);
+Q_GLOBAL_STATIC(IdCache,idFromString);
 
 static int theId(const char *str, int n = 0)
 {
     QTC_ASSERT(str && *str, return 0);
     StringHolder sh(str, n);
-    int res = idFromString.value(sh, 0);
+    int res = idFromString->value(sh, 0);
     if (res == 0) {
         res = firstUnusedId++;
         sh.str = qstrdup(sh.str);
-        idFromString[sh] = res;
-        stringFromId[res] = sh;
+        idFromString->insert(sh,res);
+        stringFromId->insert(res,sh);
     }
     return res;
 }
@@ -169,7 +163,7 @@ Id::Id(const char *name)
 
 QByteArray Id::name() const
 {
-    return stringFromId.value(m_id).str;
+    return stringFromId->value(m_id).str;
 }
 
 /*!
@@ -184,7 +178,7 @@ QByteArray Id::name() const
 
 QString Id::toString() const
 {
-    return QString::fromUtf8(stringFromId.value(m_id).str);
+    return QString::fromUtf8(stringFromId->value(m_id).str);
 }
 
 /*!
@@ -228,7 +222,7 @@ Id Id::fromName(const QByteArray &name)
 
 QVariant Id::toSetting() const
 {
-    return QVariant(QString::fromUtf8(stringFromId.value(m_id).str));
+    return QVariant(QString::fromUtf8(stringFromId->value(m_id).str));
 }
 
 /*!
@@ -298,7 +292,7 @@ Id Id::withPrefix(const char *prefix) const
 
 bool Id::operator==(const char *name) const
 {
-    const char *string = stringFromId.value(m_id).str;
+    const char *string = stringFromId->value(m_id).str;
     if (string && name)
         return strcmp(string, name) == 0;
     else
@@ -308,7 +302,7 @@ bool Id::operator==(const char *name) const
 // For debugging purposes
 CORE_EXPORT const char *nameForId(int id)
 {
-    return stringFromId.value(id).str;
+    return stringFromId->value(id).str;
 }
 
 bool Id::alphabeticallyBefore(Id other) const

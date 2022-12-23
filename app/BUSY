@@ -26,8 +26,8 @@ let exe * : Executable {
 	}else{
 		.sources += ./qtlockedfile_unix.cpp
 	}
-	.deps += [ ^qt.libqt ^utils.lib ^extensionsystem.lib ^core.lib run_moc run_rcc ]
+	.deps += [ ^qt.libqt ^utils.lib ^extensionsystem.lib ^core.lib ^texteditor.lib run_moc run_rcc ]
 	.configs += [ ^qt.qt_client_config ^cpp11conf ]
 	.include_dirs += ..
-	.defines += "IDE_LIBRARY_BASENAME=\"<not used>\""
+	.defines += "IDE_LIBRARY_BASENAME=\"NOT_USED\""
 }

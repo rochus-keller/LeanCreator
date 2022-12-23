@@ -1,0 +1,199 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "TEXTEDITOR_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP" "QT_NO_QML"
+				  "QT_STATICPLUGIN" # enable static load when compiling CorePlugin, so Q_IMPORT_PLUGIN can see it
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += ./texteditor.qrc
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./textdocument.h
+		./plaintexteditorfactory.h
+		./snippets/snippetssettingspage.cpp
+		./snippets/snippetscollection.h
+		./snippets/snippetssettingspage.h
+		./snippets/isnippetprovider.h
+		./snippets/snippeteditor.h
+		./syntaxhighlighter.h
+		./codecselector.h
+		./findincurrentfile.h
+		./textmarkregistry.h
+		./textdocumentlayout.h
+		./codeassist/completionassistprovider.h
+		./codeassist/iassistproposalwidget.h
+		./codeassist/iassistprovider.h
+		./codeassist/quickfixassistprovider.h
+		./codeassist/genericproposalwidget.h
+		./codeassist/runner.h
+		./codeassist/codeassistant.h
+		./codeassist/genericproposalwidget.cpp
+		./codeassist/functionhintproposalwidget.h
+		./codestyleselectorwidget.h
+		./quickfix.h
+		./fontsettingspage.h
+		./basehoverhandler.h
+		./behaviorsettingswidget.h
+		./texteditorplugin.h
+		./colorschemeedit.h
+		./tabsettingswidget.h
+		./refactoroverlay.h
+		./basefilefind_p.h
+		./simplecodestylepreferences.h
+		./texteditoractionhandler.h
+		./generichighlighter/highlightersettingspage.h
+		./generichighlighter/managedefinitionsdialog.h
+		./generichighlighter/manager.cpp
+		./generichighlighter/manager.h
+		./generichighlighter/definitiondownloader.h
+		./generichighlighter/highlighter.h
+		./icodestylepreferencesfactory.h
+		./codestyleselectorwidget.cpp
+		./codestyleeditor.h
+		./texteditoroverlay.h
+		./behaviorsettingspage.h
+		./outlinefactory.h
+		./displaysettingspage.h
+		./icodestylepreferences.h
+		./linenumberfilter.h
+		./texteditoroptionspage.h
+		./texteditor.cpp
+		./findinopenfiles.h
+		./findinfiles.h
+		./texteditor.h
+		./texteditorsettings.h
+		./simplecodestylepreferenceswidget.h
+		./basefilefind.h
+		./codestylepool.h
+		./ioutlinewidget.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./displaysettingspage.ui
+		./fontsettingspage.ui
+		./colorschemeedit.ui
+		./generichighlighter/highlightersettingspage.ui
+		./generichighlighter/managedefinitionsdialog.ui
+		./snippets/snippetssettingspage.ui
+		./behaviorsettingswidget.ui
+		./behaviorsettingspage.ui
+		./tabsettingswidget.ui
+		./codestyleselectorwidget.ui
+  	]
+}
+
+let lib * : Library {
+	.sources += [
+		./texteditorplugin.cpp 
+		./plaintexteditorfactory.cpp 
+		./textdocument.cpp 
+		./texteditor.cpp 
+		./behaviorsettings.cpp 
+		./behaviorsettingspage.cpp 
+		./texteditoractionhandler.cpp 
+		./fontsettingspage.cpp 
+		./texteditorconstants.cpp 
+		./tabsettings.cpp 
+		./storagesettings.cpp 
+		./displaysettings.cpp 
+		./displaysettingspage.cpp 
+		./fontsettings.cpp 
+		./linenumberfilter.cpp 
+		./findinfiles.cpp 
+		./basefilefind.cpp 
+		./texteditorsettings.cpp 
+		./codecselector.cpp 
+		./findincurrentfile.cpp 
+		./findinopenfiles.cpp 
+		./colorscheme.cpp 
+		./colorschemeedit.cpp 
+		./texteditoroverlay.cpp 
+		./texteditoroptionspage.cpp 
+		./textdocumentlayout.cpp 
+		./completionsettings.cpp 
+		./normalindenter.cpp 
+		./indenter.cpp 
+		./quickfix.cpp 
+		./syntaxhighlighter.cpp 
+		./highlighterutils.cpp 
+		./generichighlighter/itemdata.cpp 
+		./generichighlighter/specificrules.cpp 
+		./generichighlighter/rule.cpp 
+		./generichighlighter/dynamicrule.cpp 
+		./generichighlighter/context.cpp 
+		./generichighlighter/includerulesinstruction.cpp 
+		./generichighlighter/progressdata.cpp 
+		./generichighlighter/keywordlist.cpp 
+		./generichighlighter/highlightdefinition.cpp 
+		./generichighlighter/highlighter.cpp 
+		./generichighlighter/manager.cpp 
+		./generichighlighter/highlightdefinitionhandler.cpp 
+		./generichighlighter/highlightersettingspage.cpp 
+		./generichighlighter/highlightersettings.cpp 
+		./generichighlighter/managedefinitionsdialog.cpp 
+		./generichighlighter/definitiondownloader.cpp 
+		./refactoringchanges.cpp 
+		./refactoroverlay.cpp 
+		./outlinefactory.cpp 
+		./basehoverhandler.cpp 
+		./helpitem.cpp 
+		./autocompleter.cpp 
+		./snippets/snippetssettingspage.cpp 
+		./snippets/snippet.cpp 
+		./snippets/snippeteditor.cpp 
+		./snippets/snippetscollection.cpp 
+		./snippets/snippetssettings.cpp 
+		./snippets/isnippetprovider.cpp 
+		./snippets/plaintextsnippetprovider.cpp 
+		./behaviorsettingswidget.cpp 
+		./extraencodingsettings.cpp 
+		./codeassist/functionhintproposalwidget.cpp 
+		./codeassist/ifunctionhintproposalmodel.cpp 
+		./codeassist/functionhintproposal.cpp 
+		./codeassist/iassistprovider.cpp 
+		./codeassist/iassistproposal.cpp 
+		./codeassist/iassistprocessor.cpp 
+		./codeassist/iassistproposalwidget.cpp 
+		./codeassist/codeassistant.cpp 
+		./snippets/snippetassistcollector.cpp 
+		./codeassist/assistinterface.cpp 
+		./codeassist/assistproposalitem.cpp 
+		./convenience.cpp 
+		./codeassist/runner.cpp 
+		./codeassist/completionassistprovider.cpp 
+		./codeassist/genericproposalmodel.cpp 
+		./codeassist/quickfixassistprovider.cpp 
+		./codeassist/quickfixassistprocessor.cpp 
+		./codeassist/genericproposal.cpp 
+		./codeassist/genericproposalwidget.cpp 
+		./codeassist/iassistproposalmodel.cpp 
+		./tabsettingswidget.cpp 
+		./simplecodestylepreferences.cpp 
+		./simplecodestylepreferenceswidget.cpp 
+		./icodestylepreferencesfactory.cpp 
+		./semantichighlighter.cpp 
+		./codestyleselectorwidget.cpp 
+		./typingsettings.cpp 
+		./icodestylepreferences.cpp 
+		./codestylepool.cpp 
+		./codestyleeditor.cpp 
+		./circularclipboard.cpp 
+		./circularclipboardassist.cpp 
+		./textmark.cpp 
+		./codeassist/keywordscompletionassist.cpp 
+		./marginsettings.cpp
+	]
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

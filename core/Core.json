@@ -1,6 +1,6 @@
 {
     "Name" : "Core",
-    "Version" : "3.6.3",
+    "Version" : "3.6.1",
     "CompatVersion" : "3.6.0",
     "Required" : true,
     "Vendor" : "The Qt Company Ltd",

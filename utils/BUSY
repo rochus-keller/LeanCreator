@@ -68,7 +68,6 @@ let run_moc : Moc {
 		./textfieldcombobox.h
 		./theme.h
 		./tips.h
-		./tips.h
 		./tooltip.h
 		./treemodel.h
 		./treeviewcombobox.h
@@ -175,19 +174,7 @@ let lib * : Library {
     	./overridecursor.cpp 
     	./categorysortfiltermodel.cpp 
     	./dropsupport.cpp
-    	
-    	# TODO replace by regular Qt mimetypes
-    	/*
-    	./mimetypes/mimedatabase.cpp
-        ./mimetypes/mimetype.cpp
-        ./mimetypes/mimemagicrulematcher.cpp
-        ./mimetypes/mimetypeparser.cpp
-        ./mimetypes/mimemagicrule.cpp
-        ./mimetypes/mimeglobpattern.cpp
-        ./mimetypes/mimeprovider.cpp
-        */
-
-	]
+   	]
 	if target_os == `win32 {
 		.sources += ./consoleprocess_win.cpp
 	}else{

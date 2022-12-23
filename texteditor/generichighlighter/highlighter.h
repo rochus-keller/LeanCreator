@@ -1,0 +1,183 @@
+/****************************************************************************
+**
+** Copyright (C) 2015 The Qt Company Ltd.
+** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+**
+** This file is part of Qt Creator.
+**
+** $QT_BEGIN_LICENSE:LGPL21$
+** GNU Lesser General Public License Usage
+** This file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, The Qt Company gives you certain additional
+** rights.  These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+****************************************************************************/
+
+#ifndef HIGHLIGHTER_H
+#define HIGHLIGHTER_H
+
+#include "context.h"
+
+// Yes, this is correct. These are found somewhere else when building the autotest.
+#include <texteditor/textdocumentlayout.h>
+#include <texteditor/syntaxhighlighter.h>
+
+#include <QString>
+#include <QVector>
+#include <QStack>
+#include <QSharedPointer>
+#include <QStringList>
+
+#include <QTextCharFormat>
+
+namespace TextEditor {
+
+class TabSettings;
+namespace Internal {
+
+class Rule;
+class HighlightDefinition;
+class ProgressData;
+
+} // namespace Internal
+
+/*
+  Warning: Due to a very ugly hack with generichighlighter test
+  you can't export this class, so that it would be used from
+  other plugins. That's why highlighterutils.h was introduced.
+*/
+class Highlighter : public TextEditor::SyntaxHighlighter
+{
+    Q_OBJECT
+
+public:
+    Highlighter(QTextDocument *parent = 0);
+    virtual ~Highlighter();
+
+    enum TextFormatId {
+        Normal,
+        VisualWhitespace,
+        Keyword,
+        DataType,
+        Comment,
+        Decimal,
+        BaseN,
+        Float,
+        Char,
+        String,
+        Alert,
+        Error,
+        Function,
+        RegionMarker,
+        Others,
+        Identifier
+    };
+
+    void setTabSettings(const TabSettings &ts);
+    void setDefaultContext(const QSharedPointer<Internal::Context> &defaultContext);
+
+protected:
+    virtual void highlightBlock(const QString &text);
+
+private:
+
+    void setupDataForBlock(const QString &text);
+    void setupDefault();
+    void setupFromWillContinue();
+    void setupFromContinued();
+    void setupFromPersistent();
+
+    void iterateThroughRules(const QString &text,
+                             const int length,
+                             Internal::ProgressData *progress,
+                             const bool childRule,
+                             const QList<QSharedPointer<Internal::Rule> > &rules);
+
+    void assignCurrentContext();
+    bool contextChangeRequired(const QString &contextName) const;
+    void handleContextChange(const QString &contextName,
+                             const QSharedPointer<Internal::HighlightDefinition> &definition,
+                             const bool setCurrent = true);
+    void changeContext(const QString &contextName,
+                       const QSharedPointer<Internal::HighlightDefinition> &definition,
+                       const bool assignCurrent = true);
+
+    QString currentContextSequence() const;
+    void mapPersistentSequence(const QString &contextSequence);
+    void mapLeadingSequence(const QString &contextSequence);
+    void pushContextSequence(int state);
+
+    void pushDynamicContext(const QSharedPointer<Internal::Context> &baseContext);
+
+    void createWillContinueBlock();
+    void analyseConsistencyOfWillContinueBlock(const QString &text);
+
+    void applyFormat(int offset,
+                     int count,
+                     const QString &itemDataName,
+                     const QSharedPointer<Internal::HighlightDefinition> &definition);
+
+    void applyRegionBasedFolding() const;
+    void applyIndentationBasedFolding(const QString &text) const;
+    int neighbouringNonEmptyBlockIndent(QTextBlock block, const bool previous) const;
+
+    static TextBlockUserData *blockData(QTextBlockUserData *userData);
+
+    // Block states are composed by the region depth (used for code folding) and what I call
+    // observable states. Observable states occupy the 12 least significant bits. They might have
+    // the following values:
+    // - Default [0]: Nothing special.
+    // - WillContinue [1]: When there is match of the LineContinue rule (backslash as the last
+    //   character).
+    // - Continued [2]: Blocks that happen after a WillContinue block and continue from their
+    //   context until the next line end.
+    // - Persistent(s) [Anything >= 3]: Correspond to persistent contexts which last until a pop
+    //   occurs due to a matching rule. Every sequence of persistent contexts seen so far is
+    //   associated with a number (incremented by a unit each time).
+    // Region depths occupy the remaining bits.
+    enum ObservableBlockState {
+        Default = 0,
+        WillContinue,
+        Continued,
+        PersistentsStart
+    };
+    int computeState(const int observableState) const;
+
+    static int extractRegionDepth(const int state);
+    static int extractObservableState(const int state);
+
+    int m_regionDepth;
+    bool m_indentationBasedFolding;
+    const TabSettings *m_tabSettings;
+
+    int m_persistentObservableStatesCounter;
+    int m_dynamicContextsCounter;
+
+    bool m_isBroken;
+
+    QSharedPointer<Internal::Context> m_defaultContext;
+    QSharedPointer<Internal::Context> m_currentContext;
+    QVector<QSharedPointer<Internal::Context> > m_contexts;
+
+    // Mapping from context sequences to the observable persistent state they represent.
+    QHash<QString, int> m_persistentObservableStates;
+    // Mapping from context sequences to the non-persistent observable state that led to them.
+    QHash<QString, int> m_leadingObservableStates;
+    // Mapping from observable persistent states to context sequences (the actual "stack").
+    QHash<int, QVector<QSharedPointer<Internal::Context> > > m_persistentContexts;
+
+    // Captures used in dynamic rules.
+    QStringList m_currentCaptures;
+};
+
+} // namespace TextEditor
+
+#endif // HIGHLIGHTER_H

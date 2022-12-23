@@ -5,7 +5,7 @@ param HAVE_NOOPT = false
 param HAVE_SHARED_QT = false
 
 submod qt - = ../LeanQt (HAVE_ITEMVIEWS, HAVE_PROCESS, HAVE_NETACCESS, HAVE_LOCALSOCK, HAVE_SHARED = HAVE_SHARED_QT, HAVE_SHAREDMEM,
-						 HAVE_MIME, HAVE_XMLSTREAM, HAVE_CONCURRENT, HAVE_PLUGINS, HAVE_RE, HAVE_JSON)
+						 HAVE_MIME, HAVE_XMLSTREAM, HAVE_CONCURRENT, HAVE_PLUGINS, HAVE_RE, HAVE_JSON, HAVE_XML)
 
 let cpp11conf - : Config {
 	if (target_toolchain == `gcc) || (target_toolchain == `clang) {
@@ -13,9 +13,12 @@ let cpp11conf - : Config {
 	}
 }
 
+# the absolute minimum application consists of utils, extensionsystem, core and app
+
 submod utils -
 submod extensionsystem -
 submod core -
+submod texteditor -
 submod app
 
 let nooptconf : Config {

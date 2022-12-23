@@ -238,12 +238,12 @@ VariableChooserPrivate::VariableChooserPrivate(VariableChooser *parent)
     : q(parent),
       m_lineEdit(0),
       m_textEdit(0),
-      m_plainTextEdit(0)
+      m_plainTextEdit(0),
+      m_variableDescription(0)
 {
     m_defaultDescription = VariableChooser::tr("Select a variable to insert.");
 
     m_variableTree = new VariableTreeView(q, this);
-    m_variableTree->setModel(&m_model);
 
     m_variableDescription = new QLabel(q);
     m_variableDescription->setText(m_defaultDescription);
@@ -252,6 +252,8 @@ VariableChooserPrivate::VariableChooserPrivate(VariableChooser *parent)
     m_variableDescription->setWordWrap(true);
     m_variableDescription->setAttribute(Qt::WA_MacSmallSize);
     m_variableDescription->setTextInteractionFlags(Qt::TextBrowserInteraction);
+
+    m_variableTree->setModel(&m_model); // can change m_variableDescription
 
     QVBoxLayout *verticalLayout = new QVBoxLayout(q);
     verticalLayout->setContentsMargins(3, 3, 3, 12);
