@@ -88,10 +88,6 @@ const char PLUGINPATH_OPTION[] = "-pluginpath";
 
 typedef QList<PluginSpec *> PluginSpecSet;
 
-
-Q_IMPORT_PLUGIN(CorePlugin)
-Q_IMPORT_PLUGIN(TextEditorPlugin)
-
 // Helpers for displaying messages. Note that there is no console on Windows.
 
 // Format as <pre> HTML
@@ -297,6 +293,10 @@ static inline QSettings *userSettings()
 static const char *SHARE_PATH =
         Utils::HostOsInfo::isMacHost() ? "/../Resources" : "/../share/qtcreator";
 
+Q_IMPORT_PLUGIN(CorePlugin)
+Q_IMPORT_PLUGIN(TextEditorPlugin)
+Q_IMPORT_PLUGIN(ProjectExplorerPlugin)
+
 int main(int argc, char **argv)
 {
     const char *highDpiEnvironmentVariable = setHighDpiEnvironmentVariable();
@@ -333,6 +333,7 @@ int main(int argc, char **argv)
     Q_INIT_RESOURCE(find);
     Q_INIT_RESOURCE(locator);
     Q_INIT_RESOURCE(pluginview);
+    Q_INIT_RESOURCE(projectexplorer);
 
     CrashHandlerSetup setupCrashHandler; // Display a backtrace once a serious signal is delivered.
 

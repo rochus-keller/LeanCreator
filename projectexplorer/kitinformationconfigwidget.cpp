@@ -1,0 +1,501 @@
+/****************************************************************************
+**
+** Copyright (C) 2015 The Qt Company Ltd.
+** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+**
+** This file is part of Qt Creator.
+**
+** $QT_BEGIN_LICENSE:LGPL21$
+** GNU Lesser General Public License Usage
+** This file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, The Qt Company gives you certain additional
+** rights.  These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+****************************************************************************/
+
+#include "kitinformationconfigwidget.h"
+
+#ifndef QT_NO_DEVICESUPPORT
+#include "devicesupport/devicemanager.h"
+#include "devicesupport/devicemanagermodel.h"
+#include "devicesupport/idevicefactory.h"
+#endif
+#include "projectexplorerconstants.h"
+#include "kit.h"
+#include "kitinformation.h"
+#include "toolchain.h"
+#include "toolchainmanager.h"
+#include "environmentwidget.h"
+
+#include <core/icore.h>
+#include <extensionsystem/pluginmanager.h>
+#include <utils/algorithm.h>
+#include <utils/fancylineedit.h>
+#include <utils/environment.h>
+#include <utils/qtcassert.h>
+#include <utils/pathchooser.h>
+
+#include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFontMetrics>
+#include <QLabel>
+#include <QPlainTextEdit>
+#include <QPushButton>
+#include <QVBoxLayout>
+
+using namespace Core;
+
+namespace ProjectExplorer {
+namespace Internal {
+
+// --------------------------------------------------------------------------
+// SysRootInformationConfigWidget:
+// --------------------------------------------------------------------------
+
+SysRootInformationConfigWidget::SysRootInformationConfigWidget(Kit *k, const KitInformation *ki) :
+    KitConfigWidget(k, ki)
+{
+    m_chooser = new Utils::PathChooser;
+    m_chooser->setExpectedKind(Utils::PathChooser::ExistingDirectory);
+    m_chooser->setHistoryCompleter(QLatin1String("PE.SysRoot.History"));
+    m_chooser->setFileName(SysRootKitInformation::sysRoot(k));
+    connect(m_chooser, &Utils::PathChooser::rawPathChanged,
+            this, &SysRootInformationConfigWidget::pathWasChanged);
+}
+
+SysRootInformationConfigWidget::~SysRootInformationConfigWidget()
+{
+    delete m_chooser;
+}
+
+QString SysRootInformationConfigWidget::displayName() const
+{
+    return tr("Sysroot:");
+}
+
+QString SysRootInformationConfigWidget::toolTip() const
+{
+    return tr("The root directory of the system image to use.<br>"
+              "Leave empty when building for the desktop.");
+}
+
+void SysRootInformationConfigWidget::setPalette(const QPalette &p)
+{
+    KitConfigWidget::setPalette(p);
+    m_chooser->setOkColor(p.color(QPalette::Active, QPalette::Text));
+}
+
+void SysRootInformationConfigWidget::refresh()
+{
+    if (!m_ignoreChange)
+        m_chooser->setFileName(SysRootKitInformation::sysRoot(m_kit));
+}
+
+void SysRootInformationConfigWidget::makeReadOnly()
+{
+    m_chooser->setReadOnly(true);
+}
+
+QWidget *SysRootInformationConfigWidget::mainWidget() const
+{
+    return m_chooser->lineEdit();
+}
+
+QWidget *SysRootInformationConfigWidget::buttonWidget() const
+{
+    return m_chooser->buttonAtIndex(0);
+}
+
+void SysRootInformationConfigWidget::pathWasChanged()
+{
+    m_ignoreChange = true;
+    SysRootKitInformation::setSysRoot(m_kit, m_chooser->fileName());
+    m_ignoreChange = false;
+}
+
+// --------------------------------------------------------------------------
+// ToolChainInformationConfigWidget:
+// --------------------------------------------------------------------------
+
+ToolChainInformationConfigWidget::ToolChainInformationConfigWidget(Kit *k, const KitInformation *ki) :
+    KitConfigWidget(k, ki)
+{
+    m_comboBox = new QComboBox;
+    m_comboBox->setToolTip(toolTip());
+
+    refresh();
+    connect(m_comboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &ToolChainInformationConfigWidget::currentToolChainChanged);
+
+    m_manageButton = new QPushButton(KitConfigWidget::msgManage());
+    m_manageButton->setContentsMargins(0, 0, 0, 0);
+    connect(m_manageButton, &QAbstractButton::clicked,
+            this, &ToolChainInformationConfigWidget::manageToolChains);
+}
+
+ToolChainInformationConfigWidget::~ToolChainInformationConfigWidget()
+{
+    delete m_comboBox;
+    delete m_manageButton;
+}
+
+QString ToolChainInformationConfigWidget::displayName() const
+{
+    return tr("Compiler:");
+}
+
+QString ToolChainInformationConfigWidget::toolTip() const
+{
+    return tr("The compiler to use for building.<br>"
+              "Make sure the compiler will produce binaries compatible with the target device, "
+              "Qt version and other libraries used.");
+}
+
+void ToolChainInformationConfigWidget::refresh()
+{
+    m_ignoreChanges = true;
+    m_comboBox->clear();
+    foreach (ToolChain *tc, ToolChainManager::toolChains())
+        m_comboBox->addItem(tc->displayName(), tc->id());
+
+    if (m_comboBox->count() == 0) {
+        m_comboBox->addItem(tr("<No compiler available>"), QString());
+        m_comboBox->setEnabled(false);
+    } else {
+        m_comboBox->setEnabled(m_comboBox->count() > 1 && !m_isReadOnly);
+    }
+
+    m_comboBox->setCurrentIndex(indexOf(ToolChainKitInformation::toolChain(m_kit)));
+    m_ignoreChanges = false;
+}
+
+void ToolChainInformationConfigWidget::makeReadOnly()
+{
+    m_isReadOnly = true;
+    m_comboBox->setEnabled(false);
+}
+
+QWidget *ToolChainInformationConfigWidget::mainWidget() const
+{
+    return m_comboBox;
+}
+
+QWidget *ToolChainInformationConfigWidget::buttonWidget() const
+{
+    return m_manageButton;
+}
+
+void ToolChainInformationConfigWidget::manageToolChains()
+{
+    ICore::showOptionsDialog(Constants::TOOLCHAIN_SETTINGS_PAGE_ID, buttonWidget());
+}
+
+void ToolChainInformationConfigWidget::currentToolChainChanged(int idx)
+{
+    if (m_ignoreChanges)
+        return;
+
+    const QByteArray id = m_comboBox->itemData(idx).toByteArray();
+    ToolChainKitInformation::setToolChain(m_kit, ToolChainManager::findToolChain(id));
+}
+
+int ToolChainInformationConfigWidget::indexOf(const ToolChain *tc)
+{
+    const QByteArray id = tc ? tc->id() : QByteArray();
+    for (int i = 0; i < m_comboBox->count(); ++i) {
+        if (id == m_comboBox->itemData(i).toByteArray())
+            return i;
+    }
+    return -1;
+}
+
+// --------------------------------------------------------------------------
+// DeviceTypeInformationConfigWidget:
+// --------------------------------------------------------------------------
+
+DeviceTypeInformationConfigWidget::DeviceTypeInformationConfigWidget(Kit *workingCopy, const KitInformation *ki) :
+    KitConfigWidget(workingCopy, ki), m_comboBox(new QComboBox)
+{
+#ifndef QT_NO_DEVICESUPPORT
+    QList<IDeviceFactory *> factories
+            = ExtensionSystem::PluginManager::getObjects<IDeviceFactory>();
+    foreach (IDeviceFactory *factory, factories) {
+        foreach (Id id, factory->availableCreationIds())
+            m_comboBox->addItem(factory->displayNameForId(id), id.toSetting());
+    }
+#endif
+    m_comboBox->setToolTip(toolTip());
+
+    refresh();
+    connect(m_comboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &DeviceTypeInformationConfigWidget::currentTypeChanged);
+}
+
+DeviceTypeInformationConfigWidget::~DeviceTypeInformationConfigWidget()
+{
+    delete m_comboBox;
+}
+
+QWidget *DeviceTypeInformationConfigWidget::mainWidget() const
+{
+    return m_comboBox;
+}
+
+QString DeviceTypeInformationConfigWidget::displayName() const
+{
+    return tr("Device type:");
+}
+
+QString DeviceTypeInformationConfigWidget::toolTip() const
+{
+    return tr("The type of device to run applications on.");
+}
+
+void DeviceTypeInformationConfigWidget::refresh()
+{
+    Id devType = DeviceTypeKitInformation::deviceTypeId(m_kit);
+    if (!devType.isValid())
+        m_comboBox->setCurrentIndex(-1);
+    for (int i = 0; i < m_comboBox->count(); ++i) {
+        if (m_comboBox->itemData(i) == devType.toSetting()) {
+            m_comboBox->setCurrentIndex(i);
+            break;
+        }
+    }
+}
+
+void DeviceTypeInformationConfigWidget::makeReadOnly()
+{
+    m_comboBox->setEnabled(false);
+}
+
+void DeviceTypeInformationConfigWidget::currentTypeChanged(int idx)
+{
+    Id type = idx < 0 ? Id() : Id::fromSetting(m_comboBox->itemData(idx));
+    DeviceTypeKitInformation::setDeviceTypeId(m_kit, type);
+}
+
+// --------------------------------------------------------------------------
+// DeviceInformationConfigWidget:
+// --------------------------------------------------------------------------
+
+DeviceInformationConfigWidget::DeviceInformationConfigWidget(Kit *workingCopy, const KitInformation *ki) :
+    KitConfigWidget(workingCopy, ki),
+    m_comboBox(new QComboBox)
+  #ifndef QT_NO_DEVICESUPPORT
+   , m_model(new DeviceManagerModel(DeviceManager::instance()))
+  #endif
+{
+#ifndef QT_NO_DEVICESUPPORT
+    m_comboBox->setModel(m_model);
+#endif
+
+    m_manageButton = new QPushButton(KitConfigWidget::msgManage());
+
+    refresh();
+    m_comboBox->setToolTip(toolTip());
+
+#ifndef QT_NO_DEVICESUPPORT
+    connect(m_model, &QAbstractItemModel::modelAboutToBeReset,
+            this, &DeviceInformationConfigWidget::modelAboutToReset);
+    connect(m_model, &QAbstractItemModel::modelReset,
+            this, &DeviceInformationConfigWidget::modelReset);
+    connect(m_comboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+            this, &DeviceInformationConfigWidget::currentDeviceChanged);
+    connect(m_manageButton, &QAbstractButton::clicked,
+            this, &DeviceInformationConfigWidget::manageDevices);
+#endif
+}
+
+DeviceInformationConfigWidget::~DeviceInformationConfigWidget()
+{
+    delete m_comboBox;
+#ifndef QT_NO_DEVICESUPPORT
+    delete m_model;
+#endif
+    delete m_manageButton;
+}
+
+QWidget *DeviceInformationConfigWidget::mainWidget() const
+{
+    return m_comboBox;
+}
+
+QString DeviceInformationConfigWidget::displayName() const
+{
+    return tr("Device:");
+}
+
+QString DeviceInformationConfigWidget::toolTip() const
+{
+    return tr("The device to run the applications on.");
+}
+
+void DeviceInformationConfigWidget::refresh()
+{
+#ifndef QT_NO_DEVICESUPPORT
+    m_model->setTypeFilter(DeviceTypeKitInformation::deviceTypeId(m_kit));
+    m_comboBox->setCurrentIndex(m_model->indexOf(DeviceKitInformation::device(m_kit)));
+#endif
+}
+
+void DeviceInformationConfigWidget::makeReadOnly()
+{
+    m_comboBox->setEnabled(false);
+}
+
+QWidget *DeviceInformationConfigWidget::buttonWidget() const
+{
+    return m_manageButton;
+}
+
+void DeviceInformationConfigWidget::manageDevices()
+{
+    ICore::showOptionsDialog(Constants::DEVICE_SETTINGS_PAGE_ID, buttonWidget());
+}
+
+void DeviceInformationConfigWidget::modelAboutToReset()
+{
+#ifndef QT_NO_DEVICESUPPORT
+    m_selectedId = m_model->deviceId(m_comboBox->currentIndex());
+    m_ignoreChange = true;
+#endif
+}
+
+void DeviceInformationConfigWidget::modelReset()
+{
+#ifndef QT_NO_DEVICESUPPORT
+    m_comboBox->setCurrentIndex(m_model->indexForId(m_selectedId));
+#endif
+    m_ignoreChange = false;
+}
+
+void DeviceInformationConfigWidget::currentDeviceChanged()
+{
+    if (m_ignoreChange)
+        return;
+#ifndef QT_NO_DEVICESUPPORT
+    DeviceKitInformation::setDeviceId(m_kit, m_model->deviceId(m_comboBox->currentIndex()));
+#endif
+}
+
+// --------------------------------------------------------------------
+// KitEnvironmentConfigWidget:
+// --------------------------------------------------------------------
+
+KitEnvironmentConfigWidget::KitEnvironmentConfigWidget(Kit *workingCopy, const KitInformation *ki) :
+    KitConfigWidget(workingCopy, ki),
+    m_summaryLabel(new QLabel),
+    m_manageButton(new QPushButton)
+{
+    refresh();
+    m_manageButton->setText(tr("Change..."));
+    connect(m_manageButton, &QAbstractButton::clicked,
+            this, &KitEnvironmentConfigWidget::editEnvironmentChanges);
+}
+
+QWidget *KitEnvironmentConfigWidget::mainWidget() const
+{
+    return m_summaryLabel;
+}
+
+QString KitEnvironmentConfigWidget::displayName() const
+{
+    return tr("Environment:");
+}
+
+QString KitEnvironmentConfigWidget::toolTip() const
+{
+    return tr("Additional environment settings when using this kit.");
+}
+
+void KitEnvironmentConfigWidget::refresh()
+{
+    QList<Utils::EnvironmentItem> changes = EnvironmentKitInformation::environmentChanges(m_kit);
+    Utils::sort(changes, [](const Utils::EnvironmentItem &lhs, const Utils::EnvironmentItem &rhs)
+                         { return QString::localeAwareCompare(lhs.name, rhs.name) < 0; });
+    QString shortSummary = Utils::EnvironmentItem::toStringList(changes).join(QLatin1String("; "));
+    QFontMetrics fm(m_summaryLabel->font());
+    shortSummary = fm.elidedText(shortSummary, Qt::ElideRight, m_summaryLabel->width());
+    m_summaryLabel->setText(shortSummary.isEmpty() ? tr("No changes to apply.") : shortSummary);
+    if (m_editor)
+        m_editor->setPlainText(Utils::EnvironmentItem::toStringList(changes).join(QLatin1Char('\n')));
+}
+
+void KitEnvironmentConfigWidget::makeReadOnly()
+{
+    m_manageButton->setEnabled(false);
+    if (m_dialog)
+        m_dialog->reject();
+}
+
+void KitEnvironmentConfigWidget::editEnvironmentChanges()
+{
+    if (m_dialog) {
+        m_dialog->activateWindow();
+        m_dialog->raise();
+        return;
+    }
+
+    QTC_ASSERT(!m_editor, return);
+
+    m_dialog = new QDialog(m_summaryLabel);
+    m_dialog->setWindowTitle(tr("Edit Environment Changes"));
+    QVBoxLayout *layout = new QVBoxLayout(m_dialog);
+    m_editor = new QPlainTextEdit;
+    m_editor->setToolTip(tr("Enter one variable per line with the variable name "
+                            "separated from the variable value by \"=\".<br>"
+                            "Environment variables can be referenced with ${OTHER}."));
+
+    QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Apply|QDialogButtonBox::Cancel);
+
+    layout->addWidget(m_editor);
+    layout->addWidget(buttons);
+
+    connect(buttons, &QDialogButtonBox::accepted, m_dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, m_dialog, &QDialog::reject);
+    connect(m_dialog, &QDialog::accepted, this, &KitEnvironmentConfigWidget::acceptChangesDialog);
+    connect(m_dialog, &QDialog::rejected, this, &KitEnvironmentConfigWidget::closeChangesDialog);
+    connect(buttons->button(QDialogButtonBox::Apply), &QAbstractButton::clicked,
+            this, &KitEnvironmentConfigWidget::applyChanges);
+
+    refresh();
+    m_dialog->show();
+}
+
+void KitEnvironmentConfigWidget::applyChanges()
+{
+    QTC_ASSERT(m_editor, return);
+    auto changes = Utils::EnvironmentItem::fromStringList(m_editor->toPlainText().split(QLatin1Char('\n')));
+    EnvironmentKitInformation::setEnvironmentChanges(m_kit, changes);
+}
+
+void KitEnvironmentConfigWidget::closeChangesDialog()
+{
+    m_dialog->deleteLater();
+    m_dialog = 0;
+    m_editor = 0;
+}
+
+void KitEnvironmentConfigWidget::acceptChangesDialog()
+{
+    applyChanges();
+    closeChangesDialog();
+}
+
+QWidget *KitEnvironmentConfigWidget::buttonWidget() const
+{
+    return m_manageButton;
+}
+
+} // namespace Internal
+} // namespace ProjectExplorer

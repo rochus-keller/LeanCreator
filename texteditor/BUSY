@@ -4,7 +4,7 @@
 let lib_conf : Config {
 	.include_dirs += ..
 	.defines += [ "TEXTEDITOR_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP" "QT_NO_QML"
-				  "QT_STATICPLUGIN" # enable static load when compiling CorePlugin, so Q_IMPORT_PLUGIN can see it
+				  "QT_STATICPLUGIN" # enable static load when compiling plugin, so Q_IMPORT_PLUGIN can see it
 	 ]
 	.configs += ^cpp11conf
 }

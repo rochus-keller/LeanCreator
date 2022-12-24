@@ -19,6 +19,7 @@ submod utils -
 submod extensionsystem -
 submod core -
 submod texteditor -
+submod projectexplorer -
 submod app
 
 let nooptconf : Config {

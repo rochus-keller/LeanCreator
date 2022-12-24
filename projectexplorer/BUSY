@@ -1,0 +1,301 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "PROJECTEXPLORER_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP" "QT_NO_QML" 
+				  "QT_NO_CUSTOMWIZZARD" "QT_NO_JSONWIZZARD" "QT_NO_DEVICESUPPORT" "QT_NO_SSH" "QT_NO_JSENGINE"
+				  "QT_STATICPLUGIN" # enable static load when compiling plugin, so Q_IMPORT_PLUGIN can see it
+	 ]
+	 if target_cpu == `x86 {
+	 	.defines += "QTC_CPU=X86Architecture"
+	 }else if target_cpu == `arm {
+	 	.defines += "QTC_CPU=ArmArchitecture"
+	 }else if target_cpu == `ia64 {
+	 	.defines += "QTC_CPU=ItaniumArchitecture"
+	 }else if target_cpu == `mips {
+	 	.defines += "QTC_CPU=MipsArchitecture"
+	 }else if target_cpu == `ppc {
+	 	.defines += "QTC_CPU=PowerPCArchitecture"
+	 }else{
+	 	.defines += "QTC_CPU=UnknownArchitecture"
+	 }
+	.configs += ^cpp11conf
+}
+
+# TODO mac LIBS += -framework Carbon
+
+let run_rcc : Rcc {
+	.sources += ./projectexplorer.qrc
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./sessiondialog.h
+		./environmentaspect.h
+		./environmentaspectwidget.h
+		./targetsetuppage.h
+		./buildstepspage.h
+		./runconfiguration.h
+		./project.h
+		./codestylesettingspropertiespage.h
+		./panelswidget.h
+		./iprojectmanager.h
+		./projectexplorersettingspage.h
+		./environmentwidget.cpp
+		./buildsettingspropertiespage.h
+		./kitconfigwidget.h
+		./importwidget.h
+		./editorsettingspropertiespage.h
+		./buildsteplist.h
+		./deployconfigurationmodel.h
+		./buildconfiguration.h
+		./projecttree.h
+		./wincetoolchain.h
+		./taskhub.h
+		./corelistenercheckingforrunningbuild.h
+		./localenvironmentaspect.h
+		./compileoutputwindow.h
+		./gnumakeparser.h
+		./allprojectsfilter.h
+		./localapplicationruncontrol.h
+		./copytaskhandler.h
+		./appoutputpane.cpp
+		./applicationlauncher.h
+		./xcodebuildparser.h
+		./currentprojectfind.h
+		./targetselector.h
+		./currentprojectfilter.h
+		./ansifilterparser.h
+		./kitmanagerconfigwidget.h
+		./taskwindow.cpp
+		./linuxiccparser.h
+		./toolchainconfigwidget.h
+		./baseprojectwizarddialog.h
+		./pluginfilefactory.h
+		./processstep.h
+		./targetsetupwidget.h
+		./appoutputpane.h
+		./projecttreewidget.h
+		./runconfigurationaspects.h
+		./buildenvironmentwidget.h
+		./allprojectsfind.h
+		./windebuginterface.h
+		./waitforstopdialog.h
+		./deployconfiguration.h
+		./session.h
+		./msvctoolchain.h
+		./localapplicationrunconfiguration.h
+		./ldparser.h
+		./miniprojecttargetselector.h
+		./projectwelcomepage.h
+		./showineditortaskhandler.h
+		./projectconfiguration.h
+		./targetsettingspanel.h
+		./targetsettingswidget.h
+		./environmentwidget.h
+		./vcsannotatetaskhandler.h
+		./ioutputparser.h
+		./unconfiguredprojectpanel.h
+		./buildconfigurationmodel.h
+		./namedwidget.h
+		./removetaskhandler.h
+		./compileoutputwindow.cpp
+		./doubletabwidget.h
+		./gccparser.h
+		./gcctoolchainfactories.h
+		./projectfilewizardextension.h
+		./selectablefilesmodel.h
+		./deploymentdatamodel.h
+		./runconfigurationmodel.h
+		./kitmanager.h
+		./journaldwatcher.h
+		./foldernavigationwidget.h
+		./taskmodel.h
+		./taskwindow.h
+		./osparser.h
+		./environmentitemswidget.h
+		./toolchain.h
+		./deploymentdataview.h
+		./buildmanager.h
+		./itaskhandler.h
+		./toolchainmanager.h
+		./kitmodel.h
+		./showoutputtaskhandler.h
+		./kitinformationconfigwidget.h
+		./target.h
+		./projectmodels.h
+		./projectexplorer.h
+		./ipotentialkit.h
+		./projectwizardpage.h
+		./dependenciespanel.h
+		./msvcparser.h
+		./runsettingspropertiespage.h
+		./kitchooser.h
+		./kitoptionspage.h
+		./projectwindow.h
+		./buildprogress.h
+		./configtaskhandler.h
+		./abstractprocessstep.h
+		./clangparser.h
+		./buildstep.h
+		./customparserconfigdialog.h
+		./foldernavigationwidget.cpp
+		./customtoolchain.h
+		./kitinformation.h
+		./toolchainoptionspage.h
+		./editorconfiguration.h
+		./abiwidget.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./processstep.ui 
+		./editorsettingspropertiespage.ui 
+		./sessiondialog.ui 
+		./projectwizardpage.ui 
+		./projectexplorersettingspage.ui 
+		./targetsettingswidget.ui 
+		./doubletabwidget.ui 
+		./deploymentdataview.ui 
+		./codestylesettingspropertiespage.ui 
+		./customparserconfigdialog.ui
+   	]
+}
+
+let lib * : Library {
+	.sources += [
+		./projectexplorer.cpp 
+		./abi.cpp 
+		./abiwidget.cpp 
+		./ansifilterparser.cpp 
+		./buildinfo.cpp 
+		./clangparser.cpp 
+		./configtaskhandler.cpp 
+		./environmentaspect.cpp 
+		./environmentaspectwidget.cpp 
+		./gcctoolchain.cpp 
+		./importwidget.cpp 
+		./localapplicationrunconfiguration.cpp 
+		./localenvironmentaspect.cpp 
+		./osparser.cpp 
+		./projectimporter.cpp 
+		./projectwindow.cpp 
+		./removetaskhandler.cpp 
+		./targetsetuppage.cpp 
+		./targetsetupwidget.cpp 
+		./unconfiguredprojectpanel.cpp 
+		./kit.cpp 
+		./kitchooser.cpp 
+		./kitconfigwidget.cpp 
+		./kitinformation.cpp 
+		./kitinformationconfigwidget.cpp 
+		./kitmanager.cpp 
+		./kitmanagerconfigwidget.cpp 
+		./kitmodel.cpp 
+		./kitoptionspage.cpp 
+		./buildmanager.cpp 
+		./buildsteplist.cpp 
+		./compileoutputwindow.cpp 
+		./deployconfiguration.cpp 
+		./deployconfigurationmodel.cpp 
+		./namedwidget.cpp 
+		./target.cpp 
+		./targetsettingspanel.cpp 
+		./ioutputparser.cpp 
+		./projectconfiguration.cpp 
+		./gnumakeparser.cpp 
+		./task.cpp 
+		./copytaskhandler.cpp 
+		./showineditortaskhandler.cpp 
+		./showoutputtaskhandler.cpp 
+		./vcsannotatetaskhandler.cpp 
+		./taskwindow.cpp 
+		./taskmodel.cpp 
+		./projectfilewizardextension.cpp 
+		./session.cpp 
+		./dependenciespanel.cpp 
+		./allprojectsfilter.cpp 
+		./currentprojectfilter.cpp 
+		./allprojectsfind.cpp 
+		./project.cpp 
+		./buildstep.cpp 
+		./buildconfiguration.cpp 
+		./buildsettingspropertiespage.cpp 
+		./environmentwidget.cpp 
+		./processstep.cpp 
+		./abstractprocessstep.cpp 
+		./editorconfiguration.cpp 
+		./editorsettingspropertiespage.cpp 
+		./runconfiguration.cpp 
+		./applicationlauncher.cpp 
+		./runsettingspropertiespage.cpp 
+		./projecttreewidget.cpp 
+		./foldernavigationwidget.cpp 
+		./buildprogress.cpp 
+		./projectnodes.cpp 
+		./sessiondialog.cpp 
+		./projectwizardpage.cpp 
+		./buildstepspage.cpp 
+		./nodesvisitor.cpp 
+		./projectmodels.cpp 
+		./currentprojectfind.cpp 
+		./toolchain.cpp 
+		./toolchainconfigwidget.cpp 
+		./toolchainmanager.cpp 
+		./toolchainoptionspage.cpp 
+		./cesdkhandler.cpp 
+		./gccparser.cpp 
+		./projectexplorersettingspage.cpp 
+		./corelistenercheckingforrunningbuild.cpp 
+		./baseprojectwizarddialog.cpp 
+		./miniprojecttargetselector.cpp 
+		./targetselector.cpp 
+		./targetsettingswidget.cpp 
+		./doubletabwidget.cpp 
+		./buildenvironmentwidget.cpp 
+		./ldparser.cpp 
+		./linuxiccparser.cpp 
+		./runconfigurationaspects.cpp 
+		./runconfigurationmodel.cpp 
+		./buildconfigurationmodel.cpp 
+		./taskhub.cpp 
+		./processparameters.cpp 
+		./localapplicationruncontrol.cpp 
+		./appoutputpane.cpp 
+		./codestylesettingspropertiespage.cpp 
+		./settingsaccessor.cpp 
+		./environmentitemswidget.cpp 
+		./deployablefile.cpp 
+		./deploymentdatamodel.cpp 
+		./deploymentdataview.cpp 
+		./customtoolchain.cpp 
+		./projectmacroexpander.cpp 
+		./customparser.cpp 
+		./customparserconfigdialog.cpp 
+		./ipotentialkit.cpp 
+		./selectablefilesmodel.cpp 
+		./xcodebuildparser.cpp 
+		./propertiespanel.cpp 
+		./panelswidget.cpp 
+		./projectwelcomepage.cpp 
+		./projectpanelfactory.cpp 
+		./projecttree.cpp 
+		./expanddata.cpp 
+		./waitforstopdialog.cpp
+	]
+	if target_os == `win32 {
+		.sources += [
+			./windebuginterface.cpp 
+			./msvcparser.cpp 
+			./msvctoolchain.cpp 
+			./abstractmsvctoolchain.cpp 
+			./wincetoolchain.cpp
+		]
+	}
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}
