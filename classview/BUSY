@@ -1,0 +1,46 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ 
+		 "QT_STATICPLUGIN"
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ 
+		./classview.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./classviewnavigationwidget.h
+		./classviewnavigationwidgetfactory.h
+		./classviewmanager.h
+		./classviewtreeitemmodel.h
+		./classviewparser.h
+		./classviewplugin.h
+	]
+}
+
+let lib * : Library {
+	.sources += [
+		./classviewmanager.cpp
+		./classviewnavigationwidget.cpp
+		./classviewnavigationwidgetfactory.cpp
+		./classviewparser.cpp
+		./classviewparsertreeitem.cpp
+		./classviewplugin.cpp
+		./classviewsymbolinformation.cpp
+		./classviewsymbollocation.cpp
+		./classviewtreeitemmodel.cpp
+		./classviewutils.cpp
+	]
+	.deps += [ run_rcc run_moc ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

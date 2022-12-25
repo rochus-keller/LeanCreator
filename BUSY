@@ -27,6 +27,7 @@ submod genericprojectmanager -
 submod cplusplus -
 submod cpptools -
 submod cppeditor -
+submod classview -
 submod app
 
 let nooptconf : Config {

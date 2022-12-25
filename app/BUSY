@@ -32,6 +32,7 @@ let exe * : Executable {
 	}
 	.deps += [ ^qt.libqt ^utils.lib ^extensionsystem.lib ^core.lib ^texteditor.lib ^projectexplorer.lib
 				^resourceeditor.lib ^genericprojectmanager.lib ^cplusplus.lib ^cpptools.lib ^cppeditor.lib
+				^classview.lib
 				run_moc run_rcc 
 	]
 	.configs += [ ^qt.qt_client_config ^cpp11conf ]

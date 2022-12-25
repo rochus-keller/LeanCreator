@@ -3,7 +3,7 @@
 
 let lib_conf : Config {
 	.include_dirs += ..
-	.defines += [ "NO_CPP_SUPPORT" "NO_QT_SUPPORT"
+	.defines += [ "NO_QT_SUPPORT"
 		"QT_NO_DEVICESUPPORT" "QT_NO_CUSTOMWIZZARD"
 		"QT_STATICPLUGIN" # enable static load when compiling plugin, so Q_IMPORT_PLUGIN can see it
 	 ]

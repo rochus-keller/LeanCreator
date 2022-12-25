@@ -351,6 +351,7 @@ void GenericProject::refreshCppCodeModel()
     CppTools::ProjectPartBuilder ppBuilder(pInfo);
 
     CppTools::ProjectPart::QtVersion activeQtVersion = CppTools::ProjectPart::NoQt;
+#ifndef NO_QT_SUPPORT
     if (QtSupport::BaseQtVersion *qtVersion =
             QtSupport::QtKitInformation::qtVersion(activeTarget()->kit())) {
         if (qtVersion->qtVersion() < QtSupport::QtVersionNumber(5,0,0))
@@ -358,7 +359,7 @@ void GenericProject::refreshCppCodeModel()
         else
             activeQtVersion = CppTools::ProjectPart::Qt5;
     }
-
+#endif
     ppBuilder.setQtVersion(activeQtVersion);
     ppBuilder.setIncludePaths(projectIncludePaths());
     ppBuilder.setConfigFileName(configFileName());
