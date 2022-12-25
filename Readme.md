@@ -13,12 +13,12 @@ LeanCreator is based on the code of [Qt Creator 3.6.1](https://download.qt.io/ar
 Successfully tested so far on Linux x86.
 
 - [x] Basic, stand-alone application with statically linked plugins
-- [ ] C++ support
+- [x] C++ support
 - [ ] GCC, Clang and MSVC support
 - [ ] GDB and CDB support
-- [ ] Git support
 - [ ] deep BUSY integration (instead of qmake)
-- [ ] Bare metal OpenOCD support
+- [ ] Lua automation (instead of JS)
+- [ ] Designer integration
 - [ ] rebranding
 
 ### No support planned
@@ -30,7 +30,7 @@ Successfully tested so far on Linux x86.
 - remote access via ssh
 - android, ios, qnx and winrt plugins
 - make, autotools, cmake and qbs 
-- bazaar, clearcase, cvs, mercurial, perforce and subversion plugins
+- version control plugins
 - emacs or vim simulation
 
 ### How to build LeanCreator

@@ -42,7 +42,7 @@ class QIODevice;
 template <class> class QFutureInterface;
 QT_END_NAMESPACE
 
-class QMimeType;
+namespace Utils { class MimeType; }
 
 namespace TextEditor {
 namespace Internal {
@@ -61,9 +61,9 @@ public:
     static Manager *instance();
 
     QString definitionIdByName(const QString &name) const;
-    QString definitionIdByMimeType(const QMimeType &mimeType) const;
+    QString definitionIdByMimeType(const Utils::MimeType &mimeType) const;
     QString definitionIdByFile(const QString &filePath) const;
-    QString definitionIdByMimeTypeAndFile(const QMimeType& mimeType,
+    QString definitionIdByMimeTypeAndFile(const Utils::MimeType& mimeType,
                                           const QString &filePath) const;
     DefinitionMetaDataPtr availableDefinitionByName(const QString &name) const;
 

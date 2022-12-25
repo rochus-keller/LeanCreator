@@ -1,0 +1,83 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "CPPEDITOR_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP" "QT_NO_QML" 
+				  "QT_STATICPLUGIN" 
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ 
+		./cppeditor.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./cppdoxygen_test.h
+		./cpptypehierarchy.h
+		./cppcodemodelinspectordialog.h
+		./cppcodemodelinspectordialog.cpp
+		./cppincludehierarchymodel.h
+		./cppeditor.h
+		./cppeditorplugin.h
+		./cppuseselectionsupdater.h
+		./cppeditordocument.h
+		./cppinsertvirtualmethods.cpp
+		./cpphighlighter.h
+		./cppfunctiondecldeflink.h
+		./cppincludehierarchy.h
+		./cppinsertvirtualmethods.h
+		./cpppreprocessordialog.h
+		./cppquickfix.h
+		./cppoutline.h
+		./cpplocalrenaming.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./cpppreprocessordialog.ui
+    	./cppcodemodelinspectordialog.ui
+   	]
+}
+
+let lib * : Library {
+	.sources += [
+		./cppautocompleter.cpp 
+		./cppcanonicalsymbol.cpp 
+		./cppcodemodelinspectordialog.cpp 
+		./cppdocumentationcommenthelper.cpp 
+		./cppeditor.cpp 
+		./cppeditordocument.cpp 
+		./cppeditorplugin.cpp 
+		./cppelementevaluator.cpp 
+		./cppfollowsymbolundercursor.cpp 
+		./cppfunctiondecldeflink.cpp 
+		./cpphighlighter.cpp 
+		./cpphoverhandler.cpp 
+		./cppincludehierarchy.cpp 
+		./cppincludehierarchyitem.cpp 
+		./cppincludehierarchymodel.cpp 
+		./cppincludehierarchytreeview.cpp 
+		./cppinsertvirtualmethods.cpp 
+		./cpplocalrenaming.cpp 
+		./cppoutline.cpp 
+		./cpppreprocessordialog.cpp 
+		./cppquickfix.cpp 
+		./cppquickfixassistant.cpp 
+		./cppquickfixes.cpp 
+		./cppsnippetprovider.cpp 
+		./cpptypehierarchy.cpp 
+		./cppuseselectionsupdater.cpp 
+		./cppvirtualfunctionassistprovider.cpp 
+		./cppvirtualfunctionproposalitem.cpp
+	]
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

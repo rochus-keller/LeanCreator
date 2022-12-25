@@ -71,7 +71,7 @@
 #include <utils/algorithm.h>
 #include <utils/historycompleter.h>
 #include <utils/hostosinfo.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #include <utils/qtcassert.h>
 #include <utils/stylehelper.h>
 #include <utils/theme.h>
@@ -758,8 +758,8 @@ void MainWindow::openFile()
 static IDocumentFactory *findDocumentFactory(const QList<IDocumentFactory*> &fileFactories,
                                      const QFileInfo &fi)
 {
-    QMimeDatabase mdb;
-    const QMimeType mt = mdb.mimeTypeForFile(fi);
+    Utils::MimeDatabase mdb;
+    const Utils::MimeType mt = mdb.mimeTypeForFile(fi);
     if (mt.isValid()) {
         const QString typeName = mt.name();
         foreach (IDocumentFactory *factory, fileFactories) {

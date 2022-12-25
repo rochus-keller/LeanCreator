@@ -1,0 +1,135 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ 
+		"CPPTOOLS_LIBRARY" "_SCL_SECURE_NO_WARNINGS" "QT_NO_DEVICESUPPORT" "QT_NO_JSENGINE"
+				  "QT_STATICPLUGIN" 
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ 
+		./cpptools.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./cpplocatorfilter.h
+		./cppcurrentdocumentfilter.h
+		./cppcompletionassistprovider.h
+		./cppindexingsupport.h
+		./semantichighlighter.h
+		./symbolsfindfilter.h
+		./abstracteditorsupport.h
+		./cppcompletionassist.h
+		./cppcodemodelsettingspage.h
+		./completionsettingspage.h
+		./cppcodemodelsettings.h
+		./baseeditordocumentprocessor.h
+		./cppmodelmanager.h
+		./stringtable.h
+		./builtineditordocumentparser.h
+		./cppeditoroutline.cpp
+		./cpptoolsplugin.h
+		./cppincludesfilter.h
+		./cppclassesfilter.h
+		./cppcodestylesettingspage.h
+		./baseeditordocumentparser.h
+		./cpptoolssettings.h
+		./cpplocatordata.h
+		./cppfunctionsfilter.h
+		./cppeditoroutline.h
+		./cppchecksymbols.h
+		./cppsemanticinfoupdater.h
+		./cppfilesettingspage.h
+		./cppfindreferences.h
+		./cpptoolsjsextension.h
+		./cppcodestylepreferences.h
+		./builtineditordocumentprocessor.h
+		./cppcodeformatter.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./completionsettingspage.ui
+		./cppcodemodelsettingspage.ui
+		./cppcodestylesettingspage.ui
+		./cppfilesettingspage.ui
+   	]
+}
+
+let lib * : Library {
+	.sources += [
+		./abstracteditorsupport.cpp 
+		./baseeditordocumentparser.cpp 
+		./baseeditordocumentprocessor.cpp 
+		./builtineditordocumentparser.cpp 
+		./builtineditordocumentprocessor.cpp 
+		./builtinindexingsupport.cpp 
+		./commentssettings.cpp 
+		./completionsettingspage.cpp 
+		./cppchecksymbols.cpp 
+		./cppclassesfilter.cpp 
+		./cppcodeformatter.cpp 
+		./cppcodemodelinspectordumper.cpp 
+		./cppcodemodelsettings.cpp 
+		./cppcodemodelsettingspage.cpp 
+		./cppcodestylepreferences.cpp 
+		./cppcodestylepreferencesfactory.cpp 
+		./cppcodestylesettings.cpp 
+		./cppcodestylesettingspage.cpp 
+		./cppcompletionassist.cpp 
+		./cppcompletionassistprocessor.cpp 
+		./cppcompletionassistprovider.cpp 
+		./cppcurrentdocumentfilter.cpp 
+		./cppeditoroutline.cpp 
+		./cppdoxygen.cpp 
+		./cppfileiterationorder.cpp 
+		./cppfilesettingspage.cpp 
+		./cppfindreferences.cpp 
+		./cppfunctionsfilter.cpp 
+		./cppincludesfilter.cpp 
+		./cppindexingsupport.cpp 
+		./cpplocalsymbols.cpp 
+		./cpplocatordata.cpp 
+		./cpplocatorfilter.cpp 
+		./cppmodelmanager.cpp 
+		./cppmodelmanagersupport.cpp 
+		./cppmodelmanagersupportinternal.cpp 
+		./cpppointerdeclarationformatter.cpp 
+		./cppprojectfile.cpp 
+		./cppprojects.cpp 
+		./cppqtstyleindenter.cpp 
+		./cpprefactoringchanges.cpp 
+		./cppsemanticinfo.cpp 
+		./cppsemanticinfoupdater.cpp 
+		./cppsourceprocessor.cpp 
+		./cpptoolsjsextension.cpp 
+		./cpptoolsplugin.cpp 
+		./cpptoolsreuse.cpp 
+		./cpptoolssettings.cpp 
+		./cppworkingcopy.cpp 
+		./doxygengenerator.cpp 
+		./editordocumenthandle.cpp 
+		./functionutils.cpp 
+		./includeutils.cpp 
+		./indexitem.cpp 
+		./insertionpointlocator.cpp 
+		./searchsymbols.cpp 
+		./semantichighlighter.cpp 
+		./stringtable.cpp 
+		./symbolfinder.cpp 
+		./symbolsfindfilter.cpp 
+		./typehierarchybuilder.cpp 
+		./senddocumenttracker.cpp
+	]
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

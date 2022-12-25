@@ -24,7 +24,7 @@
 #include "fileiconprovider.h"
 
 #include <utils/hostosinfo.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #include <utils/qtcassert.h>
 
 #include <QApplication>
@@ -84,7 +84,7 @@ public:
         m_cache.insert(suffix, fileIconPixmap);
     }
 
-    void registerIconOverlayForMimeType(const QIcon &icon, const QMimeType &mimeType)
+    void registerIconOverlayForMimeType(const QIcon &icon, const Utils::MimeType &mimeType)
     {
         foreach (const QString &suffix, mimeType.suffixes())
             registerIconOverlayForSuffix(icon, suffix);
@@ -174,7 +174,7 @@ void registerIconOverlayForSuffix(const char *path, const char *suffix)
   */
 void registerIconOverlayForMimeType(const QIcon &icon, const char *mimeType)
 {
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     instance()->registerIconOverlayForMimeType(icon,
                                                mdb.mimeTypeForName(QString::fromLatin1(mimeType)));
 }
@@ -184,7 +184,7 @@ void registerIconOverlayForMimeType(const QIcon &icon, const char *mimeType)
  */
 void registerIconOverlayForMimeType(const char *path, const char *mimeType)
 {
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     instance()->registerIconOverlayForMimeType(QIcon(QLatin1String(path)),
                                                mdb.mimeTypeForName(QString::fromLatin1(mimeType)));
 }

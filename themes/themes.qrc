@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/themes">
+        <file>default.creatortheme</file>
+        <file>dark.creatortheme</file>
+        <file>themelist.txt</file>
+    </qresource>
+</RCC>

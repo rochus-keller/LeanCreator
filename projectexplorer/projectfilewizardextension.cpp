@@ -40,7 +40,7 @@
 #include <texteditor/storagesettings.h>
 #include <projectexplorer/project.h>
 #include <projectexplorer/editorconfiguration.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #
 #include <QPointer>
 #include <QDebug>
@@ -223,7 +223,7 @@ void ProjectFileWizardExtension::applyCodeStyle(GeneratedFile *file) const
     if (file->isBinary() || file->contents().isEmpty())
         return; // nothing to do
 
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     Id languageId = TextEditorSettings::languageId(mdb.mimeTypeForFile(file->path()).name());
 
     if (!languageId.isValid())

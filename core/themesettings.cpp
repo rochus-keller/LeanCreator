@@ -122,7 +122,17 @@ QList<ThemeEntry> ThemeSettings::availableThemes()
 {
     QList<ThemeEntry> themes;
 
-    themes.append(ThemeEntry(Id::fromString("default"), ":/theme/default.creatortheme", true));
+    QFile list(":/themes/themelist.txt"); // TODO: well known resource path
+    if( list.open(QIODevice::ReadOnly) )
+    {
+        QByteArrayList all = list.readAll().split('\n');
+        foreach( const QByteArray& f, all )
+        {
+            const QString name = QString::fromUtf8(f.trimmed());
+            if( !name.isEmpty() )
+                themes.append(ThemeEntry(Id::fromString(QFileInfo(name).baseName()), name, true));
+        }
+    }
 
     static const QString installThemeDir = ICore::resourcePath() + QLatin1String("/themes");
     static const QString userThemeDir = ICore::userResourcePath() + QLatin1String("/themes");

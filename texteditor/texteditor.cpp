@@ -76,7 +76,7 @@
 #include <utils/dropsupport.h>
 #include <utils/filesearch.h>
 #include <utils/hostosinfo.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #include <utils/qtcassert.h>
 #include <utils/stylehelper.h>
 #include <utils/tooltip.h>
@@ -2843,7 +2843,7 @@ void TextEditorWidgetPrivate::updateCodeFoldingVisible()
 
 void TextEditorWidgetPrivate::reconfigure()
 {
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     m_document->setMimeType(mdb.mimeTypeForFile(m_document->filePath().toString()).name());
     q->configureGenericHighlighter();
 }
@@ -7506,8 +7506,8 @@ void TextEditorWidget::configureGenericHighlighter()
     setCodeFoldingSupported(false);
 
     const QString type = textDocument()->mimeType();
-    QMimeDatabase mdb;
-    const QMimeType mimeType = mdb.mimeTypeForName(type);
+    Utils::MimeDatabase mdb;
+    const Utils::MimeType mimeType = mdb.mimeTypeForName(type);
     if (mimeType.isValid()) {
         d->m_isMissingSyntaxDefinition = true;
 

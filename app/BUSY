@@ -9,7 +9,11 @@ let run_moc : Moc {
 }
 
 let run_rcc : Rcc {
-	.sources += ../fonts/fonts.qrc
+	.sources += [
+		../fonts/fonts.qrc
+		../styles/styles.qrc
+		../themes/themes.qrc
+	]
 }
 
 let exe * : Executable {
@@ -26,7 +30,10 @@ let exe * : Executable {
 	}else{
 		.sources += ./qtlockedfile_unix.cpp
 	}
-	.deps += [ ^qt.libqt ^utils.lib ^extensionsystem.lib ^core.lib ^texteditor.lib ^projectexplorer.lib run_moc run_rcc ]
+	.deps += [ ^qt.libqt ^utils.lib ^extensionsystem.lib ^core.lib ^texteditor.lib ^projectexplorer.lib
+				^resourceeditor.lib ^genericprojectmanager.lib ^cplusplus.lib ^cpptools.lib ^cppeditor.lib
+				run_moc run_rcc 
+	]
 	.configs += [ ^qt.qt_client_config ^cpp11conf ]
 	.include_dirs += ..
 	.defines += "IDE_LIBRARY_BASENAME=\"NOT_USED\""

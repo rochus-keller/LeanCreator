@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/styles">
+        <file>stylelist.txt</file>
+        <file>dark.xml</file>
+        <file>default.xml</file>
+        <file>grayscale.xml</file>
+        <file>inkpot.xml</file>
+        <file>intellij.xml</file>
+    </qresource>
+</RCC>

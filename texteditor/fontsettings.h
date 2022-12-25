@@ -104,6 +104,8 @@ public:
 
     static QString defaultSchemeFileName(const QString &fileName = QString());
 
+    static QStringList builtInSchemes();
+
 private:
     QString m_family;
     QString m_schemeFileName;

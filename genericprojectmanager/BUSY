@@ -1,0 +1,53 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "NO_CPP_SUPPORT" "NO_QT_SUPPORT"
+		"QT_NO_DEVICESUPPORT" "QT_NO_CUSTOMWIZZARD"
+		"QT_STATICPLUGIN" # enable static load when compiling plugin, so Q_IMPORT_PLUGIN can see it
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ 
+		./genericproject.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./filesselectionwizardpage.h
+		./genericprojectplugin.h
+		./genericprojectwizard.h
+		./genericbuildconfiguration.h
+		./genericmakestep.h
+		./genericprojectmanager.h
+		./genericproject.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./genericmakestep.ui
+   	]
+}
+
+let lib * : Library {
+	.sources += [
+		./genericproject.cpp
+		./genericprojectplugin.cpp
+		./genericprojectmanager.cpp
+		./genericprojectnodes.cpp
+		./genericprojectwizard.cpp
+		./genericprojectfileseditor.cpp
+		./genericmakestep.cpp
+		./genericbuildconfiguration.cpp
+		./filesselectionwizardpage.cpp
+	]
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

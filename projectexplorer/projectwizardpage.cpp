@@ -37,7 +37,7 @@
 #include <utils/stringutils.h>
 #include <utils/treemodel.h>
 #include <utils/wizard.h>
-#include <vcsbase/vcsbaseconstants.h>
+#include <core/vcsbaseconstants.h>
 
 #include <QDir>
 #include <QTextStream>

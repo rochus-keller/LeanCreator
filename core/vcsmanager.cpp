@@ -32,7 +32,7 @@
 #include <core/editormanager/editormanager.h>
 #include <core/editormanager/ieditor.h>
 
-#include <vcsbase/vcsbaseconstants.h>
+#include <core/vcsbaseconstants.h>
 #include <extensionsystem/pluginmanager.h>
 #include <utils/algorithm.h>
 #include <utils/qtcassert.h>

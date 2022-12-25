@@ -35,11 +35,11 @@
 using namespace Core;
 using namespace Internal;
 
-static QMimeMagicRule::Type typeValue(int i)
+static Utils::Internal::MimeMagicRule::Type typeValue(int i)
 {
-    QTC_ASSERT(i < QMimeMagicRule::Byte,
-               return QMimeMagicRule::Invalid);
-    return QMimeMagicRule::Type(i + 1/*0==invalid*/);
+    QTC_ASSERT(i < Utils::Internal::MimeMagicRule::Byte,
+               return Utils::Internal::MimeMagicRule::Invalid);
+    return Utils::Internal::MimeMagicRule::Type(i + 1/*0==invalid*/);
 }
 
 MimeTypeMagicDialog::MimeTypeMagicDialog(QWidget *parent) :
@@ -97,7 +97,7 @@ void MimeTypeMagicDialog::applyRecommended(bool checked)
 void MimeTypeMagicDialog::validateAccept()
 {
     QString errorMessage;
-    QMimeMagicRule rule = createRule(&errorMessage);
+    Utils::Internal::MimeMagicRule rule = createRule(&errorMessage);
     if (rule.isValid())
         accept();
     else
@@ -131,12 +131,12 @@ bool MagicData::operator==(const MagicData &other)
     Returns the mask, or an empty string if the mask is the default mask which is set by
     MimeMagicRule when setting an empty mask for string patterns.
  */
-QByteArray MagicData::normalizedMask(const QMimeMagicRule &rule)
+QByteArray MagicData::normalizedMask(const Utils::Internal::MimeMagicRule &rule)
 {
     // convert mask and see if it is the "default" one (which corresponds to "empty" mask)
     // see MimeMagicRule constructor
     QByteArray mask = rule.mask();
-    if (rule.type() == QMimeMagicRule::String) {
+    if (rule.type() == Utils::Internal::MimeMagicRule::String) {
         QByteArray actualMask = QByteArray::fromHex(QByteArray::fromRawData(mask.constData() + 2,
                                                         mask.size() - 2));
         if (actualMask.count(char(-1)) == actualMask.size()) {
@@ -147,16 +147,16 @@ QByteArray MagicData::normalizedMask(const QMimeMagicRule &rule)
     return mask;
 }
 
-QMimeMagicRule MimeTypeMagicDialog::createRule(QString *errorMessage) const
+Utils::Internal::MimeMagicRule MimeTypeMagicDialog::createRule(QString *errorMessage) const
 {
-    QMimeMagicRule::Type type = typeValue(ui.typeSelector->currentIndex());
-    QMimeMagicRule rule(type,
+    Utils::Internal::MimeMagicRule::Type type = typeValue(ui.typeSelector->currentIndex());
+    Utils::Internal::MimeMagicRule rule(type,
                                         ui.valueLineEdit->text().toUtf8(),
                                         ui.startRangeSpinBox->value(),
                                         ui.endRangeSpinBox->value(),
                                         ui.maskLineEdit->text().toLatin1(),
                                         errorMessage);
-    if (type == QMimeMagicRule::Invalid) {
+    if (type == Utils::Internal::MimeMagicRule::Invalid) {
         if (errorMessage)
             *errorMessage = tr("Internal error: Type is invalid");
     }

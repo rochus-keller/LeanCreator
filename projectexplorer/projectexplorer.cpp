@@ -129,7 +129,7 @@
 #include <utils/algorithm.h>
 #include <utils/fileutils.h>
 #include <utils/macroexpander.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #include <utils/parameteraction.h>
 #include <utils/qtcassert.h>
 #include <utils/stringutils.h>
@@ -1523,11 +1523,11 @@ void ProjectExplorerPlugin::extensionsInitialized()
         return 0;
     });
 
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     foreach (IProjectManager *manager, projectManagers) {
         const QString mimeType = manager->mimeType();
         factory->addMimeType(mimeType);
-        QMimeType mime = mdb.mimeTypeForName(mimeType);
+        Utils::MimeType mime = mdb.mimeTypeForName(mimeType);
         allGlobPatterns.append(mime.globPatterns());
         filterStrings.append(mime.filterString());
 
@@ -1767,8 +1767,8 @@ ProjectExplorerPlugin::OpenProjectResult ProjectExplorerPlugin::openProjects(con
             continue;
         }
 
-        QMimeDatabase mdb;
-        QMimeType mt = mdb.mimeTypeForFile(fileName);
+        Utils::MimeDatabase mdb;
+        Utils::MimeType mt = mdb.mimeTypeForFile(fileName);
         if (mt.isValid()) {
             bool foundProjectManager = false;
             foreach (IProjectManager *manager, projectManagers) {
@@ -1865,9 +1865,9 @@ void ProjectExplorerPluginPrivate::determineSessionToRestoreAtStartup()
 QStringList ProjectExplorerPlugin::projectFileGlobs()
 {
     QStringList result;
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     foreach (const IProjectManager *ipm, ExtensionSystem::PluginManager::getObjects<IProjectManager>()) {
-        QMimeType mimeType = mdb.mimeTypeForName(ipm->mimeType());
+        Utils::MimeType mimeType = mdb.mimeTypeForName(ipm->mimeType());
         if (mimeType.isValid()) {
             const QStringList patterns = mimeType.globPatterns();
             if (!patterns.isEmpty())
@@ -3422,9 +3422,9 @@ ProjectExplorerSettings ProjectExplorerPlugin::projectExplorerSettings()
 QStringList ProjectExplorerPlugin::projectFilePatterns()
 {
     QStringList patterns;
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     foreach (const IProjectManager *pm, allProjectManagers()) {
-        QMimeType mt = mdb.mimeTypeForName(pm->mimeType());
+        Utils::MimeType mt = mdb.mimeTypeForName(pm->mimeType());
         if (mt.isValid())
             patterns.append(mt.globPatterns());
     }

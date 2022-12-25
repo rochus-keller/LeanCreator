@@ -38,7 +38,7 @@
 
 #include <utils/fileutils.h>
 #include <utils/hostosinfo.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #include <utils/qtcassert.h>
 #include <utils/pathchooser.h>
 #include <utils/reloadpromptutils.h>
@@ -723,8 +723,8 @@ QString DocumentManager::getSaveAsFileName(const IDocument *document, const QStr
 
     QString filterString;
     if (filter.isEmpty()) {
-        QMimeDatabase mdb;
-        const QMimeType &mt = mdb.mimeTypeForFile(fi);
+        Utils::MimeDatabase mdb;
+        const Utils::MimeType &mt = mdb.mimeTypeForFile(fi);
         if (mt.isValid())
             filterString = mt.filterString();
         selectedFilter = &filterString;

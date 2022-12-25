@@ -26,12 +26,12 @@
 #include "generichighlighter/highlightdefinition.h"
 #include "generichighlighter/manager.h"
 #include <core/icore.h>
-#include <QMimeType>
+#include <utils/mimetypes/mimetype.h>
 
 using namespace TextEditor;
 using namespace Internal;
 
-void TextEditor::setMimeTypeForHighlighter(Highlighter *highlighter, const QMimeType &mimeType,
+void TextEditor::setMimeTypeForHighlighter(Highlighter *highlighter, const Utils::MimeType &mimeType,
                                            const QString &filePath, QString *foundDefinitionId)
 {
     QString definitionId = Manager::instance()->definitionIdByMimeTypeAndFile(mimeType, filePath);

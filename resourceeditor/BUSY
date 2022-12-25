@@ -1,0 +1,53 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "RESOURCE_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP" "QT_NO_QML" 
+				  "QT_NO_JSENGINE"
+				  "QT_STATICPLUGIN" # enable static load when compiling plugin, so Q_IMPORT_PLUGIN can see it
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ 
+		./resourceeditor.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./resourcenode.h
+		./qrceditor/qrceditor.h
+		./qrceditor/resourceview.h
+		./qrceditor/resourcefile_p.h
+		./resourceeditorplugin.h
+		./resourceeditorfactory.h
+		./resourceeditorw.h
+		./resourceeditorplugin.cpp
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./qrceditor/qrceditor.ui
+   	]
+}
+
+let lib * : Library {
+	.sources += [
+		./resourceeditorfactory.cpp
+		./resourceeditorplugin.cpp
+		./resourceeditorw.cpp
+		./resourcenode.cpp
+		./qrceditor/resourcefile.cpp
+		./qrceditor/resourceview.cpp
+		./qrceditor/qrceditor.cpp
+		./qrceditor/undocommands.cpp
+	]
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

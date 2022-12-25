@@ -61,7 +61,7 @@ using namespace ExtensionSystem;
 
 enum { OptionIndent = 4, DescriptionIndent = 34 };
 
-const char appNameC[] = "Qt Creator";
+const char appNameC[] = "LeanCreator";
 const char corePluginNameC[] = "Core";
 const char fixedOptionsC[] =
 " [OPTION]... [FILE]...\n"
@@ -233,7 +233,7 @@ static inline QStringList getPluginPaths()
     pluginPath += QLatin1Char('/')
             + QLatin1String(Core::Constants::IDE_SETTINGSVARIANT_STR)
             + QLatin1Char('/');
-    pluginPath += QLatin1String(Utils::HostOsInfo::isMacHost() ? "Qt Creator" : "qtcreator");
+    pluginPath += QLatin1String(Utils::HostOsInfo::isMacHost() ? "LeanCreator" : "qtcreator");
     pluginPath += QLatin1String("/plugins/");
     pluginPath += QLatin1String(Core::Constants::IDE_VERSION_LONG);
     rc.push_back(pluginPath);
@@ -296,6 +296,10 @@ static const char *SHARE_PATH =
 Q_IMPORT_PLUGIN(CorePlugin)
 Q_IMPORT_PLUGIN(TextEditorPlugin)
 Q_IMPORT_PLUGIN(ProjectExplorerPlugin)
+Q_IMPORT_PLUGIN(ResourceEditorPlugin)
+Q_IMPORT_PLUGIN(GenericProjectPlugin)
+Q_IMPORT_PLUGIN(CppToolsPlugin)
+Q_IMPORT_PLUGIN(CppEditorPlugin)
 
 int main(int argc, char **argv)
 {
@@ -334,6 +338,10 @@ int main(int argc, char **argv)
     Q_INIT_RESOURCE(locator);
     Q_INIT_RESOURCE(pluginview);
     Q_INIT_RESOURCE(projectexplorer);
+    Q_INIT_RESOURCE(resourceeditor);
+    Q_INIT_RESOURCE(genericproject);
+    Q_INIT_RESOURCE(cpptools);
+    Q_INIT_RESOURCE(cppeditor);
 
     CrashHandlerSetup setupCrashHandler; // Display a backtrace once a serious signal is delivered.
 

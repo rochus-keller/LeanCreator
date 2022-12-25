@@ -1,0 +1,165 @@
+/****************************************************************************
+**
+** Copyright (C) 2015 The Qt Company Ltd.
+** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+**
+** This file is part of Qt Creator.
+**
+** $QT_BEGIN_LICENSE:LGPL21$
+** GNU Lesser General Public License Usage
+** This file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, The Qt Company gives you certain additional
+** rights.  These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+****************************************************************************/
+
+#include "cppcodemodelsettingspage.h"
+#include "cppmodelmanager.h"
+#include "cpptoolsconstants.h"
+#include "ui_cppcodemodelsettingspage.h"
+
+#include <core/icore.h>
+#include <utils/algorithm.h>
+
+#include <QTextStream>
+
+using namespace CppTools;
+using namespace CppTools::Internal;
+
+CppCodeModelSettingsWidget::CppCodeModelSettingsWidget(QWidget *parent)
+    : QWidget(parent)
+    , m_ui(new Ui::CppCodeModelSettingsPage)
+{
+    m_ui->setupUi(this);
+
+    m_ui->clangSettingsGroupBox->setVisible(true);
+    connect(m_ui->clangOptionsResetButton, &QPushButton::clicked, [this]() {
+        const QString options = m_settings->defaultExtraClangOptions().join(QLatin1Char('\n'));
+        m_ui->clangOptionsToAppendTextEdit->document()->setPlainText(options);
+    });
+}
+
+CppCodeModelSettingsWidget::~CppCodeModelSettingsWidget()
+{
+    delete m_ui;
+}
+
+void CppCodeModelSettingsWidget::setSettings(const QSharedPointer<CppCodeModelSettings> &s)
+{
+    m_settings = s;
+
+    setupClangCodeModelWidgets();
+    setupPchCheckBox();
+}
+
+void CppCodeModelSettingsWidget::applyToSettings() const
+{
+    bool changed = false;
+
+    changed |= applyClangCodeModelWidgetsToSettings();
+    changed |= applyPchCheckBoxToSettings();
+
+    if (changed)
+        m_settings->toSettings(Core::ICore::settings());
+}
+
+void CppCodeModelSettingsWidget::setupClangCodeModelWidgets() const
+{
+    bool isClangActive = false;
+    const bool isClangAvailable = CppModelManager::instance()->isClangCodeModelAvailable();
+    if (isClangAvailable)
+        isClangActive = m_settings->useClangCodeModel();
+
+    m_ui->activateClangCodeModelPluginHint->setVisible(!isClangAvailable);
+    m_ui->clangSettingsGroupBox->setEnabled(isClangAvailable);
+    m_ui->clangSettingsGroupBox->setChecked(isClangActive);
+
+    const QString extraClangOptions = m_settings->extraClangOptions().join(QLatin1Char('\n'));
+    m_ui->clangOptionsToAppendTextEdit->document()->setPlainText(extraClangOptions);
+}
+
+void CppCodeModelSettingsWidget::setupPchCheckBox() const
+{
+    const bool ignorePch = m_settings->pchUsage() == CppCodeModelSettings::PchUse_None;
+    m_ui->ignorePCHCheckBox->setChecked(ignorePch);
+}
+
+bool CppCodeModelSettingsWidget::applyClangCodeModelWidgetsToSettings() const
+{
+    bool settingsChanged = false;
+
+    const bool previouslyClangWasActive = m_settings->useClangCodeModel();
+    const bool nowClangIsActive = m_ui->clangSettingsGroupBox->isChecked();
+    if (nowClangIsActive != previouslyClangWasActive) {
+        m_settings->setUseClangCodeModel(nowClangIsActive);
+        settingsChanged = true;
+    }
+
+    const QStringList previousOptions = m_settings->extraClangOptions();
+    const QString newOptionsAsString = m_ui->clangOptionsToAppendTextEdit->document()->toPlainText();
+    const QStringList newOptions = newOptionsAsString.split(QLatin1Char('\n'),
+                                                            QString::SkipEmptyParts);
+    if (newOptions != previousOptions) {
+        m_settings->setExtraClangOptions(newOptions);
+        settingsChanged = true;
+    }
+
+    return settingsChanged;
+}
+
+bool CppCodeModelSettingsWidget::applyPchCheckBoxToSettings() const
+{
+    const bool newIgnorePch = m_ui->ignorePCHCheckBox->isChecked();
+    const bool previousIgnorePch = m_settings->pchUsage() == CppCodeModelSettings::PchUse_None;
+
+    if (newIgnorePch != previousIgnorePch) {
+        const CppCodeModelSettings::PCHUsage pchUsage = m_ui->ignorePCHCheckBox->isChecked()
+                ? CppCodeModelSettings::PchUse_None
+                : CppCodeModelSettings::PchUse_BuildSystem;
+        m_settings->setPCHUsage(pchUsage);
+
+        return true;
+    }
+
+    return false;
+}
+
+CppCodeModelSettingsPage::CppCodeModelSettingsPage(QSharedPointer<CppCodeModelSettings> &settings,
+                                                   QObject *parent)
+    : Core::IOptionsPage(parent)
+    , m_settings(settings)
+{
+    setId(Constants::CPP_CODE_MODEL_SETTINGS_ID);
+    setDisplayName(QCoreApplication::translate("CppTools",Constants::CPP_CODE_MODEL_SETTINGS_NAME));
+    setCategory(Constants::CPP_SETTINGS_CATEGORY);
+    setDisplayCategory(QCoreApplication::translate("CppTools",Constants::CPP_SETTINGS_TR_CATEGORY));
+    setCategoryIcon(QLatin1String(Constants::SETTINGS_CATEGORY_CPP_ICON));
+}
+
+QWidget *CppCodeModelSettingsPage::widget()
+{
+    if (!m_widget) {
+        m_widget = new CppCodeModelSettingsWidget;
+        m_widget->setSettings(m_settings);
+    }
+    return m_widget;
+}
+
+void CppCodeModelSettingsPage::apply()
+{
+    if (m_widget)
+        m_widget->applyToSettings();
+}
+
+void CppCodeModelSettingsPage::finish()
+{
+    delete m_widget;
+}

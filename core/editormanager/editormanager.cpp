@@ -63,7 +63,7 @@
 #include <utils/fileutils.h>
 #include <utils/hostosinfo.h>
 #include <utils/macroexpander.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #include <utils/qtcassert.h>
 #include <utils/overridecursor.h>
 
@@ -556,8 +556,8 @@ bool EditorManagerPrivate::skipOpeningBigTextFile(const QString &filePath)
     if (!fileInfo.exists(filePath))
         return false;
 
-    QMimeDatabase mdb;
-    QMimeType mimeType = mdb.mimeTypeForFile(filePath);
+    Utils::MimeDatabase mdb;
+    Utils::MimeType mimeType = mdb.mimeTypeForFile(filePath);
     if (!mimeType.inherits(QLatin1String("text/plain")))
         return false;
 
@@ -628,8 +628,8 @@ IEditor *EditorManagerPrivate::openEditor(EditorView *view, const QString &fileN
 
     EditorManager::EditorFactoryList factories = EditorManagerPrivate::findFactories(Id(), fn);
     if (factories.isEmpty()) {
-        QMimeDatabase mdb;
-        QMimeType mimeType = mdb.mimeTypeForFile(fn);
+        Utils::MimeDatabase mdb;
+        Utils::MimeType mimeType = mdb.mimeTypeForFile(fn);
         QMessageBox msgbox(QMessageBox::Critical, EditorManager::tr("File Error"),
                            tr("Could not open \"%1\": Cannot open files of type \"%2\".")
                            .arg(FileName::fromString(realFn).toUserOutput()).arg(mimeType.name()),
@@ -958,8 +958,8 @@ void EditorManagerPrivate::showPopupOrSelectDocument()
 Id EditorManagerPrivate::getOpenWithEditorId(const QString &fileName, bool *isExternalEditor)
 {
     // Collect editors that can open the file
-    QMimeDatabase mdb;
-    QMimeType mt = mdb.mimeTypeForFile(fileName);
+    Utils::MimeDatabase mdb;
+    Utils::MimeType mt = mdb.mimeTypeForFile(fileName);
     //Unable to determine mime type of fileName. Falling back to text/plain",
     if (!mt.isValid())
         mt = mdb.mimeTypeForName(QLatin1String("text/plain"));
@@ -1124,8 +1124,8 @@ EditorManager::EditorFactoryList EditorManagerPrivate::findFactories(Id editorId
     if (!editorId.isValid()) {
         const QFileInfo fileInfo(fileName);
         // Find by mime type
-        QMimeDatabase mdb;
-        QMimeType mimeType = mdb.mimeTypeForFile(fileInfo);
+        Utils::MimeDatabase mdb;
+        Utils::MimeType mimeType = mdb.mimeTypeForFile(fileInfo);
         if (!mimeType.isValid()) {
             qWarning("%s unable to determine mime type of %s/%s. Falling back to text/plain",
                      Q_FUNC_INFO, fileName.toUtf8().constData(), editorId.name().constData());
@@ -1634,7 +1634,7 @@ void EditorManagerPrivate::updateWindowTitleForDocument(IDocument *document, QWi
         windowTitle.append(dashSep);
     }
 
-    windowTitle.append(tr("Qt Creator"));
+    windowTitle.append(tr("LeanCreator"));
     window->window()->setWindowTitle(windowTitle);
     window->window()->setWindowFilePath(filePath);
 
@@ -1938,8 +1938,8 @@ bool EditorManagerPrivate::saveDocumentAs(IDocument *document)
     if (!document)
         return false;
 
-    QMimeDatabase mdb;
-    const QString filter = QMimeDatabase::allFiltersString();
+    Utils::MimeDatabase mdb;
+    const QString filter = Utils::MimeDatabase::allFiltersString();
     QString selectedFilter;
     QString filePath = document->filePath().toString();
     if (filePath.isEmpty())
@@ -2252,8 +2252,8 @@ void EditorManager::populateOpenWithMenu(QMenu *menu, const QString &fileName)
 
     bool anyMatches = false;
 
-    QMimeDatabase mdb;
-    const QMimeType mt = mdb.mimeTypeForFile(fileName);
+    Utils::MimeDatabase mdb;
+    const Utils::MimeType mt = mdb.mimeTypeForFile(fileName);
     if (mt.isValid()) {
         const EditorFactoryList factories = editorFactories(mt, false);
         const ExternalEditorList extEditors = externalEditors(mt, false);
@@ -2495,24 +2495,24 @@ IEditor *EditorManager::activateEditorForDocument(IDocument *document, OpenEdito
  * or IExternalEditor), find the one best matching the mimetype passed in.
  *  Recurse over the parent classes of the mimetype to find them. */
 template <class EditorFactoryLike>
-static void mimeTypeFactoryLookup(const QMimeType &mimeType,
+static void mimeTypeFactoryLookup(const Utils::MimeType &mimeType,
                                      const QList<EditorFactoryLike*> &allFactories,
                                      bool firstMatchOnly,
                                      QList<EditorFactoryLike*> *list)
 {
-    QMimeDatabase mdb;
+    Utils::MimeDatabase mdb;
     QSet<EditorFactoryLike *> matches;
     // search breadth-first through parent hierarchy, e.g. for hierarchy
     // * application/x-ruby
     //     * application/x-executable
     //         * application/octet-stream
     //     * text/plain
-    QList<QMimeType> queue;
+    QList<Utils::MimeType> queue;
     QSet<QString> seen;
     queue.append(mimeType);
     seen.insert(mimeType.name());
     while (!queue.isEmpty()) {
-        QMimeType mt = queue.takeFirst();
+        Utils::MimeType mt = queue.takeFirst();
         // check for matching factories
         foreach (EditorFactoryLike *factory, allFactories) {
             if (!matches.contains(factory)) {
@@ -2529,7 +2529,7 @@ static void mimeTypeFactoryLookup(const QMimeType &mimeType,
         // add parent mime types
         QStringList parentNames = mt.parentMimeTypes();
         foreach (const QString &parentName, parentNames) {
-            const QMimeType parent = mdb.mimeTypeForName(parentName);
+            const Utils::MimeType parent = mdb.mimeTypeForName(parentName);
             if (parent.isValid()) {
                 int seenSize = seen.size();
                 seen.insert(parent.name());
@@ -2541,7 +2541,7 @@ static void mimeTypeFactoryLookup(const QMimeType &mimeType,
 }
 
 EditorManager::EditorFactoryList
-    EditorManager::editorFactories(const QMimeType& mimeType, bool bestMatchOnly)
+    EditorManager::editorFactories(const Utils::MimeType& mimeType, bool bestMatchOnly)
 {
     EditorFactoryList rc;
     const EditorFactoryList allFactories = ExtensionSystem::PluginManager::getObjects<IEditorFactory>();
@@ -2552,7 +2552,7 @@ EditorManager::EditorFactoryList
 }
 
 EditorManager::ExternalEditorList
-        EditorManager::externalEditors(const QMimeType& mimeType, bool bestMatchOnly)
+        EditorManager::externalEditors(const Utils::MimeType& mimeType, bool bestMatchOnly)
 {
     ExternalEditorList rc;
     const ExternalEditorList allEditors = ExtensionSystem::PluginManager::getObjects<IExternalEditor>();
@@ -2623,7 +2623,7 @@ bool EditorManager::openExternalEditor(const QString &fileName, Id editorId)
 QStringList EditorManager::getOpenFileNames()
 {
     QString selectedFilter;
-    const QString &fileFilters = QMimeDatabase::allFiltersString(&selectedFilter);
+    const QString &fileFilters = Utils::MimeDatabase::allFiltersString(&selectedFilter);
     return DocumentManager::getOpenFileNames(fileFilters, QString(), &selectedFilter);
 }
 

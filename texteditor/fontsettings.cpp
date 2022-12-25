@@ -394,4 +394,21 @@ QString FontSettings::defaultSchemeFileName(const QString &fileName)
     return defaultScheme;
 }
 
+QStringList FontSettings::builtInSchemes()
+{
+    QStringList res;
+    QFile list(":/styles/stylelist.txt"); // TODO: well known resource path
+    if( list.open(QIODevice::ReadOnly) )
+    {
+        QByteArrayList all = list.readAll().split('\n');
+        foreach( const QByteArray& f, all )
+        {
+            const QString name = QString::fromUtf8(f.trimmed());
+            if( !name.isEmpty() )
+                res << name;
+        }
+    }
+    return res;
+}
+
 } // namespace TextEditor

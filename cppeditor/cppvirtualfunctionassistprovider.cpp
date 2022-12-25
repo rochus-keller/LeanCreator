@@ -1,0 +1,217 @@
+/****************************************************************************
+**
+** Copyright (C) 2015 The Qt Company Ltd.
+** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+**
+** This file is part of Qt Creator.
+**
+** $QT_BEGIN_LICENSE:LGPL21$
+** GNU Lesser General Public License Usage
+** This file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, The Qt Company gives you certain additional
+** rights.  These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+****************************************************************************/
+
+
+#include "cppvirtualfunctionassistprovider.h"
+
+#include "cppeditorconstants.h"
+#include "cppvirtualfunctionproposalitem.h"
+
+#include <cplusplus/Icons.h>
+#include <cplusplus/Overview.h>
+
+#include <core/actionmanager/actionmanager.h>
+#include <core/actionmanager/command.h>
+
+#include <cpptools/cpptoolsreuse.h>
+#include <cpptools/functionutils.h>
+#include <cpptools/symbolfinder.h>
+#include <cpptools/typehierarchybuilder.h>
+
+#include <texteditor/codeassist/genericproposalmodel.h>
+#include <texteditor/codeassist/genericproposal.h>
+#include <texteditor/codeassist/genericproposalwidget.h>
+#include <texteditor/codeassist/assistinterface.h>
+#include <texteditor/codeassist/iassistprocessor.h>
+#include <texteditor/codeassist/iassistproposal.h>
+#include <texteditor/texteditorconstants.h>
+
+#include <utils/qtcassert.h>
+
+using namespace CPlusPlus;
+using namespace CppEditor::Internal;
+using namespace CppTools;
+using namespace TextEditor;
+
+/// Activate current item with the same shortcut that is configured for Follow Symbol Under Cursor.
+/// This is limited to single-key shortcuts without modifiers.
+class VirtualFunctionProposalWidget : public GenericProposalWidget
+{
+public:
+    VirtualFunctionProposalWidget(bool openInSplit)
+    {
+        const char *id = openInSplit
+            ? TextEditor::Constants::FOLLOW_SYMBOL_UNDER_CURSOR_IN_NEXT_SPLIT
+            : TextEditor::Constants::FOLLOW_SYMBOL_UNDER_CURSOR;
+        if (Core::Command *command = Core::ActionManager::command(id))
+            m_sequence = command->keySequence();
+    }
+
+protected:
+    bool eventFilter(QObject *o, QEvent *e) override
+    {
+        if (e->type() == QEvent::ShortcutOverride && m_sequence.count() == 1) {
+            QKeyEvent *ke = static_cast<QKeyEvent *>(e);
+            const QKeySequence seq(ke->key());
+            if (seq == m_sequence) {
+                activateCurrentProposalItem();
+                e->accept();
+                return true;
+            }
+        }
+        return GenericProposalWidget::eventFilter(o, e);
+    }
+
+    void showProposal(const QString &prefix) override
+    {
+        GenericProposalModel *proposalModel = model();
+        if (proposalModel && proposalModel->size() == 1) {
+            emit proposalItemActivated(proposalModel->proposalItem(0));
+            deleteLater();
+            return;
+        }
+        GenericProposalWidget::showProposal(prefix);
+    }
+
+private:
+    QKeySequence m_sequence;
+};
+
+class VirtualFunctionProposal : public GenericProposal
+{
+public:
+    VirtualFunctionProposal(int cursorPos, const QList<AssistProposalItem *> &items, bool openInSplit)
+        : GenericProposal(cursorPos, items)
+        , m_openInSplit(openInSplit)
+    {}
+
+    bool isFragile() const override { return true; }
+
+    IAssistProposalWidget *createWidget() const override
+    { return new VirtualFunctionProposalWidget(m_openInSplit); }
+
+private:
+    bool m_openInSplit;
+};
+
+class VirtualFunctionAssistProcessor : public IAssistProcessor
+{
+public:
+    VirtualFunctionAssistProcessor(const VirtualFunctionAssistProvider::Parameters &params)
+        : m_params(params)
+    {}
+
+    IAssistProposal *immediateProposal(const AssistInterface *) override
+    {
+        QTC_ASSERT(m_params.function, return 0);
+
+        AssistProposalItem *hintItem
+                = new VirtualFunctionProposalItem(TextEditorWidget::Link());
+        hintItem->setText(QCoreApplication::translate("VirtualFunctionsAssistProcessor",
+                                                      "...searching overrides"));
+        hintItem->setOrder(-1000);
+
+        QList<AssistProposalItem *> items;
+        items << itemFromFunction(m_params.function);
+        items << hintItem;
+        return new VirtualFunctionProposal(m_params.cursorPosition, items, m_params.openInNextSplit);
+    }
+
+    IAssistProposal *perform(const AssistInterface *assistInterface) override
+    {
+        delete assistInterface;
+
+        QTC_ASSERT(m_params.function, return 0);
+        QTC_ASSERT(m_params.staticClass, return 0);
+        QTC_ASSERT(!m_params.snapshot.isEmpty(), return 0);
+
+        Class *functionsClass = m_finder.findMatchingClassDeclaration(m_params.function,
+                                                                      m_params.snapshot);
+        if (!functionsClass)
+            return 0;
+
+        const QList<Function *> overrides = FunctionUtils::overrides(
+            m_params.function, functionsClass, m_params.staticClass, m_params.snapshot);
+        if (overrides.isEmpty())
+            return 0;
+
+        QList<AssistProposalItem *> items;
+        foreach (Function *func, overrides)
+            items << itemFromFunction(func);
+        items.first()->setOrder(1000); // Ensure top position for function of static type
+
+        return new VirtualFunctionProposal(m_params.cursorPosition, items, m_params.openInNextSplit);
+    }
+
+private:
+    Function *maybeDefinitionFor(Function *func) const
+    {
+        if (Function *definition = m_finder.findMatchingDefinition(func, m_params.snapshot))
+            return definition;
+        return func;
+    }
+
+    AssistProposalItem *itemFromFunction(Function *func) const
+    {
+        const TextEditorWidget::Link link = CppTools::linkToSymbol(maybeDefinitionFor(func));
+        QString text = m_overview.prettyName(LookupContext::fullyQualifiedName(func));
+        if (func->isPureVirtual())
+            text += QLatin1String(" = 0");
+
+        AssistProposalItem *item = new VirtualFunctionProposalItem(link, m_params.openInNextSplit);
+        item->setText(text);
+        item->setIcon(m_icons.iconForSymbol(func));
+
+        return item;
+    }
+
+    VirtualFunctionAssistProvider::Parameters m_params;
+    Overview m_overview;
+    Icons m_icons;
+    mutable SymbolFinder m_finder;
+};
+
+VirtualFunctionAssistProvider::VirtualFunctionAssistProvider()
+{
+}
+
+bool VirtualFunctionAssistProvider::configure(const Parameters &parameters)
+{
+    m_params = parameters;
+    return true;
+}
+
+IAssistProvider::RunType VirtualFunctionAssistProvider::runType() const
+{
+    return AsynchronousWithThread;
+}
+
+bool VirtualFunctionAssistProvider::supportsEditor(Core::Id editorId) const
+{
+    return editorId == Constants::CPPEDITOR_ID;
+}
+
+IAssistProcessor *VirtualFunctionAssistProvider::createProcessor() const
+{
+    return new VirtualFunctionAssistProcessor(m_params);
+}

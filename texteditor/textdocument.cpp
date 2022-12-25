@@ -37,7 +37,7 @@
 #include <texteditor/generichighlighter/highlighter.h>
 #include <core/editormanager/editormanager.h>
 #include <core/editormanager/documentmodel.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 
 #include <QApplication>
 #include <QDir>
@@ -591,7 +591,7 @@ Core::IDocument::OpenResult TextDocument::open(QString *errorString, const QStri
     emit aboutToOpen(fileName, realFileName);
     OpenResult success = openImpl(errorString, fileName, realFileName, /*reload =*/ false);
     if (success == OpenResult::Success) {
-        QMimeDatabase mdb;
+        Utils::MimeDatabase mdb;
         setMimeType(mdb.mimeTypeForFile(fileName).name());
         emit openFinishedSuccessfully();
     }

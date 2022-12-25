@@ -31,7 +31,7 @@
 #include "dialogs/promptoverwritedialog.h"
 #include <extensionsystem/pluginmanager.h>
 #include <utils/filewizardpage.h>
-#include <QMimeDatabase>
+#include <utils/mimetypes/mimedatabase.h>
 #include <utils/qtcassert.h>
 #include <utils/stringutils.h>
 #include <utils/wizard.h>
@@ -273,8 +273,8 @@ QString BaseFileWizardFactory::buildFileName(const QString &path,
 QString BaseFileWizardFactory::preferredSuffix(const QString &mimeType)
 {
     QString rc;
-    QMimeDatabase mdb;
-    QMimeType mt = mdb.mimeTypeForName(mimeType);
+    Utils::MimeDatabase mdb;
+    Utils::MimeType mt = mdb.mimeTypeForName(mimeType);
     if (mt.isValid())
         rc = mt.preferredSuffix();
     if (rc.isEmpty())
