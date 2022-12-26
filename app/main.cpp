@@ -301,6 +301,8 @@ Q_IMPORT_PLUGIN(GenericProjectPlugin)
 Q_IMPORT_PLUGIN(CppToolsPlugin)
 Q_IMPORT_PLUGIN(CppEditorPlugin)
 Q_IMPORT_PLUGIN(ClassViewPlugin)
+Q_IMPORT_PLUGIN(DebuggerPlugin)
+Q_IMPORT_PLUGIN(BinEditorPlugin)
 
 int main(int argc, char **argv)
 {
@@ -344,6 +346,7 @@ int main(int argc, char **argv)
     Q_INIT_RESOURCE(cpptools);
     Q_INIT_RESOURCE(cppeditor);
     Q_INIT_RESOURCE(classview);
+    Q_INIT_RESOURCE(debugger);
 
     CrashHandlerSetup setupCrashHandler; // Display a backtrace once a serious signal is delivered.
 

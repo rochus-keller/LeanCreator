@@ -4,7 +4,7 @@
 let lib_conf : Config {
 	.include_dirs += ..
 	.defines += [ "PROJECTEXPLORER_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP" "QT_NO_QML" 
-				  "QT_NO_CUSTOMWIZZARD" "QT_NO_JSONWIZZARD" "QT_NO_DEVICESUPPORT" "QT_NO_SSH" "QT_NO_JSENGINE"
+				  "QT_NO_CUSTOMWIZZARD" "QT_NO_JSONWIZZARD" "QT_NO_SSH" "QT_NO_JSENGINE"
 				  "QT_STATICPLUGIN" # enable static load when compiling plugin, so Q_IMPORT_PLUGIN can see it
 	 ]
 	 if target_cpu == `x86 {
@@ -147,6 +147,28 @@ let run_moc : Moc {
 		./toolchainoptionspage.h
 		./editorconfiguration.h
 		./abiwidget.h
+		
+		./devicesupport/devicesettingswidget.h
+		./devicesupport/desktopprocesssignaloperation.h
+		./devicesupport/desktopdeviceconfigurationwidget.h
+		./devicesupport/deviceprocess.h
+		./devicesupport/devicesettingspage.h
+		./devicesupport/deviceusedportsgatherer.h
+		./devicesupport/deviceprocessesdialog.h
+		./devicesupport/deviceapplicationrunner.h
+		./devicesupport/devicetestdialog.h
+		./devicesupport/desktopdeviceprocess.h
+		./devicesupport/idevicefactory.h
+		./devicesupport/devicecheckbuildstep.h
+		./devicesupport/devicemanagermodel.h
+		./devicesupport/desktopdevicefactory.h
+		./devicesupport/deviceprocesslist.h
+		./devicesupport/deviceprocessesdialog.cpp
+		./devicesupport/devicemanager.h
+		./devicesupport/idevice.h
+		./devicesupport/idevicewidget.h
+		./devicesupport/localprocesslist.h
+		./devicesupport/devicefactoryselectiondialog.h
 	]
 }
 
@@ -162,6 +184,11 @@ let run_uic : Uic {
 		./deploymentdataview.ui 
 		./codestylesettingspropertiespage.ui 
 		./customparserconfigdialog.ui
+		
+		./devicesupport/desktopdeviceconfigurationwidget.ui  
+		./devicesupport/devicesettingswidget.ui
+		./devicesupport/devicefactoryselectiondialog.ui      
+		./devicesupport/devicetestdialog.ui
    	]
 }
 
@@ -285,6 +312,27 @@ let lib * : Library {
 		./projecttree.cpp 
 		./expanddata.cpp 
 		./waitforstopdialog.cpp
+		
+		./devicesupport/desktopdeviceconfigurationwidget.cpp
+		./devicesupport/desktopdevice.cpp
+		./devicesupport/desktopdevicefactory.cpp
+		./devicesupport/desktopdeviceprocess.cpp
+		./devicesupport/desktopprocesssignaloperation.cpp
+		./devicesupport/deviceapplicationrunner.cpp
+		./devicesupport/devicecheckbuildstep.cpp
+		./devicesupport/devicefactoryselectiondialog.cpp
+		./devicesupport/devicemanager.cpp
+		./devicesupport/devicemanagermodel.cpp
+		./devicesupport/deviceprocess.cpp
+		./devicesupport/deviceprocessesdialog.cpp
+		./devicesupport/deviceprocesslist.cpp
+		./devicesupport/devicesettingspage.cpp
+		./devicesupport/devicesettingswidget.cpp
+		./devicesupport/devicetestdialog.cpp
+		./devicesupport/deviceusedportsgatherer.cpp
+		./devicesupport/idevice.cpp
+		./devicesupport/idevicefactory.cpp
+		./devicesupport/localprocesslist.cpp
 	]
 	if target_os == `win32 {
 		.sources += [

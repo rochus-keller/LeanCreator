@@ -4,7 +4,7 @@
 let lib_conf : Config {
 	.include_dirs += ..
 	.defines += [ 
-		"CPPTOOLS_LIBRARY" "_SCL_SECURE_NO_WARNINGS" "QT_NO_DEVICESUPPORT" "QT_NO_JSENGINE"
+		"CPPTOOLS_LIBRARY" "_SCL_SECURE_NO_WARNINGS" "QT_NO_JSENGINE"
 				  "QT_STATICPLUGIN" 
 	 ]
 	.configs += ^cpp11conf

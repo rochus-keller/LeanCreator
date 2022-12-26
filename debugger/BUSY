@@ -1,0 +1,183 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "DEBUGGER_LIBRARY" "QT_NO_QML" "QT_NO_SSH" "NO_QT_SUPPORT"
+				  "QT_STATICPLUGIN" 
+	 ]
+	.configs += ^cpp11conf
+}
+
+# NOTE: gave up QT_NO_DEVICESUPPORT since it is virtually everywhere in Debugger and can handle no device.
+
+let run_rcc : Rcc {
+	.sources += [ 
+		./debugger.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./outputcollector.h
+		./debuggertooltipmanager.h
+		./lldb/lldbengine.h
+		./debuggerkitconfigwidget.h
+		./stackhandler.h
+		./debuggerdialogs.h
+		./disassembleragent.h
+		./imageviewer.h
+		./unstartedappwatcherdialog.h
+		./memoryagent.h
+		./debuggerrunconfigurationaspect.h
+		./loadcoredialog.h
+		./threadswindow.h
+		./watchwindow.h
+		./debuggerkitinformation.h
+		./breakwindow.cpp
+		./debuggerengine.cpp
+		./debuggerruncontrol.h
+		./registerwindow.h
+		./debuggerplugin.cpp
+		./registerhandler.h
+		./cdb/cdboptionspage.h
+		./cdb/cdbengine.h
+		./cdb/cdboptionspage.cpp
+		./debuggerengine.h
+		./debuggermainwindow.h
+		./watchhandler.h
+		./watchdelegatewidgets.h
+		./localsandexpressionswindow.h
+		./threadshandler.h
+		./logwindow.h
+		./logwindow.cpp
+		./moduleswindow.h
+		./breakwindow.h
+		./snapshothandler.h
+		./commonoptionspage.cpp
+		./snapshotwindow.h
+		./sourcefileswindow.h
+		./breakhandler.h
+		./shared/symbolpathsdialog.h
+		./shared/cdbsymbolpathlisteditor.h
+		./moduleshandler.h
+		./terminal.h
+		./debuggerplugin.h
+		./memoryview.h
+		./debuggersourcepathmappingwidget.h
+		./pdb/pdbengine.h
+		./commonoptionspage.h
+		./sourcefileshandler.h
+		./imageviewer.cpp
+		./debuggeractions.h
+		./gdb/attachgdbadapter.h
+		./gdb/gdbengine.h
+		./gdb/coregdbadapter.h
+		./gdb/gdbplainengine.h
+		./gdb/remotegdbserveradapter.h
+		./gdb/startgdbserverdialog.h
+		./gdb/gdboptionspage.cpp
+		./gdb/termgdbadapter.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./cdb/cdboptionspagewidget.ui
+		./shared/symbolpathsdialog.ui
+   	]
+}
+
+let lib * : Library {
+	.sources += [
+		./breakhandler.cpp 
+		./breakpoint.cpp 
+		./breakwindow.cpp 
+		./commonoptionspage.cpp 
+		./debuggeractions.cpp 
+		./debuggerdialogs.cpp 
+		./debuggerengine.cpp 
+		./debuggeritem.cpp 
+		./debuggeritemmanager.cpp 
+		./debuggermainwindow.cpp 
+		./debuggerplugin.cpp 
+		./debuggerprotocol.cpp 
+		./debuggerrunconfigurationaspect.cpp 
+		./debuggerruncontrol.cpp 
+		./debuggeroptionspage.cpp 
+		./debuggerkitconfigwidget.cpp 
+		./debuggerkitinformation.cpp 
+		./disassembleragent.cpp 
+		./disassemblerlines.cpp 
+		./loadcoredialog.cpp 
+		./logwindow.cpp 
+		./memoryagent.cpp 
+		./moduleshandler.cpp 
+		./moduleswindow.cpp 
+		./outputcollector.cpp 
+		./procinterrupt.cpp 
+		./registerhandler.cpp 
+		./registerwindow.cpp 
+		./snapshothandler.cpp 
+		./snapshotwindow.cpp 
+		./sourceagent.cpp 
+		./sourcefileshandler.cpp 
+		./sourcefileswindow.cpp 
+		./sourceutils.cpp 
+		./stackhandler.cpp 
+		./stackwindow.cpp 
+		./threadshandler.cpp 
+		./threadswindow.cpp 
+		./terminal.cpp 
+		./watchdata.cpp 
+		./watchhandler.cpp 
+		./watchutils.cpp 
+		./watchwindow.cpp 
+		./stackframe.cpp 
+		./watchdelegatewidgets.cpp 
+		./debuggertooltipmanager.cpp 
+		./debuggersourcepathmappingwidget.cpp 
+		./memoryview.cpp 
+		./localsandexpressionswindow.cpp 
+		./imageviewer.cpp 
+		./simplifytype.cpp 
+		./unstartedappwatcherdialog.cpp
+		
+		./cdb/cdbengine.cpp
+		./cdb/bytearrayinputstream.cpp
+		./cdb/cdbparsehelpers.cpp
+		./cdb/cdboptionspage.cpp
+		
+		./gdb/gdbengine.cpp 
+		./gdb/gdboptionspage.cpp 
+		./gdb/attachgdbadapter.cpp 
+		./gdb/coregdbadapter.cpp 
+		./gdb/termgdbadapter.cpp 
+		./gdb/remotegdbserveradapter.cpp 
+		./gdb/gdbplainengine.cpp 
+		./gdb/startgdbserverdialog.cpp
+		
+		./lldb/lldbengine.cpp
+		
+		./pdb/pdbengine.cpp
+		
+		./shared/backtrace.cpp 
+		./shared/cdbsymbolpathlisteditor.cpp 
+		./shared/hostutils.cpp 
+		./shared/peutils.cpp 
+		./shared/symbolpathsdialog.cpp
+		
+		./namedemangler/namedemangler.cpp
+    	./namedemangler/parsetreenodes.cpp
+    	./namedemangler/globalparsestate.cpp
+	]
+	if target_os == `win32 {
+		# TODO shared/registryaccess/registryaccess.pri
+		# registerpostmortemaction.cpp
+		# -lole32 -lshell32 -ladvapi32
+	}
+	.deps += [ run_rcc run_moc run_uic ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

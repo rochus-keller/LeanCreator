@@ -1349,7 +1349,11 @@ bool ProjectExplorerPlugin::initialize(const QStringList &arguments, QString *er
         []() -> QString {
             Kit *kit = currentKit();
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? device->sshParameters().host : QString();
+            return
+                               #ifndef QT_NO_SSH
+                                   device ? device->sshParameters().host :
+                               #endif
+                                   QString();
         });
 
     expander->registerVariable(Constants::VAR_CURRENTDEVICE_SSHPORT,
@@ -1357,7 +1361,11 @@ bool ProjectExplorerPlugin::initialize(const QStringList &arguments, QString *er
         []() -> QString {
             Kit *kit = currentKit();
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? QString::number(device->sshParameters().port) : QString();
+            return
+                               #ifndef QT_NO_SSH
+                                   device ? QString::number(device->sshParameters().port) :
+                               #endif
+                                   QString();
         });
 
     expander->registerVariable(Constants::VAR_CURRENTDEVICE_USERNAME,
@@ -1365,7 +1373,11 @@ bool ProjectExplorerPlugin::initialize(const QStringList &arguments, QString *er
         []() -> QString {
             Kit *kit = currentKit();
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? device->sshParameters().userName : QString();
+            return
+                               #ifndef QT_NO_SSH
+                                   device ? device->sshParameters().userName :
+                               #endif
+                                   QString();
         });
 
 
@@ -1375,7 +1387,11 @@ bool ProjectExplorerPlugin::initialize(const QStringList &arguments, QString *er
         []() -> QString {
             Kit *kit = currentKit();
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? device->sshParameters().privateKeyFile : QString();
+            return
+                               #ifndef QT_NO_SSH
+                                   device ? device->sshParameters().privateKeyFile :
+                               #endif
+                                   QString();
         });
 #endif
 

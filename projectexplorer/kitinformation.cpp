@@ -453,22 +453,38 @@ void DeviceKitInformation::addToMacroExpander(Kit *kit, Utils::MacroExpander *ex
     expander->registerVariable("Device:HostAddress", tr("Host address"),
         [this, kit]() -> QString {
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? device->sshParameters().host : QString();
+            return
+        #ifndef QT_NO_SSH
+                    device ? device->sshParameters().host :
+                 #endif
+                             QString();
     });
     expander->registerVariable("Device:SshPort", tr("SSH port"),
         [this, kit]() -> QString {
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? QString::number(device->sshParameters().port) : QString();
+            return
+                    #ifndef QT_NO_SSH
+                    device ? QString::number(device->sshParameters().port) :
+                 #endif
+                             QString();
     });
     expander->registerVariable("Device:UserName", tr("User name"),
         [this, kit]() -> QString {
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? device->sshParameters().userName : QString();
+            return
+                    #ifndef QT_NO_SSH
+                    device ? device->sshParameters().userName :
+                 #endif
+                             QString();
     });
     expander->registerVariable("Device:KeyFile", tr("Private key file"),
         [this, kit]() -> QString {
             const IDevice::ConstPtr device = DeviceKitInformation::device(kit);
-            return device ? device->sshParameters().privateKeyFile : QString();
+            return
+                    #ifndef QT_NO_SSH
+                    device ? device->sshParameters().privateKeyFile :
+                 #endif
+                             QString();
     });
 #endif
 }

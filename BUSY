@@ -28,6 +28,8 @@ submod cplusplus -
 submod cpptools -
 submod cppeditor -
 submod classview -
+submod debugger -
+submod bineditor -
 submod app
 
 let nooptconf : Config {
