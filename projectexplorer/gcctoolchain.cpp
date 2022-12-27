@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -1089,7 +1089,7 @@ void ClangToolChain::addToEnvironment(Environment &env) const
 {
     GccToolChain::addToEnvironment(env);
     // Clang takes PWD as basis for debug info, if set.
-    // When running Qt Creator from a shell, PWD is initially set to an "arbitrary" value.
+    // When running LeanCreator from a shell, PWD is initially set to an "arbitrary" value.
     // Since the tools are not called through a shell, PWD is never changed to the actual cwd,
     // so we better make sure PWD is empty to begin with
     env.unset(QLatin1String("PWD"));

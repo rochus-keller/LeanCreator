@@ -5,7 +5,7 @@
 ** Contact: Research In Motion (blackberry-qt@qnx.com)
 ** Contact: KDAB (info@kdab.com)
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in

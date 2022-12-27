@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -209,14 +209,14 @@ private slots:
     // The following tests operate on a project and require special invocation:
     //
     // Ensure that the project is properly configured for a given settings path:
-    //   $ ./qtcreator -settingspath /your/settings/path /path/to/project
+    //   $ ./leancreator -settingspath /your/settings/path /path/to/project
     //
     // ...and that it builds, which might prevent blocking dialogs for not
     // existing files (e.g. ui_*.h).
     //
     // Run a test:
     //   $ export QTC_TEST_WAIT_FOR_LOADED_PROJECT=1
-    //   $ ./qtcreator -settingspath /your/settings/path -test CppEditor,test_openEachFile /path/to/project
+    //   $ ./leancreator -settingspath /your/settings/path -test CppEditor,test_openEachFile /path/to/project
     void test_openEachFile();
     void test_switchHeaderSourceOnEachFile();
     void test_moveTokenWiseThroughEveryFile();

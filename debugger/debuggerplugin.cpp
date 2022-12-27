@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -1454,7 +1454,7 @@ DebuggerRunControl *DebuggerPluginPrivate::attachToRunningProcess(Kit *kit,
     if (isWindows && isWinProcessBeingDebugged(process.pid)) {
         AsynchronousMessageBox::warning(tr("Process Already Under Debugger Control"),
                              tr("The process %1 is already under the control of a debugger.\n"
-                                "Qt Creator cannot attach to it.").arg(process.pid));
+                                "LeanCreator cannot attach to it.").arg(process.pid));
         return 0;
     }
 
@@ -2118,7 +2118,7 @@ void DebuggerPluginPrivate::activatePreviousMode()
 {
     if (ModeManager::currentMode() == ModeManager::mode(MODE_DEBUG)
             && m_previousMode.isValid()) {
-        // If stopping the application also makes Qt Creator active (as the
+        // If stopping the application also makes LeanCreator active (as the
         // "previously active application"), doing the switch synchronously
         // leads to funny effects with floating dock widgets
         const Core::Id mode = m_previousMode;
@@ -2947,7 +2947,7 @@ void DebuggerPluginPrivate::extensionsInitialized()
     m_watchersWindow->setVisible(false);
     m_returnWindow->setVisible(false);
 
-    // time gdb -i mi -ex 'b debuggerplugin.cpp:800' -ex r -ex q bin/qtcreator.bin
+    // time gdb -i mi -ex 'b debuggerplugin.cpp:800' -ex r -ex q bin/leancreator.bin
 }
 
 DebuggerEngine *currentEngine()
@@ -3164,7 +3164,7 @@ QSharedPointer<Internal::GlobalDebuggerOptions> globalDebuggerOptions()
     \class Debugger::DebuggerPlugin
 
     This is the "external" interface of the debugger plugin that's visible
-    from Qt Creator core. The internal interface to global debugger
+    from LeanCreator core. The internal interface to global debugger
     functionality that is used by debugger views and debugger engines
     is DebuggerCore, implemented in DebuggerPluginPrivate.
 */

@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -294,7 +294,7 @@ void TargetSetupPage::setProjectPath(const QString &path)
 {
     m_projectPath = path;
     if (!m_projectPath.isEmpty())
-        m_ui->headerLabel->setText(tr("Qt Creator can use the following kits for project <b>%1</b>:",
+        m_ui->headerLabel->setText(tr("LeanCreator can use the following kits for project <b>%1</b>:",
                                       "%1: Project name").arg(QFileInfo(m_projectPath).baseName()));
     m_ui->headerLabel->setVisible(!m_projectPath.isEmpty());
 

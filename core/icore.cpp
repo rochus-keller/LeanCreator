@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -403,15 +403,15 @@ QString ICore::userInterfaceLanguage()
 QString ICore::resourcePath()
 {
     const QString sharePath = QLatin1String(Utils::HostOsInfo::isMacHost()
-                                            ? "/../Resources" : "/../share/qtcreator");
+                                            ? "/../Resources" : "/../share/leancreator");
     return QDir::cleanPath(QCoreApplication::applicationDirPath() + sharePath);
 }
 
 QString ICore::userResourcePath()
 {
-    // Create qtcreator dir if it doesn't yet exist
+    // Create leancreator dir if it doesn't yet exist
     const QString configDir = QFileInfo(settings(QSettings::UserScope)->fileName()).path();
-    const QString urp = configDir + QLatin1String("/qtcreator");
+    const QString urp = configDir + QLatin1String("/leancreator");
 
     if (!QFileInfo::exists(urp + QLatin1Char('/'))) {
         QDir dir;
@@ -425,7 +425,7 @@ QString ICore::userResourcePath()
 QString ICore::documentationPath()
 {
     const QString docPath = QLatin1String(Utils::HostOsInfo::isMacHost()
-                                            ? "/../Resources/doc" : "/../share/doc/qtcreator");
+                                            ? "/../Resources/doc" : "/../share/doc/leancreator");
     return QDir::cleanPath(QCoreApplication::applicationDirPath() + docPath);
 }
 
@@ -446,7 +446,7 @@ QString ICore::libexecPath()
     case Utils::OsTypeLinux:
     case Utils::OsTypeOtherUnix:
     case Utils::OsTypeOther:
-        path = QCoreApplication::applicationDirPath() + QLatin1String("/../libexec/qtcreator");
+        path = QCoreApplication::applicationDirPath() + QLatin1String("/../libexec/leancreator");
         break;
     }
     return QDir::cleanPath(path);
@@ -482,7 +482,7 @@ QString ICore::versionString()
 #ifdef IDE_VERSION_DESCRIPTION
     ideVersionDescription = tr(" (%1)").arg(QLatin1String(Constants::IDE_VERSION_DESCRIPTION_STR));
 #endif
-    return tr("Qt Creator %1%2").arg(QLatin1String(Constants::IDE_VERSION_LONG),
+    return tr("LeanCreator %1%2").arg(QLatin1String(Constants::IDE_VERSION_LONG),
                                      ideVersionDescription);
 }
 

@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -55,7 +55,7 @@ static const char licenseTemplatePathKeyC[] = "LicenseTemplate";
 
 const char *licenseTemplateTemplate = QT_TRANSLATE_NOOP("CppTools::Internal::CppFileSettingsWidget",
 "/**************************************************************************\n"
-"** Qt Creator license header template\n"
+"** LeanCreator license header template\n"
 "**   Special keywords: %USER% %DATE% %YEAR%\n"
 "**   Environment variables: %$VARIABLE%\n"
 "**   To protect a percent sign, use '%%'.\n"

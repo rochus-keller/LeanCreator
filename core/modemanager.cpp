@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -50,7 +50,7 @@ namespace Core {
     The mode manager handles everything related to the instances of IMode
     that were added to the plugin manager's object pool as well as their
     buttons and the tool bar with the round buttons in the lower left
-    corner of Qt Creator.
+    corner of LeanCreator.
 */
 
 struct ModeManagerPrivate
@@ -153,7 +153,7 @@ void ModeManager::objectAdded(QObject *obj)
     d->m_modeStack->setTabEnabled(index, mode->isEnabled());
 
     // Register mode shortcut
-    const Id actionId = mode->id().withPrefix("QtCreator.Mode.");
+    const Id actionId = mode->id().withPrefix("LeanCreator.Mode.");
     QAction *action = new QAction(tr("Switch to <b>%1</b> mode").arg(mode->displayName()), this);
     Command *cmd = ActionManager::registerAction(action, actionId);
 

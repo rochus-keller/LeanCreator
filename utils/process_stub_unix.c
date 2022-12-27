@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -142,7 +142,7 @@ static void sigchldHandler(int sig)
 #endif
             sendMsg("pid %d\n", chldPid);
             if (isDetached == 2 && isDebug) {
-                /* qtcreator was not informed and died while debugging, killing the child */
+                /* leancreator was not informed and died while debugging, killing the child */
                 kill(chldPid, SIGKILL);
             }
         } else if (WIFEXITED(chldStatus)) {
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
     memset(&act, 0, sizeof(act));
 
     if (argc < ArgEnv) {
-        fprintf(stderr, "This is an internal helper of Qt Creator. Do not run it manually.\n");
+        fprintf(stderr, "This is an internal helper of LeanCreator. Do not run it manually.\n");
         return 1;
     }
     sleepMsg = argv[ArgMsg];
@@ -327,9 +327,9 @@ int main(int argc, char *argv[])
                     if (!isDetached) {
                         isDetached = 2;
                         if (nbytes == 0)
-                            fprintf(stderr, "Lost connection to QtCreator, detaching from it.\n");
+                            fprintf(stderr, "Lost connection to LeanCreator, detaching from it.\n");
                         else
-                            perror("Lost connection to QtCreator, detaching from it");
+                            perror("Lost connection to LeanCreator, detaching from it");
                     }
                     break;
                 } else {
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
                             exit(0);
                         default:
                             if (!hadInvalidCommand) {
-                                fprintf(stderr, "Ignoring invalid commands from QtCreator.\n");
+                                fprintf(stderr, "Ignoring invalid commands from LeanCreator.\n");
                                 hadInvalidCommand = 1;
                             }
                         }

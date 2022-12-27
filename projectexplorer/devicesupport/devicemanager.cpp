@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -159,7 +159,7 @@ void DeviceManager::load()
     Utils::PersistentSettingsReader reader;
     // read devices file from global settings path
     QList<IDevice::Ptr> sdkDevices;
-    if (reader.load(systemSettingsFilePath(QLatin1String("/qtcreator/devices.xml"))))
+    if (reader.load(systemSettingsFilePath(QLatin1String("/leancreator/devices.xml"))))
         sdkDevices = fromMap(reader.restoreValues().value(QLatin1String(DeviceManagerKey)).toMap());
     // read devices file from user settings path
     QList<IDevice::Ptr> userDevices;

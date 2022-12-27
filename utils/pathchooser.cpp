@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -629,7 +629,7 @@ QString PathChooser::homePath()
 {
     // Return 'users/<name>/Documents' on Windows, since Windows explorer
     // does not let people actually display the contents of their home
-    // directory. Alternatively, create a QtCreator-specific directory?
+    // directory. Alternatively, create a LeanCreator-specific directory?
     if (HostOsInfo::isWindowsHost())
         return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     return QDir::homePath();

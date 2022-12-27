@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -63,7 +63,7 @@ bool startProcess(wchar_t pCommandLine[]);
 int main(int argc, char **)
 {
     if (argc < 2) {
-        fprintf(stderr, "This is an internal helper of Qt Creator. Do not run it manually.\n");
+        fprintf(stderr, "This is an internal helper of LeanCreator. Do not run it manually.\n");
         return 1;
     }
 

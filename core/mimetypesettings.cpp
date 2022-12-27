@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -401,7 +401,7 @@ void MimeTypeSettingsPrivate::resetMimeTypes()
     m_userModifiedMimeTypes.clear(); // settings file will be removed with next settings-save
     QMessageBox::information(ICore::dialogParent(),
                              tr("Reset MIME Types"),
-                             tr("Changes will take effect after Qt Creator restart."));
+                             tr("Changes will take effect after LeanCreator restart."));
 }
 
 void MimeTypeSettingsPrivate::setFilterPattern(const QString &pattern)

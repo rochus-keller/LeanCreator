@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -147,7 +147,7 @@ void DebuggerRunConfigWidget::showEvent(QShowEvent *event)
     // QML debugger language is hard to track.
     //
     // !event->spontaneous makes sure we ignore e.g. global windows events,
-    // when Qt Creator itself is minimized/maximized.
+    // when LeanCreator itself is minimized/maximized.
     if (!event->spontaneous())
         update();
 

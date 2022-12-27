@@ -5,7 +5,7 @@
 ** Copyright (C) 2015 Giuliano Schneider
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -37,7 +37,7 @@
     \brief The IOutputPane class is an interface for providing \gui Output panes.
 
     \mainclass
-    \inmodule Qt Creator
+    \inmodule LeanCreator
 */
 
 /*!

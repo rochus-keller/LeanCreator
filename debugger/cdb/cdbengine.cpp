@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -87,7 +87,7 @@ enum { debugBreakpoints = 0 };
     \class Debugger::Internal::CdbEngine
 
     Cdb engine version 2: Run the CDB process on pipes and parse its output.
-    The engine relies on a CDB extension Qt Creator provides as an extension
+    The engine relies on a CDB extension LeanCreator provides as an extension
     library (32/64bit), which is loaded into cdb.exe. It serves to:
 
     \list
@@ -371,7 +371,7 @@ QString CdbEngine::extensionLibraryName(bool is64Bit)
 static QStringList mergeEnvironment(QStringList runConfigEnvironment,
                                     QString cdbExtensionPath)
 {
-    // Determine CDB extension path from Qt Creator
+    // Determine CDB extension path from LeanCreator
     static const char cdbExtensionPathVariableC[] = "_NT_DEBUGGER_EXTENSION_PATH";
     const QByteArray oldCdbExtensionPath = qgetenv(cdbExtensionPathVariableC);
     if (!oldCdbExtensionPath.isEmpty()) {
@@ -539,7 +539,7 @@ bool CdbEngine::launchCDB(const DebuggerRunParameters &sp, QString *errorMessage
     const QFileInfo extensionFi(CdbEngine::extensionLibraryName(cdbIs64Bit));
     if (!extensionFi.isFile()) {
         *errorMessage = QString::fromLatin1("Internal error: The extension %1 cannot be found.\n"
-                                            "If you build Qt Creator from sources, check out "
+                                            "If you build LeanCreator from sources, check out "
                                             "https://code.qt.io/cgit/qt-creator/binary-artifacts.git/.").
                 arg(QDir::toNativeSeparators(extensionFi.absoluteFilePath()));
         return false;

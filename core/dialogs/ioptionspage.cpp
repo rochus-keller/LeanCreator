@@ -6,7 +6,7 @@
 ** Copyright (C) 2015 Giuliano Schneider
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -42,7 +42,7 @@
 /*!
     \class Core::IOptionsPage
     \mainclass
-    \inmodule Qt Creator
+    \inmodule LeanCreator
     \brief The IOptionsPage class is an interface for providing pages for the
     \gui Options dialog (called \gui Preferences on Mac OS).
 */

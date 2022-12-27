@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -339,8 +339,8 @@ using namespace Internal;
  * \c{textcontrol->setProperty(VariableChooser::kVariableSupportProperty, true)}
  * \sa addVariableSupport()
  */
-const char kVariableSupportProperty[] = "QtCreator.VariableSupport";
-const char kVariableNameProperty[] = "QtCreator.VariableName";
+const char kVariableSupportProperty[] = "LeanCreator.VariableSupport";
+const char kVariableNameProperty[] = "LeanCreator.VariableName";
 
 /*!
  * Creates a variable chooser that tracks all children of \a parent for variable support.

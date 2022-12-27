@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -51,7 +51,7 @@ using namespace Core::Internal;
 /*!
     \class Core::ActionManager
     \mainclass
-    \inmodule Qt Creator
+    \inmodule LeanCreator
 
     \brief The ActionManager class is responsible for registration of menus and
     menu items and keyboard shortcuts.

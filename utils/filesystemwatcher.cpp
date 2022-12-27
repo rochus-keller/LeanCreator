@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -156,7 +156,7 @@ public:
 bool FileSystemWatcherPrivate::checkLimit() const
 {
     // We are potentially watching a _lot_ of directories. This might crash
-    // qtcreator when we hit the upper limit.
+    // leancreator when we hit the upper limit.
     // Heuristic is therefore: Do not use more than half of the file handles
     // available in THIS watcher.
     return quint64(m_directories.size() + m_files.size()) <

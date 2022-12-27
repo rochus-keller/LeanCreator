@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 Andre Hartmann.
 ** Contact: aha_1980@gmx.de
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in

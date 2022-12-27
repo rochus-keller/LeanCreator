@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -123,7 +123,7 @@ CrashHandlerSetup::CrashHandlerSetup()
     // SA_RESETHAND - Restore signal action to default after signal handler has been called.
     // SA_NODEFER - Don't block the signal after it was triggered (otherwise blocked signals get
     // inherited via fork() and execve()). Without this the signal will not be delivered to the
-    // restarted Qt Creator.
+    // restarted LeanCreator.
     // SA_ONSTACK - Use alternative stack.
     sa.sa_flags = SA_RESETHAND | SA_NODEFER | SA_ONSTACK;
     // See "man 7 signal" for an overview of signals.

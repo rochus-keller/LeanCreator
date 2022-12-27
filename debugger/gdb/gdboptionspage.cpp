@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -84,7 +84,7 @@ GdbOptionsPageWidget::GdbOptionsPageWidget()
     auto labelGdbWatchdogTimeout = new QLabel(groupBoxGeneral);
     labelGdbWatchdogTimeout->setText(GdbOptionsPage::tr("GDB timeout:"));
     labelGdbWatchdogTimeout->setToolTip(GdbOptionsPage::tr(
-        "The number of seconds Qt Creator will wait before it terminates\n"
+        "The number of seconds LeanCreator will wait before it terminates\n"
         "a non-responsive GDB process. The default value of 20 seconds should\n"
         "be sufficient for most applications, but there are situations when\n"
         "loading big libraries or listing source files takes much longer than\n"
@@ -195,7 +195,7 @@ GdbOptionsPageWidget::GdbOptionsPageWidget()
     groupBoxCustomDumperCommands->setTitle(GdbOptionsPage::tr("Debugging Helper Customization"));
     groupBoxCustomDumperCommands->setToolTip(GdbOptionsPage::tr(
         "<html><head/><body><p>GDB commands entered here will be executed after "
-        "Qt Creator's debugging helpers have been loaded and fully initialized. "
+        "LeanCreator's debugging helpers have been loaded and fully initialized. "
         "You can load additional debugging helpers or modify existing ones here.</p>"
         "%1</body></html>").arg(howToUsePython));
 

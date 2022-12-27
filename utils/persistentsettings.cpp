@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -69,7 +69,7 @@ static QRect stringToRectangle(const QString &v)
 
     Handles all string-serializable simple types and QVariantList and QVariantMap. Example:
     \code
-<qtcreator>
+<leancreator>
     <data>
         <variable>ProjectExplorer.Project.ActiveTarget</variable>
         <value type="int">0</value>
@@ -122,7 +122,7 @@ struct Context // Basic context containing element name string constants.
 };
 
 Context::Context() :
-    qtCreatorElement(QLatin1String("qtcreator")),
+    qtCreatorElement(QLatin1String("leancreator")),
     dataElement(QLatin1String("data")),
     variableElement(QLatin1String("variable")),
     typeAttribute(QLatin1String("type")),

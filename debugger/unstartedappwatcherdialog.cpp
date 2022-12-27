@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 Petar Perisin <petar.perisin@gmail.com>
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -68,7 +68,7 @@ namespace Internal {
     application path.
 
     After selecting start, dialog will check if selected application is started every
-    10 miliseconds. As soon as application is started, QtCreator will attach to it.
+    10 miliseconds. As soon as application is started, LeanCreator will attach to it.
 
     After user attaches, it is possible to keep dialog active and as soon as debugging
     session ends, it will start watching again. This is because sometimes automated test

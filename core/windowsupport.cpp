@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -164,7 +164,7 @@ void WindowList::addWindow(QWidget *window)
 #endif
 
     m_windows.append(window);
-    Id id = Id("QtCreator.Window.").withSuffix(m_windows.size());
+    Id id = Id("LeanCreator.Window.").withSuffix(m_windows.size());
     m_windowActionIds.append(id);
     auto action = new QAction(window->windowTitle(), 0);
     m_windowActions.append(action);
@@ -196,7 +196,7 @@ void WindowList::updateTitle(QWidget *window)
     QTC_ASSERT(index >= 0, return);
     QTC_ASSERT(index < m_windowActions.size(), return);
     QString title = window->windowTitle();
-    if (title.endsWith(QStringLiteral("- Qt Creator")))
+    if (title.endsWith(QStringLiteral("- LeanCreator")))
         title.chop(12);
     m_windowActions.at(index)->setText(title.trimmed());
 }

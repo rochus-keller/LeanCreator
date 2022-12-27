@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -185,7 +185,7 @@ enum LogChannel
     ConsoleOutput            // Used to output to console
 };
 
-// Keep values compatible between Qt Creator versions,
+// Keep values compatible between LeanCreator versions,
 // because they are used by the installer for registering debuggers
 enum DebuggerEngineType
 {

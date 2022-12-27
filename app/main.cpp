@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -218,13 +218,13 @@ static inline QStringList getPluginPaths()
         pluginPath = rootDirPath;
         pluginPath += QLatin1Char('/');
         pluginPath += QLatin1String(IDE_LIBRARY_BASENAME);
-        pluginPath += QLatin1String("/qtcreator/plugins");
+        pluginPath += QLatin1String("/leancreator/plugins");
         rc.push_back(pluginPath);
     }
     // 3) <localappdata>/plugins/<ideversion>
     //    where <localappdata> is e.g.
-    //    "%LOCALAPPDATA%\QtProject\qtcreator" on Windows Vista and later
-    //    "$XDG_DATA_HOME/data/QtProject/qtcreator" or "~/.local/share/data/QtProject/qtcreator" on Linux
+    //    "%LOCALAPPDATA%\QtProject\leancreator" on Windows Vista and later
+    //    "$XDG_DATA_HOME/data/QtProject/leancreator" or "~/.local/share/data/QtProject/leancreator" on Linux
     //    "~/Library/Application Support/QtProject/Qt Creator" on Mac
     pluginPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
 #if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
@@ -233,7 +233,7 @@ static inline QStringList getPluginPaths()
     pluginPath += QLatin1Char('/')
             + QLatin1String(Core::Constants::IDE_SETTINGSVARIANT_STR)
             + QLatin1Char('/');
-    pluginPath += QLatin1String(Utils::HostOsInfo::isMacHost() ? "LeanCreator" : "qtcreator");
+    pluginPath += QLatin1String(Utils::HostOsInfo::isMacHost() ? "LeanCreator" : "leancreator");
     pluginPath += QLatin1String("/plugins/");
     pluginPath += QLatin1String(Core::Constants::IDE_VERSION_LONG);
     rc.push_back(pluginPath);
@@ -244,7 +244,7 @@ static QSettings *createUserSettings()
 {
     return new QSettings(QSettings::IniFormat, QSettings::UserScope,
                          QLatin1String(Core::Constants::IDE_SETTINGSVARIANT_STR),
-                         QLatin1String("QtCreator"));
+                         QLatin1String("LeanCreator"));
 }
 
 static inline QSettings *userSettings()
@@ -279,9 +279,9 @@ static inline QSettings *userSettings()
                 || lowerFile.startsWith(QLatin1String("qtversion.xml"))
                 || lowerFile.startsWith(QLatin1String("devices.xml"))
                 || lowerFile.startsWith(QLatin1String("debuggers.xml"))
-                || lowerFile.startsWith(QLatin1String("qtcreator.")))
+                || lowerFile.startsWith(QLatin1String("leancreator.")))
             QFile::copy(srcDir.absoluteFilePath(file), destDir.absoluteFilePath(file));
-        if (file == QLatin1String("qtcreator"))
+        if (file == QLatin1String("leancreator"))
             copyRecursively(srcDir.absoluteFilePath(file), destDir.absoluteFilePath(file));
     }
 
@@ -291,7 +291,7 @@ static inline QSettings *userSettings()
 }
 
 static const char *SHARE_PATH =
-        Utils::HostOsInfo::isMacHost() ? "/../Resources" : "/../share/qtcreator";
+        Utils::HostOsInfo::isMacHost() ? "/../Resources" : "/../share/leancreator";
 
 Q_IMPORT_PLUGIN(CorePlugin)
 Q_IMPORT_PLUGIN(TextEditorPlugin)
@@ -403,9 +403,9 @@ int main(int argc, char **argv)
 
     QSettings *globalSettings = new QSettings(QSettings::IniFormat, QSettings::SystemScope,
                                               QLatin1String(Core::Constants::IDE_SETTINGSVARIANT_STR),
-                                              QLatin1String("QtCreator"));
+                                              QLatin1String("LeanCreator"));
     PluginManager pluginManager;
-    PluginManager::setPluginIID(QLatin1String("org.qt-project.Qt.QtCreatorPlugin"));
+    PluginManager::setPluginIID(QLatin1String("org.qt-project.Qt.LeanCreatorPlugin"));
     PluginManager::setGlobalSettings(globalSettings);
     PluginManager::setSettings(settings);
 
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
             + QLatin1String(SHARE_PATH) + QLatin1String("/translations");
     foreach (QString locale, uiLanguages) {
         locale = QLocale(locale).name();
-        if (translator.load(QLatin1String("qtcreator_") + locale, creatorTrPath)) {
+        if (translator.load(QLatin1String("leancreator_") + locale, creatorTrPath)) {
             const QString &qtTrPath = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
             const QString &qtTrFile = QLatin1String("qt_") + locale;
             // Binary installer puts Qt tr files into creatorTrPath

@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -113,19 +113,19 @@ void TargetSetupPageWrapper::updateNoteText()
     bool showHint = false;
     if (!k) {
         text = tr("The project <b>%1</b> is not yet configured.<br/>"
-                  "Qt Creator cannot parse the project, because no kit "
+                  "LeanCreator cannot parse the project, because no kit "
                   "has been set up.")
                 .arg(m_project->displayName());
         showHint = true;
     } else if (k->isValid()) {
         text = tr("The project <b>%1</b> is not yet configured.<br/>"
-                  "Qt Creator uses the kit <b>%2</b> to parse the project.")
+                  "LeanCreator uses the kit <b>%2</b> to parse the project.")
                 .arg(m_project->displayName())
                 .arg(k->displayName());
         showHint = false;
     } else {
         text = tr("The project <b>%1</b> is not yet configured.<br/>"
-                  "Qt Creator uses the <b>invalid</b> kit <b>%2</b> to parse the project.")
+                  "LeanCreator uses the <b>invalid</b> kit <b>%2</b> to parse the project.")
                 .arg(m_project->displayName())
                 .arg(k->displayName());
         showHint = true;

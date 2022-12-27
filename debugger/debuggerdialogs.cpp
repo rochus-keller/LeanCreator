@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -262,7 +262,7 @@ StartApplicationDialog::StartApplicationDialog(QWidget *parent)
     d->serverStartScriptPathChooser->setPromptDialogTitle(tr("Select Server Start Script"));
     d->serverStartScriptPathChooser->setToolTip(tr(
         "This option can be used to point to a script that will be used "
-        "to start a debug server. If the field is empty, Qt Creator's "
+        "to start a debug server. If the field is empty, LeanCreator's "
         "default methods to set up debug servers will be used."));
     d->serverStartScriptLabel = new QLabel(tr("&Server start script:"), this);
     d->serverStartScriptLabel->setBuddy(d->serverStartScriptPathChooser);
@@ -547,7 +547,7 @@ static QString cdbRemoteHelp()
     const QString ext32 = QDir::toNativeSeparators(CdbEngine::extensionLibraryName(false));
     const QString ext64 = QDir::toNativeSeparators(CdbEngine::extensionLibraryName(true));
     return  StartRemoteCdbDialog::tr(
-                "<html><body><p>The remote CDB needs to load the matching Qt Creator CDB extension "
+                "<html><body><p>The remote CDB needs to load the matching LeanCreator CDB extension "
                 "(<code>%1</code> or <code>%2</code>, respectively).</p><p>Copy it onto the remote machine and set the "
                 "environment variable <code>%3</code> to point to its folder.</p><p>"
                 "Launch the remote CDB as <code>%4 &lt;executable&gt;</code> "

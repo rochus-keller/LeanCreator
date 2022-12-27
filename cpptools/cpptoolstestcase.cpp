@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -306,7 +306,7 @@ ProjectInfo ProjectOpenerAndCloser::open(const QString &projectFile, bool config
 
 TemporaryDir::TemporaryDir()
     : m_temporaryDir(QFileInfo(QDir::tempPath()).canonicalFilePath()
-                        + QLatin1String("/qtcreator-tests-XXXXXX"))
+                        + QLatin1String("/leancreator-tests-XXXXXX"))
     , m_isValid(m_temporaryDir.isValid())
 {
 }

@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -675,7 +675,7 @@ bool QtcProcess::prepareCommand(const QString &command, const QString &arguments
 void QtcProcess::setUseCtrlCStub(bool enabled)
 {
     // Do not use the stub in debug mode. Activating the stub will shut down
-    // Qt Creator otherwise, because they share the same Windows console.
+    // LeanCreator otherwise, because they share the same Windows console.
     // See QTCREATORBUG-11995 for details.
 #ifndef QT_DEBUG
     m_useCtrlCStub = enabled;

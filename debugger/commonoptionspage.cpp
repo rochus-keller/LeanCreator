@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -111,7 +111,7 @@ CommonOptionsPageWidget::CommonOptionsPageWidget
     checkBoxSwitchModeOnExit->setText(tr("Switch to previous mode on debugger exit"));
 
     checkBoxBringToForegroundOnInterrrupt = new QCheckBox(behaviorBox);
-    checkBoxBringToForegroundOnInterrrupt->setText(tr("Bring Qt Creator to foreground when application interrupts"));
+    checkBoxBringToForegroundOnInterrrupt->setText(tr("Bring LeanCreator to foreground when application interrupts"));
 
     checkBoxShowQmlObjectTree = new QCheckBox(behaviorBox);
     checkBoxShowQmlObjectTree->setToolTip(tr("Shows QML object tree in Locals and Expressions when connected and not stepping."));
@@ -122,8 +122,8 @@ CommonOptionsPageWidget::CommonOptionsPageWidget
     checkBoxBreakpointsFullPath->setText(tr("Set breakpoints using a full absolute path"));
 
     checkBoxRegisterForPostMortem = new QCheckBox(behaviorBox);
-    checkBoxRegisterForPostMortem->setToolTip(tr("Registers Qt Creator for debugging crashed applications."));
-    checkBoxRegisterForPostMortem->setText(tr("Use Qt Creator for post-mortem debugging"));
+    checkBoxRegisterForPostMortem->setToolTip(tr("Registers LeanCreator for debugging crashed applications."));
+    checkBoxRegisterForPostMortem->setText(tr("Use LeanCreator for post-mortem debugging"));
 
     checkBoxWarnOnReleaseBuilds = new QCheckBox(behaviorBox);
     checkBoxWarnOnReleaseBuilds->setText(tr("Warn when debugging \"Release\" builds"));

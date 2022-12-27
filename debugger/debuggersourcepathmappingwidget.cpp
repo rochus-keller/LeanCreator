@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -210,7 +210,7 @@ DebuggerSourcePathMappingWidget::DebuggerSourcePathMappingWidget(QWidget *parent
                   "at which the modules where built, for example, while "
                   "doing remote debugging.</p>"
                   "<p>If source is specified as a regular expression by starting it with an "
-                  "open parenthesis, Qt Creator matches the paths in the ELF with the "
+                  "open parenthesis, LeanCreator matches the paths in the ELF with the "
                   "regular expression to automatically determine the source path.</p>"
                   "<p>Example: <b>(/home/.*/Project)/KnownSubDir -> D:\\Project</b> will "
                   "substitute ELF built by any user to your local project directory.</p>"));

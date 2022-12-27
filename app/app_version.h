@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -57,7 +57,7 @@ const char * const IDE_REVISION_STR      = "";
 #ifdef IDE_SETTINGSVARIANT
 const char * const IDE_SETTINGSVARIANT_STR      = STRINGIFY(IDE_SETTINGSVARIANT);
 #else
-const char * const IDE_SETTINGSVARIANT_STR      = "QtProject";
+const char * const IDE_SETTINGSVARIANT_STR      = "LeanQtProject";
 #endif
 
 #ifdef IDE_COPY_SETTINGS_FROM_VARIANT

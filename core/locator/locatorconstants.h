@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -36,7 +36,7 @@
 namespace Core {
 namespace Constants {
 
-const char LOCATE[] = "QtCreator.Locate";
+const char LOCATE[] = "LeanCreator.Locate";
 const char FILTER_OPTIONS_PAGE[] = QT_TRANSLATE_NOOP("Locator", "Locator");
 const char CUSTOM_FILTER_BASEID[] = "Locator.CustomFilter";
 const char TASK_INDEX[] = "Locator.Task.Index";

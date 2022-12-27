@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -1770,7 +1770,7 @@ void EditorManagerPrivate::editorAreaDestroyed(QObject *area)
     // we need to set a new current editor or view
     if (!newActiveArea) {
         // some window managers behave weird and don't activate another window
-        // or there might be a Qt Creator toplevel activated that doesn't have editor windows
+        // or there might be a LeanCreator toplevel activated that doesn't have editor windows
         newActiveArea = d->m_editorAreas.first();
     }
 

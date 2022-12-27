@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -46,7 +46,7 @@ public:
             QDir lib(QCoreApplication::applicationDirPath());
             lib.cd(QLatin1String("../lib"));
             QString toReplace = lib.path();
-            lib.cd(QLatin1String("qtcreator"));
+            lib.cd(QLatin1String("leancreator"));
             toReplace.append(QLatin1Char(':'));
             toReplace.append(lib.path());
 

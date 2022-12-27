@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -126,7 +126,7 @@ void ImageViewer::clicked(const QString &message)
     m_infoLabel->setText(text);
 }
 
-// Open Qt Creator's image viewer
+// Open LeanCreator's image viewer
 static void openImageViewer(const QImage &image)
 {
     QString fileName = QDir::tempPath();

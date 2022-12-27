@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -75,7 +75,7 @@ protected:
 /*
     Alternative way for providing option pages instead of adding IOptionsPage
     objects into the plugin manager pool. Should only be used if creation of the
-    actual option pages is not possible or too expensive at Qt Creator startup.
+    actual option pages is not possible or too expensive at LeanCreator startup.
     (Like the designer integration, which needs to initialize designer plugins
     before the options pages get available.)
 */

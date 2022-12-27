@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -45,7 +45,7 @@ EditorWindow::EditorWindow(QWidget *parent) :
     layout->addWidget(m_area);
     setFocusProxy(m_area);
     setAttribute(Qt::WA_DeleteOnClose);
-    setAttribute(Qt::WA_QuitOnClose, false); // don't prevent Qt Creator from closing
+    setAttribute(Qt::WA_QuitOnClose, false); // don't prevent LeanCreator from closing
     resize(QSize(800, 600));
 
     static int windowId = 0;

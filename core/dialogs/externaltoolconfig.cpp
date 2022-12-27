@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -129,7 +129,7 @@ QMimeData *ExternalToolModel::mimeData(const QModelIndexList &indexes) const
     QByteArray ba;
     QDataStream stream(&ba, QIODevice::WriteOnly);
     stream << category << m_tools.value(category).indexOf(tool);
-    md->setData(QLatin1String("application/qtcreator-externaltool-config"), ba);
+    md->setData(QLatin1String("application/leancreator-externaltool-config"), ba);
     return md;
 }
 
@@ -145,7 +145,7 @@ bool ExternalToolModel::dropMimeData(const QMimeData *data,
     bool found;
     QString toCategory = categoryForIndex(parent, &found);
     QTC_ASSERT(found, return false);
-    QByteArray ba = data->data(QLatin1String("application/qtcreator-externaltool-config"));
+    QByteArray ba = data->data(QLatin1String("application/leancreator-externaltool-config"));
     if (ba.isEmpty())
         return false;
     QDataStream stream(&ba, QIODevice::ReadOnly);
@@ -168,7 +168,7 @@ bool ExternalToolModel::dropMimeData(const QMimeData *data,
 
 QStringList ExternalToolModel::mimeTypes() const
 {
-    return QStringList() << QLatin1String("application/qtcreator-externaltool-config");
+    return QStringList() << QLatin1String("application/leancreator-externaltool-config");
 }
 
 QModelIndex ExternalToolModel::index(int row, int column, const QModelIndex &parent) const

@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -124,7 +124,7 @@ const char ORIGINAL_VERSION_KEY[] = "OriginalVersion";
 // for compatibility with QtC 3.1 and older:
 const char OBSOLETE_VERSION_KEY[] = "ProjectExplorer.Project.Updater.FileVersion";
 
-// Version 1 is used in master post Qt Creator 1.3.x.
+// Version 1 is used in master post LeanCreator 1.3.x.
 // It was never used in any official release but is required for the
 // transition to later versions (which introduce support for targets).
 class UserFileVersion1Upgrader : public VersionUpgrader
@@ -157,7 +157,7 @@ private:
     UserFileAccessor *m_accessor;
 };
 
-// Version 2 is used in master post Qt Creator 2.0 alpha.
+// Version 2 is used in master post LeanCreator 2.0 alpha.
 class UserFileVersion2Upgrader : public VersionUpgrader
 {
 public:
@@ -714,7 +714,7 @@ QVariantMap SettingsAccessor::prepareSettings(const QVariantMap &data) const
  *
  * This method is used to compare data extracted from two XML settings files.
  * It will never be called with a version too old or too new to be read by
- * the current instance of Qt Creator.
+ * the current instance of LeanCreator.
  *
  * Compares \a newData against \a origData.
  *
@@ -836,9 +836,9 @@ SettingsAccessor::IssueInfo SettingsAccessor::findIssues(const QVariantMap &data
         result.message = QApplication::translate("Utils::SettingsAccessor",
                                                  "<p>The versioned backup \"%1\" of the settings "
                                                  "file is used, because the non-versioned file was "
-                                                 "created by an incompatible version of Qt Creator.</p>"
+                                                 "created by an incompatible version of LeanCreator.</p>"
                                                  "<p>Settings changes made since the last time this "
-                                                 "version of Qt Creator was used are ignored, and "
+                                                 "version of LeanCreator was used are ignored, and "
                                                  "changes made now will <b>not</b> be propagated to "
                                                  "the newer version.</p>").arg(path.toUserOutput());
         result.buttons.insert(QMessageBox::Ok, Continue);
@@ -852,7 +852,7 @@ SettingsAccessor::IssueInfo SettingsAccessor::findIssues(const QVariantMap &data
         result.title = differentEnvironmentMsg(project()->displayName());
         result.message = QApplication::translate("ProjectExplorer::EnvironmentIdAccessor",
                                                  "<p>No .user settings file created by this instance "
-                                                 "of Qt Creator was found.</p>"
+                                                 "of LeanCreator was found.</p>"
                                                  "<p>Did you work with this project on another machine or "
                                                  "using a different settings path before?</p>"
                                                  "<p>Do you still want to load the settings file \"%1\"?</p>")
@@ -1092,7 +1092,7 @@ QVariantMap SettingsAccessor::readSharedSettings(QWidget *parent) const
                                             "Unsupported Shared Settings File"),
                     QApplication::translate("ProjectExplorer::SettingsAccessor",
                                             "The version of your .shared file is not "
-                                            "supported by Qt Creator. "
+                                            "supported by LeanCreator. "
                                             "Do you want to try loading it anyway?"),
                     QMessageBox::Yes | QMessageBox::No,
                     parent);

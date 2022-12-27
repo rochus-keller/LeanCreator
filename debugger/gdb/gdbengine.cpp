@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -1708,7 +1708,7 @@ void GdbEngine::handlePythonSetup(const DebuggerResponse &response)
         QByteArray msg = response.data["msg"].data();
         if (msg.contains("Python scripting is not supported in this copy of GDB.")) {
             QString out1 = _("The selected build of GDB does not support Python scripting.");
-            QString out2 = _("It cannot be used in Qt Creator.");
+            QString out2 = _("It cannot be used in LeanCreator.");
             showStatusMessage(out1 + QLatin1Char(' ') + out2);
             AsynchronousMessageBox::critical(tr("Execution Error"), out1 + _("<br>") + out2);
         }

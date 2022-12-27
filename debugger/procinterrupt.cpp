@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -118,7 +118,7 @@ bool Debugger::Internal::interruptProcess(qint64 pID, int engineType, QString *e
     N/A = This configuration is not possible
 
           | Windows 32bit   | Windows 64bit
-          | QtCreator 32bit | QtCreator 32bit                   | QtCreator 64bit
+          | LeanCreator 32bit | LeanCreator 32bit                   | LeanCreator 64bit
           | Inferior 32bit  | Inferior 32bit  | Inferior 64bit  | Inferior 32bit  | Inferior 64bit |
 ----------|-----------------|-----------------|-----------------|-----------------|----------------|
 CDB 32bit | Api             | Api             | NA              | Win32           | NA             |
@@ -152,7 +152,7 @@ GDB 32bit | Api             | Api             | NA              | Win32         
                     ? QCoreApplication::applicationDirPath() + QLatin1String("/win32interrupt.exe")
                     : QCoreApplication::applicationDirPath() + QLatin1String("/win64interrupt.exe");
             if (!QFile::exists(executable)) {
-                *errorMessage = QString::fromLatin1("%1 does not exist. If you have built QtCreator "
+                *errorMessage = QString::fromLatin1("%1 does not exist. If you have built LeanCreator "
                                                     "on your own ,checkout "
                                                     "https://code.qt.io/cgit/qt-creator/binary-artifacts.git/.").
                         arg(QDir::toNativeSeparators(executable));

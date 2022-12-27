@@ -101,7 +101,7 @@ public:
 
     QString filterString() const;
 
-    // Qt Creator additions
+    // LeanCreator additions
     bool matchesName(const QString &nameOrAlias) const;
     void setPreferredSuffix(const QString &suffix);
 

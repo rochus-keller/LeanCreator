@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -242,7 +242,7 @@ void OutputPaneManager::init()
     const int n = m_panes.size();
 
     int shortcutNumber = 1;
-    const Id baseId = "QtCreator.Pane.";
+    const Id baseId = "LeanCreator.Pane.";
     for (int i = 0; i != n; ++i) {
         IOutputPane *outPane = m_panes.at(i);
         const int idx = m_outputWidgetPane->addWidget(outPane->outputWidget(this));

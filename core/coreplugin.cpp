@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -185,13 +185,13 @@ bool CorePlugin::initialize(const QStringList &arguments, QString *errorMessage)
                                []() { return DocumentManager::projectsDirectory(); });
     expander->registerVariable("Config:LastFileDialogDirectory", tr("The directory last visited in a file dialog."),
                                []() { return DocumentManager::fileDialogLastVisitedDirectory(); });
-    expander->registerVariable("HostOs:isWindows", tr("Is Qt Creator running on Windows?"),
+    expander->registerVariable("HostOs:isWindows", tr("Is LeanCreator running on Windows?"),
                                []() { return QVariant(Utils::HostOsInfo::isWindowsHost()).toString(); });
-    expander->registerVariable("HostOs:isOSX", tr("Is Qt Creator running on OS X?"),
+    expander->registerVariable("HostOs:isOSX", tr("Is LeanCreator running on OS X?"),
                                []() { return QVariant(Utils::HostOsInfo::isMacHost()).toString(); });
-    expander->registerVariable("HostOs:isLinux", tr("Is Qt Creator running on Linux?"),
+    expander->registerVariable("HostOs:isLinux", tr("Is LeanCreator running on Linux?"),
                                []() { return QVariant(Utils::HostOsInfo::isLinuxHost()).toString(); });
-    expander->registerVariable("HostOs:isUnix", tr("Is Qt Creator running on any unix-based platform?"),
+    expander->registerVariable("HostOs:isUnix", tr("Is LeanCreator running on any unix-based platform?"),
                                []() { return QVariant(Utils::HostOsInfo::isAnyUnixHost()).toString(); });
     expander->registerPrefix("CurrentDate:", tr("The current date (QDate formatstring)."),
                              [](const QString &fmt) { return QDate::currentDate().toString(fmt); });

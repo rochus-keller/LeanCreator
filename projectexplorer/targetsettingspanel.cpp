@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -490,7 +490,7 @@ void TargetSettingsPanelWidget::removeTarget(Target *t)
         BuildManager::cancel();
     } else {
         // We don't show the generic message box on removing the target, if we showed the still building one
-        int ret = QMessageBox::warning(this, tr("Qt Creator"),
+        int ret = QMessageBox::warning(this, tr("LeanCreator"),
                                        tr("Do you really want to remove the\n"
                                           "\"%1\" kit?").arg(t->displayName()),
                                         QMessageBox::Yes | QMessageBox::No,

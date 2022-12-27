@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -192,7 +192,7 @@ void NavigationWidget::setFactories(const QList<INavigationWidgetFactory *> &fac
         d->m_actionMap.insert(action, id);
 
         Command *cmd = ActionManager::registerAction(action,
-            id.withPrefix("QtCreator.Sidebar."), navicontext);
+            id.withPrefix("LeanCreator.Sidebar."), navicontext);
         cmd->setDefaultKeySequence(factory->activationSequence());
         d->m_commandMap.insert(id, cmd);
 

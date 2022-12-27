@@ -74,7 +74,7 @@ public:
     virtual void loadIcon(MimeTypePrivate &) {}
     virtual void loadGenericIcon(MimeTypePrivate &) {}
 
-    // Qt Creator additions
+    // LeanCreator additions
     virtual QMap<int, QList<MimeMagicRule> > magicRulesForMimeType(const MimeType &mimeType) = 0;
     virtual void setGlobPatternsForMimeType(const MimeType &mimeType, const QStringList &patterns) = 0;
     virtual void setMagicRulesForMimeType(const MimeType &mimeType, const QMap<int, QList<MimeMagicRule> > &rules) = 0;
@@ -154,7 +154,7 @@ public:
     void addAlias(const QString &alias, const QString &name);
     void addMagicMatcher(const MimeMagicRuleMatcher &matcher);
 
-    // Qt Creator additions
+    // LeanCreator additions
     void addFile(const QString &filePath);
     QMap<int, QList<MimeMagicRule> > magicRulesForMimeType(const MimeType &mimeType);
     void setGlobPatternsForMimeType(const MimeType &mimeType, const QStringList &patterns);
@@ -179,7 +179,7 @@ private:
     QList<MimeMagicRuleMatcher> m_magicMatchers;
     QStringList m_allFiles;
 
-    // Qt Creator additions
+    // LeanCreator additions
     QStringList m_additionalFiles;
 };
 

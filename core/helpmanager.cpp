@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -222,7 +222,7 @@ static QUrl buildQUrl(const QString &ns, const QString &folder,
     return url;
 }
 
-// This should go into Qt 4.8 once we start using it for Qt Creator
+// This should go into Qt 4.8 once we start using it for LeanCreator
 QMap<QString, QUrl> HelpManager::linksForKeyword(const QString &key)
 {
     QMap<QString, QUrl> links;

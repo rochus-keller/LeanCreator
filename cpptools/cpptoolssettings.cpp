@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -164,7 +164,7 @@ CppToolsSettings::CppToolsSettings(QObject *parent)
     // load global settings (after built-in settings are added to the pool)
     d->m_globalCodeStyle->fromSettings(QLatin1String(CppTools::Constants::CPP_SETTINGS_ID), s);
 
-    // legacy handling start (Qt Creator Version < 2.4)
+    // legacy handling start (LeanCreator Version < 2.4)
     const bool legacyTransformed =
                 s->value(QLatin1String("CppCodeStyleSettings/LegacyTransformed"), false).toBool();
 

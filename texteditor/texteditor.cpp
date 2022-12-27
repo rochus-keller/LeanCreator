@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
@@ -617,7 +617,7 @@ QString TextEditorWidget::convertToPlainText(const QString &txt)
     return ret;
 }
 
-static const char kTextBlockMimeType[] = "application/vnd.qtcreator.blocktext";
+static const char kTextBlockMimeType[] = "application/vnd.leancreator.blocktext";
 
 Id TextEditorWidget::SnippetPlaceholderSelection("TextEdit.SnippetPlaceHolderSelection");
 Id TextEditorWidget::CurrentLineSelection("TextEdit.CurrentLineSelection");
@@ -6750,7 +6750,7 @@ QMimeData *TextEditorWidget::createMimeDataFromSelection() const
 
         /*
           Try to figure out whether we are copying an entire block, and store the complete block
-          including indentation in the qtcreator.blocktext mimetype.
+          including indentation in the leancreator.blocktext mimetype.
         */
         QTextCursor selstart = cursor;
         selstart.setPosition(cursor.selectionStart());

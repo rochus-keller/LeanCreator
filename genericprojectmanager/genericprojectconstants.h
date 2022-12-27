@@ -3,7 +3,7 @@
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing
 **
-** This file is part of Qt Creator.
+** This file is part of LeanCreator.
 **
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
@@ -40,9 +40,9 @@ const char GENERICMIMETYPE[]    = "text/x-generic-project"; // ### FIXME
 // Contexts
 const char FILES_EDITOR_ID[]    = "QT4.FilesEditor";
 
-const char FILES_MIMETYPE[]     = "application/vnd.qtcreator.generic.files";
-const char INCLUDES_MIMETYPE[]  = "application/vnd.qtcreator.generic.includes";
-const char CONFIG_MIMETYPE[]    = "application/vnd.qtcreator.generic.config";
+const char FILES_MIMETYPE[]     = "application/vnd.leancreator.generic.files";
+const char INCLUDES_MIMETYPE[]  = "application/vnd.leancreator.generic.includes";
+const char CONFIG_MIMETYPE[]    = "application/vnd.leancreator.generic.config";
 
 // Project
 const char GENERICPROJECT_ID[]  = "GenericProjectManager.GenericProject";
