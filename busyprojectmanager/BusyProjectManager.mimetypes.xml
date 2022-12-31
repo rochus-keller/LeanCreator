@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+  <mime-type type="text/x-busy-project">
+    <sub-class-of type="text/plain"/>
+    <comment>LeanCreator BUSY Project file</comment>
+    <glob pattern="BUSY"/>
+    <glob pattern="BUSY.busy"/>
+ </mime-type>
+
+</mime-info>

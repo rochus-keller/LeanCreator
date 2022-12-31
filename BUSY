@@ -30,6 +30,8 @@ submod cppeditor -
 submod classview -
 submod debugger -
 submod bineditor -
+submod busy -
+submod busyprojectmanager -
 submod app
 
 let nooptconf : Config {

@@ -167,6 +167,7 @@ TextEditorSettings::TextEditorSettings(QObject *parent)
                              tr("Name of function declared as virtual."),
                              functionFormat);
 
+#if 0
     formatDescr.emplace_back(C_BINDING, tr("QML Binding"),
                              tr("QML item property, that allows a "
                                 "binding to another property."),
@@ -214,6 +215,7 @@ TextEditorSettings::TextEditorSettings(QObject *parent)
     formatDescr.emplace_back(C_JS_GLOBAL_VAR, tr("JavaScript Global Variable"),
                              tr("Variables defined outside the script."),
                              jsGlobalFormat);
+#endif
 
     formatDescr.emplace_back(C_KEYWORD, tr("Keyword"),
                              tr("Reserved keywords of the programming language except "
@@ -251,6 +253,7 @@ TextEditorSettings::TextEditorSettings(QObject *parent)
                                 "(in diff editor)."), Qt::blue);
 
     // New diff categories
+#if 0
     formatDescr.emplace_back(C_DIFF_FILE_LINE, tr("Diff File Line"),
                              tr("Applied to lines with file information "
                                 "in differences (in side-by-side diff editor)."),
@@ -275,6 +278,7 @@ TextEditorSettings::TextEditorSettings(QObject *parent)
                              tr("Applied to added characters "
                                 "in differences (in side-by-side diff editor)."),
                              Format(QColor(), QColor(175, 255, 175)));
+#endif
 
     formatDescr.emplace_back(C_LOG_CHANGE_LINE, tr("Log Change Line"),
                              tr("Applied to lines describing changes in VCS log."),

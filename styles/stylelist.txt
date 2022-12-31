@@ -1,5 +1,5 @@
-:/styles/dark.xml  
 :/styles/default.xml  
+:/styles/dark.xml  
 :/styles/grayscale.xml  
 :/styles/inkpot.xml  
 :/styles/intellij.xml

@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BusyProjectManager::Internal::BusyBuildStepConfigWidget</class>
+ <widget class="QWidget" name="BusyProjectManager::Internal::BusyBuildStepConfigWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>723</width>
+    <height>247</height>
+   </rect>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="buildVariantLabel">
+     <property name="text">
+      <string>Build variant:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_5">
+     <item>
+      <widget class="QComboBox" name="buildVariantComboBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <item>
+        <property name="text">
+         <string>Debug</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Release</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <spacer name="spacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>70</width>
+         <height>13</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="jobsLabel">
+     <property name="text">
+      <string>Parallel jobs:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_6">
+     <item>
+      <widget class="QSpinBox" name="jobSpinBox">
+       <property name="toolTip">
+        <string>Number of concurrent build jobs.</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="qmlDebuggingLabel">
+     <property name="text">
+      <string>Enable QML debugging:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QCheckBox" name="qmlDebuggingLibraryCheckBox">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="qmlDebuggingWarningIcon">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="pixmap">
+        <pixmap resource="../coreplugin/core.qrc">:/core/images/warning.png</pixmap>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="qmlDebuggingWarningText">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>5</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="propertyLabel">
+     <property name="text">
+      <string>Properties:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="Utils::FancyLineEdit" name="propertyEdit">
+     <property name="toolTip">
+      <string>Properties to pass to the project.</string>
+     </property>
+     <property name="text">
+      <string notr="true"/>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="flagsLabel">
+     <property name="text">
+      <string>Flags:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QCheckBox" name="dryRunCheckBox">
+       <property name="toolTip">
+        <string>No commands will be executed and no permanent changes to the build graph will be done.</string>
+       </property>
+       <property name="text">
+        <string>Dry run</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="keepGoingCheckBox">
+       <property name="toolTip">
+        <string>Keep going when errors occur (if at all possible).</string>
+       </property>
+       <property name="text">
+        <string>Keep going</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="showCommandLinesCheckBox">
+       <property name="text">
+        <string>Show command lines</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="installCheckBox">
+       <property name="text">
+        <string>Install</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="cleanInstallRootCheckBox">
+       <property name="text">
+        <string>Clean install root</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="checkBoxSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>5</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="commandLineKeyLabel">
+     <property name="text">
+      <string>Equivalent command line:</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QPlainTextEdit" name="commandLineTextEdit">
+     <property name="undoRedoEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+     <property name="plainText">
+      <string notr="true"/>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+  <zorder>buildVariantLabel</zorder>
+  <zorder>qmlDebuggingLabel</zorder>
+  <zorder>propertyLabel</zorder>
+  <zorder>propertyEdit</zorder>
+  <zorder>commandLineKeyLabel</zorder>
+  <zorder>flagsLabel</zorder>
+  <zorder>jobsLabel</zorder>
+  <zorder>commandLineTextEdit</zorder>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Utils::FancyLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header location="global">utils/fancylineedit.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../coreplugin/core.qrc"/>
+ </resources>
+ <connections/>
+</ui>

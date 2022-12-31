@@ -1,0 +1,19 @@
+{
+    "Name" : "BusyProjectManager",
+    "Version" : "3.6.1",
+    "CompatVersion" : "3.6.0",
+    "Vendor" : "Rochus Keller",
+    "Copyright" : "(C) 2015 The Qt Company Ltd, (C) 2022 Rochus Keller",
+    "License" : [ "GNU Lesser General Public License Usage",
+                  "",
+                  "This plugin may be used under the terms of the GNU Lesser General Public License version 2.1 or version 3 as published by the Free Software Foundation.  Please review the following information to ensure the GNU Lesser General Public License requirements will be met: https://www.gnu.org/licenses/lgpl.html and http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html."
+    ],
+    "Category" : "Build Systems",
+    "Description" : "BUSY support.",
+    "Url" : "https://github.com/rochus-keller/leancreator/",
+    "Dependencies" : [
+        { "Name" : "Core", "Version" : "3.6.1" },
+        { "Name" : "ProjectExplorer", "Version" : "3.6.1" },
+        { "Name" : "TextEditor", "Version" : "3.6.1" }
+    ]
+}

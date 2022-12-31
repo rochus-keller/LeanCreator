@@ -225,7 +225,7 @@ static inline QStringList getPluginPaths()
     //    where <localappdata> is e.g.
     //    "%LOCALAPPDATA%\QtProject\leancreator" on Windows Vista and later
     //    "$XDG_DATA_HOME/data/QtProject/leancreator" or "~/.local/share/data/QtProject/leancreator" on Linux
-    //    "~/Library/Application Support/QtProject/Qt Creator" on Mac
+    //    "~/Library/Application Support/QtProject/LeanCreator" on Mac
     pluginPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
 #if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
     pluginPath += QLatin1String("/data");
@@ -303,6 +303,7 @@ Q_IMPORT_PLUGIN(CppEditorPlugin)
 Q_IMPORT_PLUGIN(ClassViewPlugin)
 Q_IMPORT_PLUGIN(DebuggerPlugin)
 Q_IMPORT_PLUGIN(BinEditorPlugin)
+Q_IMPORT_PLUGIN(BusyProjectManagerPlugin)
 
 int main(int argc, char **argv)
 {
@@ -310,7 +311,7 @@ int main(int argc, char **argv)
 
     QLoggingCategory::setFilterRules(QLatin1String("qtc.*.debug=false"));
 #ifdef Q_OS_MAC
-    // increase the number of file that can be opened in Qt Creator.
+    // increase the number of file that can be opened in LeanCreator.
     struct rlimit rl;
     getrlimit(RLIMIT_NOFILE, &rl);
 
@@ -323,30 +324,39 @@ int main(int argc, char **argv)
     if (highDpiEnvironmentVariable)
         qunsetenv(highDpiEnvironmentVariable);
 
+#if 0
     if (Utils::HostOsInfo().isWindowsHost()
             && !qFuzzyCompare(qApp->devicePixelRatio(), 1.0)
             && QApplication::style()->objectName().startsWith(
-                QLatin1String("windows"), Qt::CaseInsensitive)) {
+                QLatin1String("windows"), Qt::CaseInsensitive))
+#endif
+    {
         QApplication::setStyle(QLatin1String("fusion"));
     }
     const int threadCount = QThreadPool::globalInstance()->maxThreadCount();
     QThreadPool::globalInstance()->setMaxThreadCount(qMax(4, 2 * threadCount));
 
     // assert that all resource files are loaded
-    Q_INIT_RESOURCE(theme);
-    Q_INIT_RESOURCE(utils);
+    Q_INIT_RESOURCE(classview);
     Q_INIT_RESOURCE(core);
+    Q_INIT_RESOURCE(cplusplus);
+    Q_INIT_RESOURCE(cppeditor);
+    Q_INIT_RESOURCE(cpptools);
+    Q_INIT_RESOURCE(debugger);
     Q_INIT_RESOURCE(fancyactionbar);
     Q_INIT_RESOURCE(find);
+    Q_INIT_RESOURCE(fonts);
+    Q_INIT_RESOURCE(genericproject);
     Q_INIT_RESOURCE(locator);
     Q_INIT_RESOURCE(pluginview);
     Q_INIT_RESOURCE(projectexplorer);
     Q_INIT_RESOURCE(resourceeditor);
-    Q_INIT_RESOURCE(genericproject);
-    Q_INIT_RESOURCE(cpptools);
-    Q_INIT_RESOURCE(cppeditor);
-    Q_INIT_RESOURCE(classview);
-    Q_INIT_RESOURCE(debugger);
+    Q_INIT_RESOURCE(styles);
+    Q_INIT_RESOURCE(texteditor);
+    Q_INIT_RESOURCE(themes);
+    Q_INIT_RESOURCE(utils);
+    Q_INIT_RESOURCE(busyprojectmanager);
+
 
     CrashHandlerSetup setupCrashHandler; // Display a backtrace once a serious signal is delivered.
 
@@ -405,7 +415,7 @@ int main(int argc, char **argv)
                                               QLatin1String(Core::Constants::IDE_SETTINGSVARIANT_STR),
                                               QLatin1String("LeanCreator"));
     PluginManager pluginManager;
-    PluginManager::setPluginIID(QLatin1String("org.qt-project.Qt.LeanCreatorPlugin"));
+    PluginManager::setPluginIID(QLatin1String("org.qt-project.Qt.QtCreatorPlugin"));
     PluginManager::setGlobalSettings(globalSettings);
     PluginManager::setSettings(settings);
 
@@ -420,7 +430,7 @@ int main(int argc, char **argv)
             + QLatin1String(SHARE_PATH) + QLatin1String("/translations");
     foreach (QString locale, uiLanguages) {
         locale = QLocale(locale).name();
-        if (translator.load(QLatin1String("leancreator_") + locale, creatorTrPath)) {
+        if (translator.load(QLatin1String("qtcreator_") + locale, creatorTrPath)) {
             const QString &qtTrPath = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
             const QString &qtTrFile = QLatin1String("qt_") + locale;
             // Binary installer puts Qt tr files into creatorTrPath

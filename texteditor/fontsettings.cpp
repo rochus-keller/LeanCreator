@@ -350,11 +350,15 @@ void FontSettings::setColorScheme(const ColorScheme &scheme)
 
 static QString defaultFontFamily()
 {
+#if 0
     if (Utils::HostOsInfo::isMacHost())
         return QLatin1String("Monaco");
     if (Utils::HostOsInfo::isAnyUnixHost())
         return QLatin1String("Monospace");
     return QLatin1String("Courier");
+#else
+    return QLatin1String("DejaVu Sans Mono"); // TODO: assumes that this font is in the resources
+#endif
 }
 
 QString FontSettings::defaultFixedFontFamily()

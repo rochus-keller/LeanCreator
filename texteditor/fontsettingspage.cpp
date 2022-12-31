@@ -608,8 +608,7 @@ void FontSettingsPage::refreshColorSchemeList()
     int selected = 0;
 
     QStringList schemeList = styleDir.entryList();
-    schemeList += FontSettings::builtInSchemes();
-    QString defaultScheme = Utils::FileName::fromString(FontSettings::defaultSchemeFileName()).fileName();
+    const QString defaultScheme = Utils::FileName::fromString(FontSettings::defaultSchemeFileName()).fileName();
     if (schemeList.removeAll(defaultScheme))
         schemeList.prepend(defaultScheme);
     foreach (const QString &file, schemeList) {
@@ -617,6 +616,13 @@ void FontSettingsPage::refreshColorSchemeList()
         if (d_ptr->m_value.colorSchemeFileName() == fileName)
             selected = colorSchemes.size();
         colorSchemes.append(ColorSchemeEntry(fileName, true));
+    }
+
+    schemeList = FontSettings::builtInSchemes();
+    foreach (const QString &file, schemeList) {
+        if (d_ptr->m_value.colorSchemeFileName() == file)
+            selected = colorSchemes.size();
+        colorSchemes.append(ColorSchemeEntry(file, true));
     }
 
     if (colorSchemes.isEmpty())

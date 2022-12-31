@@ -1,0 +1,78 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+	.include_dirs += ..
+	.defines += [ "BUSYPROJECTMANAGER_LIBRARY" "BUSY_INSTALL_DIR=\"NONE\""
+				  "QT_STATICPLUGIN" 
+	 ]
+	.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ 
+		./busyprojectmanager.qrc
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+		./custombusypropertiesdialog.h
+		./defaultpropertyprovider.h
+		./propertyprovider.h
+		./busybuildconfiguration.h
+		./busybuildconfigurationwidget.h
+		./busybuildstep.h
+		./busycleanstep.h
+		./busydeployconfigurationfactory.h
+		./busyinstallstep.h
+		./busylogsink.h
+		./busyparser.h
+		./busyprojectfile.h
+		./busyproject.h
+		./busyprojectmanager.h
+		./busyprojectmanagerplugin.h
+		./busyprojectparser.h
+		./busyrunconfiguration.h
+		./busyprofilessettingspage.cpp
+		./busyeditor.h
+	]
+}
+
+let run_uic : Uic {
+	.sources += [
+		./custombusypropertiesdialog.ui
+		./busybuildstepconfigwidget.ui
+		./busycleanstepconfigwidget.ui
+		./busyinstallstepconfigwidget.ui
+		./busyprofilessettingswidget.ui
+   	]
+}
+
+let lib * : Library {
+	.sources += [
+		./custombusypropertiesdialog.cpp 
+		./defaultpropertyprovider.cpp 
+		./busybuildconfiguration.cpp 
+		./busybuildconfigurationwidget.cpp 
+		./busybuildstep.cpp 
+		./busycleanstep.cpp 
+		./busydeployconfigurationfactory.cpp 
+		./busyinstallstep.cpp 
+		./busylogsink.cpp 
+		./busynodes.cpp 
+		./busyparser.cpp 
+		./busyprofilessettingspage.cpp 
+		./busyproject.cpp 
+		./busyprojectfile.cpp 
+		./busyprojectmanager.cpp 
+		./busyprojectmanagerplugin.cpp 
+		./busyprojectparser.cpp 
+		./busyrunconfiguration.cpp
+		./busyeditor.cpp
+	]
+	.deps += [ run_rcc run_moc run_uic ^busy.lib ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

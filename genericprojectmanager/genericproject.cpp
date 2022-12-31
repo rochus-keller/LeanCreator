@@ -41,9 +41,9 @@
 #include <projectexplorer/kitinformation.h>
 #include <projectexplorer/kitmanager.h>
 #include <projectexplorer/projectexplorerconstants.h>
+#include "customexecutablerunconfiguration.h"
 #ifndef NO_QT_SUPPORT
 #include <qtsupport/baseqtversion.h>
-#include <qtsupport/customexecutablerunconfiguration.h>
 #include <qtsupport/qtkitinformation.h>
 #endif
 #include <utils/fileutils.h>
@@ -438,10 +438,8 @@ Project::RestoreResult GenericProject::fromMap(const QVariantMap &map, QString *
             removeTarget(t);
             continue;
         }
-#ifndef NO_QT_SUPPORT
         if (!t->activeRunConfiguration())
-            t->addRunConfiguration(new QtSupport::CustomExecutableRunConfiguration(t));
-#endif
+            t->addRunConfiguration(new CustomExecutableRunConfiguration(t));
     }
 
     refresh(Everything);

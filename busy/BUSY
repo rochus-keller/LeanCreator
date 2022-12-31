@@ -1,0 +1,35 @@
+# Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+submod busy = ../../BUSY
+
+let lib_conf : Config {
+	.include_dirs += [ .. . busy.include_dir ]
+	.defines += [ 
+	 ]
+	#.configs += ^cpp11conf
+}
+
+let run_rcc : Rcc {
+	.sources += [ 
+	]
+	.deps += ^qt.copy_rcc
+}
+
+let run_moc : Moc {
+	.sources += [
+	]
+}
+
+let lib * : Library {
+	.sources += [
+		./busyapi.cpp
+		./busySynTree.cpp
+		./busyTokenType.cpp
+		./Parser.cpp
+		./busyLexer.cpp
+	]
+	.deps += [ run_rcc run_moc busy.lib busy.run_rcc ]
+	.include_dirs += build_dir()
+	.configs += [ ^qt.qt_client_config lib_conf ]
+}

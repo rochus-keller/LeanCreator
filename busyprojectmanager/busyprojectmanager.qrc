@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/busyprojectmanager">
+        <file>images/groups.png</file>
+        <file>images/groups@2x.png</file>
+        <file>images/productgear.png</file>
+        <file>images/productgear@2x.png</file>
+        <file>BusyProjectManager.mimetypes.xml</file>
+    </qresource>
+</RCC>

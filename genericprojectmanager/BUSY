@@ -26,6 +26,9 @@ let run_moc : Moc {
 		./genericmakestep.h
 		./genericprojectmanager.h
 		./genericproject.h
+		./customexecutablerunconfiguration.cpp
+		./customexecutablerunconfiguration.h
+		./customexecutableconfigurationwidget.h
 	]
 }
 
@@ -46,6 +49,8 @@ let lib * : Library {
 		./genericmakestep.cpp
 		./genericbuildconfiguration.cpp
 		./filesselectionwizardpage.cpp
+		./customexecutableconfigurationwidget.cpp
+	 	./customexecutablerunconfiguration.cpp
 	]
 	.deps += [ run_rcc run_moc run_uic ]
 	.include_dirs += build_dir()
