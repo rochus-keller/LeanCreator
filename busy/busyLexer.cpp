@@ -48,10 +48,11 @@ Token Lexer::peekToken(int off)
     {
         BSToken t = bslex_peek(d_lex,off);
         res.d_lineNr = t.loc.row;
-        res.d_colNr = t.loc.col;
+        res.d_colNr = t.loc.col + 1;
         res.d_sourcePath = d_sourcePath;
         res.d_type = t.tok;
         res.d_val = QByteArray::fromRawData(t.val,t.len);
+        res.d_uniLen = bslex_numOfUnichar(t.val,t.len);
     }
     return res;
 }
@@ -63,16 +64,27 @@ Token Lexer::nextToken()
     {
         BSToken t = bslex_next(d_lex);
         res.d_lineNr = t.loc.row;
-        res.d_colNr = t.loc.col;
+        res.d_colNr = t.loc.col + 1;
         res.d_sourcePath = d_sourcePath;
         res.d_type = t.tok;
         res.d_val = QByteArray::fromRawData(t.val,t.len);
+        res.d_uniLen = bslex_numOfUnichar(t.val,t.len);
     }
     return res;
 }
 
 QList<Token> Lexer::tokens(const QByteArray& code, const QString& sourcePath)
 {
-
+    setStream( code, sourcePath );
+    bslex_mute(d_lex);
+    bslex_alltokens(d_lex);
+    QList<Token> res;
+    Token t = nextToken();
+    while( t.isValid() )
+    {
+        res << t;
+        t = nextToken();
+    }
+    return res;
 }
 

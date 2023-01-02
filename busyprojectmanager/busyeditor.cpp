@@ -16,6 +16,8 @@
 
 #include "busyeditor.h"
 #include "busyprojectmanagerconstants.h"
+#include "busyhighlighter.h"
+#include "busyindenter.h"
 
 #include <texteditor/texteditoractionhandler.h>
 #include <texteditor/texteditorsettings.h>
@@ -38,12 +40,12 @@ EditorFactory::EditorFactory()
     addMimeType(Constants::MIME_TYPE);
 
     setDocumentCreator([]() { return new EditorDocument; });
-    //setIndenterCreator([]() { return new VerilogIndenter; });
+    setIndenterCreator([]() { return new Indenter; });
     setEditorWidgetCreator([]() { return new EditorWidget; });
     setEditorCreator([]() { return new Editor; });
     //setAutoCompleterCreator([]() { return new AutoCompleter; });
     //setCompletionAssistProvider(new CompletionAssistProvider);
-    //setSyntaxHighlighterCreator([]() { return new VerilogHighlighter; });
+    setSyntaxHighlighterCreator([]() { return new Highlighter; });
     setCommentStyle(Utils::CommentDefinition::HashStyle);
     setParenthesesMatchingEnabled(true);
     setCodeFoldingSupported(true);

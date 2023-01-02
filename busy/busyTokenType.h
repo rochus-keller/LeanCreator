@@ -12,6 +12,7 @@ namespace busy {
 		TT_Literals,
 		Tok_Bang,
 		Tok_BangEq,
+		Tok_Quote,
 		Tok_Hash,
 		Tok_2Hash,
 		Tok_Dlr,

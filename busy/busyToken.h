@@ -34,14 +34,16 @@ namespace busy
 #else
         quint16 d_type; // TokenType
 #endif
+        quint16 d_uniLen; // len of d_val in unicode chars
+
         uint d_lineNr : 22; 
         uint d_colNr : 10; 
 
-        QByteArray d_val; // using raw values pointing to buffered file content
+        QByteArray d_val; // using raw utf8 values pointing to buffered file content
         QString d_sourcePath;
         Token(quint16 t = Tok_Invalid, quint32 line = 0, quint16 col = 0, const QByteArray& val = QByteArray()):
-            d_type(t),d_lineNr(line),d_colNr(col),d_val(val){}
-        bool isEmpty() const { return d_type == Tok_Invalid; }
+            d_type(t),d_lineNr(line),d_colNr(col),d_val(val),d_uniLen(0){}
+        bool isValid() const { return d_type != Tok_Eof && d_type != Tok_Invalid; }
     };
 }
 

@@ -48,30 +48,14 @@ void Parser::Get() {
 	for (;;) {
 		d_cur = d_next;
 		d_next = scanner->nextToken();
-        bool deliverToParser = false;
-        switch( d_next.d_type )
-        {
-        case 0:
-        	if( !d_next.isEmpty() )
-            	SynErr( d_next.d_type, d_next.d_val );
-            // else errors already handeled in lexer
-            break;
-        default:
-            deliverToParser = true;
-            break;
-        }
+        if( d_next.d_type == busy::Tok_Eof )
+            d_next.d_type = _EOF;
 
-        if( deliverToParser )
+        la->kind = d_next.d_type;
+        if (la->kind <= maxT)
         {
-            if( d_next.d_type == busy::Tok_Eof )
-                d_next.d_type = _EOF;
-
-            la->kind = d_next.d_type;
-            if (la->kind <= maxT)
-            {
-                ++errDist;
-                break;
-            }
+            ++errDist;
+            break;
         }
 
 		d_next = d_cur;

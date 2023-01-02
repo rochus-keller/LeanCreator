@@ -7,6 +7,7 @@ namespace busy {
 			case Tok_Invalid: return "<invalid>";
 			case Tok_Bang: return "!";
 			case Tok_BangEq: return "!=";
+			case Tok_Quote: return "\"";
 			case Tok_Hash: return "#";
 			case Tok_2Hash: return "##";
 			case Tok_Dlr: return "$";
@@ -79,6 +80,7 @@ namespace busy {
 			case Tok_Invalid: return "Tok_Invalid";
 			case Tok_Bang: return "Tok_Bang";
 			case Tok_BangEq: return "Tok_BangEq";
+			case Tok_Quote: return "Tok_Quote";
 			case Tok_Hash: return "Tok_Hash";
 			case Tok_2Hash: return "Tok_2Hash";
 			case Tok_Dlr: return "Tok_Dlr";
@@ -168,6 +170,9 @@ namespace busy {
 			} else {
 				res = Tok_Bang; i += 1;
 			}
+			break;
+		case '"':
+			res = Tok_Quote; i += 1;
 			break;
 		case '#':
 			if( at(str,i+1) == '#' ){

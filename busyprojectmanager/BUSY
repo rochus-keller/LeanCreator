@@ -71,8 +71,10 @@ let lib * : Library {
 		./busyprojectparser.cpp 
 		./busyrunconfiguration.cpp
 		./busyeditor.cpp
+		./busyhighlighter.cpp
+		./busyindenter.cpp
 	]
-	.deps += [ run_rcc run_moc run_uic ^busy.lib ]
+	.deps += [ run_rcc run_moc run_uic ]
 	.include_dirs += build_dir()
 	.configs += [ ^qt.qt_client_config lib_conf ]
 }
