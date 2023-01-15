@@ -17,7 +17,7 @@
 #include "busyapi.h"
 using namespace busy;
 
-class Internal::ProjectImp : public QSharedData
+class Internal::ModuleImp : public QSharedData
 {
 
 };

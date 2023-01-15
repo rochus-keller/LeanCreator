@@ -167,7 +167,7 @@ ProjectNode *BusyProject::rootProjectNode() const
     return m_rootProjectNode;
 }
 
-static void collectFilesForProject(const busy::ProjectData &project, QSet<QString> &result)
+static void collectFilesForProject(const busy::ModuleData &project, QSet<QString> &result)
 {
     result.insert(project.location().filePath());
     foreach (const busy::ProductData &prd, project.products()) {
@@ -178,24 +178,24 @@ static void collectFilesForProject(const busy::ProjectData &project, QSet<QStrin
         }
         result.insert(prd.location().filePath());
     }
-    foreach (const busy::ProjectData &subProject, project.subProjects())
+    foreach (const busy::ModuleData &subProject, project.subModules())
         collectFilesForProject(subProject, result);
 }
 
 QStringList BusyProject::files(Project::FilesMode fileMode) const
 {
     Q_UNUSED(fileMode);
-    if (!m_qbsProject.isValid() || isParsing())
+    if (!m_rootModule.isValid() || isParsing())
         return QStringList();
     QSet<QString> result;
-    collectFilesForProject(m_projectData, result);
-    result.unite(m_qbsProject.buildSystemFiles());
+    collectFilesForProject(m_rootModuleData, result);
+    result.unite(m_rootModule.buildSystemFiles());
     return result.toList();
 }
 
 bool BusyProject::isProjectEditable() const
 {
-    return m_qbsProject.isValid() && !isParsing() && !BuildManager::isBuilding();
+    return m_rootModule.isValid() && !isParsing() && !BuildManager::isBuilding();
 }
 
 class ChangeExpector
@@ -253,7 +253,7 @@ busy::GroupData BusyProject::reRetrieveGroupData(const busy::ProductData &oldPro
                                           const busy::GroupData &oldGroup)
 {
     busy::GroupData newGroup;
-    foreach (const busy::ProductData &pd, m_projectData.allProducts()) {
+    foreach (const busy::ProductData &pd, m_rootModuleData.allProducts()) {
         if (uniqueProductName(pd) == uniqueProductName(oldProduct)) {
             foreach (const busy::GroupData &gd, pd.groups()) {
                 if (gd.location() == oldGroup.location()) {
@@ -271,13 +271,13 @@ busy::GroupData BusyProject::reRetrieveGroupData(const busy::ProductData &oldPro
 bool BusyProject::addFilesToProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
         const busy::ProductData &productData, const busy::GroupData &groupData, QStringList *notAdded)
 {
-    QTC_ASSERT(m_qbsProject.isValid(), return false);
+    QTC_ASSERT(m_rootModule.isValid(), return false);
     QStringList allPaths = groupData.allFilePaths();
     const QString productFilePath = productData.location().filePath();
     ChangeExpector expector(productFilePath, m_qbsDocuments);
     ensureWriteableBusyFile(productFilePath);
     foreach (const QString &path, filePaths) {
-        busy::ErrorInfo err = m_qbsProject.addFiles(productData, groupData, QStringList() << path);
+        busy::ErrorInfo err = m_rootModule.addFiles(productData, groupData, QStringList() << path);
         if (err.hasError()) {
             MessageManager::write(err.toString());
             *notAdded += path;
@@ -286,7 +286,7 @@ bool BusyProject::addFilesToProduct(BusyBaseProjectNode *node, const QStringList
         }
     }
     if (notAdded->count() != filePaths.count()) {
-        m_projectData = m_qbsProject.projectData();
+        m_rootModuleData = m_rootModule.projectData();
         BusyGroupNode::setupFiles(node, reRetrieveGroupData(productData, groupData),
                                  allPaths, QFileInfo(productFilePath).absolutePath(), true);
         m_rootProjectNode->update();
@@ -299,14 +299,14 @@ bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStrin
         const busy::ProductData &productData, const busy::GroupData &groupData,
         QStringList *notRemoved)
 {
-    QTC_ASSERT(m_qbsProject.isValid(), return false);
+    QTC_ASSERT(m_rootModule.isValid(), return false);
     QStringList allPaths = groupData.allFilePaths();
     const QString productFilePath = productData.location().filePath();
     ChangeExpector expector(productFilePath, m_qbsDocuments);
     ensureWriteableBusyFile(productFilePath);
     foreach (const QString &path, filePaths) {
         busy::ErrorInfo err
-                = m_qbsProject.removeFiles(productData, groupData, QStringList() << path);
+                = m_rootModule.removeFiles(productData, groupData, QStringList() << path);
         if (err.hasError()) {
             MessageManager::write(err.toString());
             *notRemoved += path;
@@ -315,7 +315,7 @@ bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStrin
         }
     }
     if (notRemoved->count() != filePaths.count()) {
-        m_projectData = m_qbsProject.projectData();
+        m_rootModuleData = m_rootModule.projectData();
         BusyGroupNode::setupFiles(node, reRetrieveGroupData(productData, groupData), allPaths,
                                  QFileInfo(productFilePath).absolutePath(), true);
         m_rootProjectNode->update();
@@ -334,7 +334,7 @@ bool BusyProject::renameFileInProduct(BusyBaseProjectNode *node, const QString &
     if (!removeFilesFromProduct(node, QStringList() << oldPath, productData, groupData, &dummy))
         return false;
     busy::ProductData newProductData;
-    foreach (const busy::ProductData &p, m_projectData.allProducts()) {
+    foreach (const busy::ProductData &p, m_rootModuleData.allProducts()) {
         if (uniqueProductName(p) == uniqueProductName(productData)) {
             newProductData = p;
             break;
@@ -363,16 +363,16 @@ void BusyProject::invalidate()
 busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList productNames,
                                  QString &error)
 {
-    QTC_ASSERT(busyProject().isValid(), return 0);
+    QTC_ASSERT(busyModule().isValid(), return 0);
     QTC_ASSERT(!isParsing(), return 0);
 
     if (productNames.isEmpty())
-        return busyProject().buildAllProducts(opts);
+        return busyModule().buildAllProducts(opts);
 
     QList<busy::ProductData> products;
     foreach (const QString &productName, productNames) {
         bool found = false;
-        foreach (const busy::ProductData &data, busyProjectData().allProducts()) {
+        foreach (const busy::ProductData &data, busyModuleData().allProducts()) {
             if (uniqueProductName(data) == productName) {
                 found = true;
                 products.append(data);
@@ -385,21 +385,21 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
         }
     }
 
-    return busyProject().buildSomeProducts(products, opts);
+    return busyModule().buildSomeProducts(products, opts);
 }
 
 busy::CleanJob *BusyProject::clean(const busy::CleanOptions &opts)
 {
-    if (!busyProject().isValid())
+    if (!busyModule().isValid())
         return 0;
-    return busyProject().cleanAllProducts(opts);
+    return busyModule().cleanAllProducts(opts);
 }
 
 busy::InstallJob *BusyProject::install(const busy::InstallOptions &opts)
 {
-    if (!busyProject().isValid())
+    if (!busyModule().isValid())
         return 0;
-    return busyProject().installAllProducts(opts);
+    return busyModule().installAllProducts(opts);
 }
 
 QString BusyProject::profileForTarget(const Target *t) const
@@ -414,17 +414,17 @@ bool BusyProject::isParsing() const
 
 bool BusyProject::hasParseResult() const
 {
-    return busyProject().isValid();
+    return busyModule().isValid();
 }
 
-busy::Module BusyProject::busyProject() const
+busy::Module BusyProject::busyModule() const
 {
-    return m_qbsProject;
+    return m_rootModule;
 }
 
-busy::ProjectData BusyProject::busyProjectData() const
+busy::ModuleData BusyProject::busyModuleData() const
 {
-    return m_projectData;
+    return m_rootModuleData;
 }
 
 bool BusyProject::needsSpecialDeployment() const
@@ -451,16 +451,16 @@ void BusyProject::handleBusyParsingDone(bool success)
 
     bool dataChanged = false;
     if (success) {
-        m_qbsProject = m_qbsProjectParser->busyProject();
-        const busy::ProjectData &projectData = m_qbsProject.projectData();
-        QTC_CHECK(m_qbsProject.isValid());
+        m_rootModule = m_qbsProjectParser->busyProject();
+        const busy::ModuleData &projectData = m_rootModule.projectData();
+        QTC_CHECK(m_rootModule.isValid());
 
-        if (projectData != m_projectData) {
-            m_projectData = projectData;
+        if (projectData != m_rootModuleData) {
+            m_rootModuleData = projectData;
             m_rootProjectNode->update();
 
-            updateDocuments(m_qbsProject.isValid()
-                            ? m_qbsProject.buildSystemFiles() : QSet<QString>() << m_fileName);
+            updateDocuments(m_rootModule.isValid()
+                            ? m_rootModule.buildSystemFiles() : QSet<QString>() << m_fileName);
             dataChanged = true;
         }
     } else {
@@ -573,8 +573,8 @@ void BusyProject::cancelParsing()
 
 void BusyProject::updateAfterBuild()
 {
-    QTC_ASSERT(m_qbsProject.isValid(), return);
-    m_projectData = m_qbsProject.projectData();
+    QTC_ASSERT(m_rootModule.isValid(), return);
+    m_rootModuleData = m_rootModule.projectData();
     updateBuildTargetData();
     updateCppCompilerCallData();
 }
@@ -696,7 +696,7 @@ void BusyProject::updateDocuments(const QSet<QString> &files)
 
 void BusyProject::updateCppCodeModel()
 {
-    if (!m_projectData.isValid())
+    if (!m_rootModuleData.isValid())
         return;
 
 #if 0
@@ -721,7 +721,7 @@ void BusyProject::updateCppCodeModel()
     }
 
     QHash<QString, QString> uiFiles;
-    foreach (const busy::ProductData &prd, m_projectData.allProducts()) {
+    foreach (const busy::ProductData &prd, m_rootModuleData.allProducts()) {
         foreach (const busy::GroupData &grp, prd.groups()) {
             const busy::PropertyMap &props = grp.properties();
 
@@ -811,7 +811,7 @@ void BusyProject::updateCppCompilerCallData()
     QTC_ASSERT(m_codeModelProjectInfo == modelManager->projectInfo(this), return);
 
     CppTools::ProjectInfo::CompilerCallData data;
-    foreach (const busy::ProductData &product, m_projectData.allProducts()) {
+    foreach (const busy::ProductData &product, m_rootModuleData.allProducts()) {
         if (!product.isEnabled())
             continue;
 
@@ -825,7 +825,7 @@ void BusyProject::updateCppCompilerCallData()
 
                 busy::ErrorInfo errorInfo;
                 const busy::RuleCommandList ruleCommands
-                       = m_qbsProject.ruleCommands(product, file, QLatin1String("obj"), &errorInfo);
+                       = m_rootModule.ruleCommands(product, file, QLatin1String("obj"), &errorInfo);
                 if (errorInfo.hasError())
                     continue;
 
@@ -855,7 +855,7 @@ void BusyProject::updateQmlJsCodeModel()
 
     QmlJS::ModelManagerInterface::ProjectInfo projectInfo =
             modelManager->defaultProjectInfoForProject(this);
-    foreach (const qbs::ProductData &product, m_projectData.allProducts()) {
+    foreach (const qbs::ProductData &product, m_rootModuleData.allProducts()) {
         static const QString propertyName = QLatin1String("qmlImportPaths");
         foreach (const QString &path, product.properties().value(propertyName).toStringList()) {
             projectInfo.importPaths.maybeInsert(Utils::FileName::fromString(path),
@@ -871,10 +871,10 @@ void BusyProject::updateQmlJsCodeModel()
 void BusyProject::updateApplicationTargets()
 {
     BuildTargetInfoList applications;
-    foreach (const busy::ProductData &productData, m_projectData.allProducts()) {
+    foreach (const busy::ProductData &productData, m_rootModuleData.allProducts()) {
         if (!productData.isEnabled() || !productData.isRunnable())
             continue;
-        const QString displayName = productDisplayName(m_qbsProject, productData);
+        const QString displayName = productDisplayName(m_rootModule, productData);
         if (productData.targetArtifacts().isEmpty()) { // No build yet.
             applications.list << BuildTargetInfo(displayName,
                     FileName(),
@@ -896,11 +896,11 @@ void BusyProject::updateApplicationTargets()
 void BusyProject::updateDeploymentInfo()
 {
     DeploymentData deploymentData;
-    if (m_qbsProject.isValid()) {
+    if (m_rootModule.isValid()) {
         busy::InstallOptions installOptions;
         installOptions.setInstallRoot(QLatin1String("/"));
-        foreach (const busy::InstallableFile &f, m_qbsProject
-                     .installableFilesForProject(m_projectData, installOptions)) {
+        foreach (const busy::InstallableFile &f, m_rootModule
+                     .installableFilesForProject(m_rootModuleData, installOptions)) {
             deploymentData.addFile(f.sourceFilePath(), QFileInfo(f.targetFilePath()).path(),
                     f.isExecutable() ? DeployableFile::TypeExecutable : DeployableFile::TypeNormal);
         }

@@ -94,8 +94,8 @@ public:
 
     void registerBusyProjectParser(BusyProjectParser *p);
 
-    busy::Module busyProject() const;
-    busy::ProjectData busyProjectData() const;
+    busy::Module busyModule() const;
+    busy::ModuleData busyModuleData() const;
 
     bool needsSpecialDeployment() const;
     void generateErrors(const busy::ErrorInfo &e);
@@ -142,8 +142,8 @@ private:
     BusyManager *const m_manager;
     const QString m_projectName;
     const QString m_fileName;
-    busy::Module m_qbsProject;
-    busy::ProjectData m_projectData;
+    busy::Module m_rootModule;
+    busy::ModuleData m_rootModuleData;
     QSet<Core::IDocument *> m_qbsDocuments;
     BusyRootProjectNode *m_rootProjectNode;
 

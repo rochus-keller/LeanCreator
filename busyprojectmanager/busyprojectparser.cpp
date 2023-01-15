@@ -50,7 +50,7 @@ BusyProjectParser::BusyProjectParser(BusyProject *project, QFutureInterface<bool
     m_fi(fi),
     m_currentProgressBase(0)
 {
-    m_project = project->busyProject();
+    m_project = project->busyModule();
     m_projectFilePath = project->projectFilePath().toString();
 }
 

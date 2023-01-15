@@ -75,7 +75,7 @@ static Core::Id idFromProduct(const BusyProject *project, const busy::ProductDat
 {
     QString id = QLatin1String(BUSY_RC_PREFIX);
     id.append(BusyProject::uniqueProductName(product)).append(rcNameSeparator())
-            .append(BusyProject::productDisplayName(project->busyProject(), product));
+            .append(BusyProject::productDisplayName(project->busyModule(), product));
     return Core::Id::fromString(id);
 }
 
@@ -94,7 +94,7 @@ static QString productDisplayNameFromId(Core::Id id)
     return suffix.mid(sepPos + rcNameSeparator().count());
 }
 
-const busy::ProductData findProduct(const busy::ProjectData &pro, const QString &uniqeName)
+const busy::ProductData findProduct(const busy::ModuleData &pro, const QString &uniqeName)
 {
     foreach (const busy::ProductData &product, pro.allProducts()) {
         if (BusyProject::uniqueProductName(product) == uniqeName)
@@ -221,12 +221,12 @@ void BusyRunConfiguration::installStepToBeRemoved(int pos)
 QString BusyRunConfiguration::executable() const
 {
     BusyProject *pro = static_cast<BusyProject *>(target()->project());
-    const busy::ProductData product = findProduct(pro->busyProjectData(), m_uniqueProductName);
+    const busy::ProductData product = findProduct(pro->busyModuleData(), m_uniqueProductName);
 
-    if (!product.isValid() || !pro->busyProject().isValid())
+    if (!product.isValid() || !pro->busyModule().isValid())
         return QString();
 
-    return pro->busyProject().targetExecutable(product, installOptions());
+    return pro->busyModule().targetExecutable(product, installOptions());
 }
 
 ApplicationLauncher::Mode BusyRunConfiguration::runMode() const
@@ -237,7 +237,7 @@ ApplicationLauncher::Mode BusyRunConfiguration::runMode() const
 bool BusyRunConfiguration::isConsoleApplication() const
 {
     BusyProject *pro = static_cast<BusyProject *>(target()->project());
-    const busy::ProductData product = findProduct(pro->busyProjectData(), m_uniqueProductName);
+    const busy::ProductData product = findProduct(pro->busyModuleData(), m_uniqueProductName);
     return product.properties().value(QLatin1String("consoleApplication"), false).toBool();
 }
 
@@ -270,11 +270,11 @@ void BusyRunConfiguration::addToBaseEnvironment(Utils::Environment &env) const
 {
     BusyProject *project = static_cast<BusyProject *>(target()->project());
     if (project) {
-        const busy::ProductData product = findProduct(project->busyProjectData(), m_uniqueProductName);
+        const busy::ProductData product = findProduct(project->busyModuleData(), m_uniqueProductName);
         if (product.isValid()) {
             QProcessEnvironment procEnv = env.toProcessEnvironment();
             procEnv.insert(QLatin1String("BUSY_RUN_FILE_PATH"), executable());
-            busy::RunEnvironment qbsRunEnv = project->busyProject().getRunEnvironment(product, installOptions(),
+            busy::RunEnvironment qbsRunEnv = project->busyModule().getRunEnvironment(product, installOptions(),
                     procEnv, BusyManager::settings());
             procEnv = qbsRunEnv.runEnvironment();
             if (!procEnv.isEmpty()) {
@@ -423,7 +423,7 @@ bool BusyRunConfigurationFactory::canCreate(Target *parent, Core::Id id) const
         return false;
 
     BusyProject *project = static_cast<BusyProject *>(parent->project());
-    return findProduct(project->busyProjectData(), uniqueProductNameFromId(id)).isValid();
+    return findProduct(project->busyModuleData(), uniqueProductNameFromId(id)).isValid();
 }
 
 RunConfiguration *BusyRunConfigurationFactory::doCreate(Target *parent, Core::Id id)
@@ -464,10 +464,10 @@ QList<Core::Id> BusyRunConfigurationFactory::availableCreationIds(Target *parent
         return result;
 
     BusyProject *project = static_cast<BusyProject *>(parent->project());
-    if (!project || !project->busyProject().isValid())
+    if (!project || !project->busyModule().isValid())
         return result;
 
-    foreach (const busy::ProductData &product, project->busyProjectData().allProducts()) {
+    foreach (const busy::ProductData &product, project->busyModuleData().allProducts()) {
         if (product.isRunnable() && product.isEnabled())
             result << idFromProduct(project, product);
     }

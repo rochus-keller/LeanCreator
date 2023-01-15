@@ -27,7 +27,7 @@ namespace busy
 
 namespace Internal
 {
-    class ProjectImp;
+    class ModuleImp;
 }
 
 // TODO: we don't need profiles and groups
@@ -250,7 +250,7 @@ public:
     bool operator==( const ProductData& ) const { return false; }
 };
 
-class ProjectData
+class ModuleData
 {
 public:
     bool isValid() const { return false; }
@@ -259,9 +259,9 @@ public:
     CodeLocation location() const { return CodeLocation(); }
     QString buildDirectory() const { return QString(); }
     QList<ProductData> products() const { return QList<ProductData>(); }
-    QList<ProjectData> subProjects() const { return QList<ProjectData>(); }
+    QList<ModuleData> subModules() const { return QList<ModuleData>(); }
     QList<ProductData> allProducts() const { return QList<ProductData>(); }
-    bool operator!=( const ProjectData& ) const { return false; }
+    bool operator!=( const ModuleData& ) const { return false; }
 };
 
 class RunEnvironment
@@ -315,7 +315,7 @@ public:
 
     bool isValid() const { return false; }
     QString profile() const { return QString(); }
-    ProjectData projectData() const { return ProjectData(); }
+    ModuleData projectData() const { return ModuleData(); }
     QString targetExecutable(const ProductData &product,
                              const InstallOptions &installoptions) const { return QString(); }
     RunEnvironment getRunEnvironment(const ProductData &product,
@@ -335,7 +335,7 @@ public:
                                    ProductSelection productSelection = ProductSelectionDefaultOnly,
                                    QObject *jobOwner = 0) const { return 0; }
 
-    QList<InstallableFile> installableFilesForProject(const ProjectData &project,
+    QList<InstallableFile> installableFilesForProject(const ModuleData &project,
                                    const InstallOptions &options) const { return QList<InstallableFile>(); }
 
     QStringList generatedFiles(const ProductData &product, const QString &file,
@@ -351,8 +351,8 @@ public:
     ErrorInfo removeFiles(const ProductData &product, const GroupData &group,
                           const QStringList &filePaths) { return ErrorInfo(); }
 private:
-    friend class Internal::ProjectImp;
-    QExplicitlySharedDataPointer<Internal::ProjectImp> d_imp;
+    friend class Internal::ModuleImp;
+    QExplicitlySharedDataPointer<Internal::ModuleImp> d_imp;
 };
 
 class SetupProjectJob : public AbstractJob

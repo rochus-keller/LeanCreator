@@ -155,12 +155,12 @@ public:
 
     virtual BusyProject *project() const;
     const busy::Module busyProject() const;
-    const busy::ProjectData busyProjectData() const { return m_projectData; }
+    const busy::ModuleData busyProjectData() const { return m_projectData; }
 
     bool showInSimpleTree() const;
 
 protected:
-    void update(const busy::Module &busyProject, const busy::ProjectData &prjData);
+    void update(const busy::Module &busyProject, const busy::ModuleData &prjData);
 
 private:
     void ctor();
@@ -169,7 +169,7 @@ private:
     BusyProjectNode *findProjectNode(const QString &name);
 
     static QIcon m_projectIcon;
-    busy::ProjectData m_projectData;
+    busy::ModuleData m_projectData;
 };
 
 // --------------------------------------------------------------------

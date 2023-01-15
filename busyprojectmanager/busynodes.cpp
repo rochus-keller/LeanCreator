@@ -251,7 +251,7 @@ static QList<ProjectExplorer::ProjectAction> supportedNodeActions(ProjectExplore
     if (managesFiles)
         actions << ProjectExplorer::AddNewFile << ProjectExplorer::AddExistingFile;
     if (node->nodeType() == ProjectExplorer::FileNodeType
-            && !project->busyProject().buildSystemFiles().contains(node->path().toString())) {
+            && !project->busyModule().buildSystemFiles().contains(node->path().toString())) {
         actions << ProjectExplorer::RemoveFile << ProjectExplorer::Rename;
     }
     return actions;
@@ -750,12 +750,12 @@ BusyProjectNode::~BusyProjectNode()
     // do not delete m_project
 }
 
-void BusyProjectNode::update(const busy::Module &qbsProject, const busy::ProjectData &prjData)
+void BusyProjectNode::update(const busy::Module &qbsProject, const busy::ModuleData &prjData)
 {
     QList<ProjectExplorer::ProjectNode *> toAdd;
     QList<ProjectExplorer::ProjectNode *> toRemove = subProjectNodes();
 
-    foreach (const busy::ProjectData &subData, prjData.subProjects()) {
+    foreach (const busy::ModuleData &subData, prjData.subModules()) {
         BusyProjectNode *qn = findProjectNode(subData.name());
         if (!qn) {
             auto subProject =
@@ -795,7 +795,7 @@ BusyProject *BusyProjectNode::project() const
 
 const busy::Module BusyProjectNode::busyProject() const
 {
-    return project()->busyProject();
+    return project()->busyModule();
 }
 
 bool BusyProjectNode::showInSimpleTree() const
@@ -852,7 +852,7 @@ BusyRootProjectNode::BusyRootProjectNode(BusyProject *project) :
 
 void BusyRootProjectNode::update()
 {
-    QStringList buildSystemFiles = unreferencedBuildSystemFiles(m_project->busyProject());
+    QStringList buildSystemFiles = unreferencedBuildSystemFiles(m_project->busyModule());
 
     QStringList projectBuildSystemFiles;
     Utils::FileName base = m_project->projectDirectory();
@@ -863,14 +863,14 @@ void BusyRootProjectNode::update()
     BusyGroupNode::setupFiles(m_buildSystemFiles, busy::GroupData(), projectBuildSystemFiles,
                              base.toString(), false);
 
-    update(m_project->busyProject(), m_project->busyProjectData());
+    update(m_project->busyModule(), m_project->busyModuleData());
 }
 
-static QSet<QString> referencedBuildSystemFiles(const busy::ProjectData &data)
+static QSet<QString> referencedBuildSystemFiles(const busy::ModuleData &data)
 {
     QSet<QString> result;
     result.insert(data.location().filePath());
-    foreach (const busy::ProjectData &subProject, data.subProjects())
+    foreach (const busy::ModuleData &subProject, data.subModules())
         result.unite(referencedBuildSystemFiles(subProject));
     foreach (const busy::ProductData &product, data.products()) {
         result.insert(product.location().filePath());
