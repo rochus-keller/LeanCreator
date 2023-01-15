@@ -94,13 +94,13 @@ public:
 
     void registerBusyProjectParser(BusyProjectParser *p);
 
-    busy::Project busyProject() const;
+    busy::Module busyProject() const;
     busy::ProjectData busyProjectData() const;
 
     bool needsSpecialDeployment() const;
     void generateErrors(const busy::ErrorInfo &e);
 
-    static QString productDisplayName(const busy::Project &project,
+    static QString productDisplayName(const busy::Module &project,
                                       const busy::ProductData &product);
     static QString uniqueProductName(const busy::ProductData &product);
 
@@ -142,7 +142,7 @@ private:
     BusyManager *const m_manager;
     const QString m_projectName;
     const QString m_fileName;
-    busy::Project m_qbsProject;
+    busy::Module m_qbsProject;
     busy::ProjectData m_projectData;
     QSet<Core::IDocument *> m_qbsDocuments;
     BusyRootProjectNode *m_rootProjectNode;

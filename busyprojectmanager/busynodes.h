@@ -122,7 +122,7 @@ private:
 class BusyProductNode : public BusyBaseProjectNode
 {
 public:
-    explicit BusyProductNode(const busy::Project &project, const busy::ProductData &prd);
+    explicit BusyProductNode(const busy::Module &project, const busy::ProductData &prd);
 
     bool isEnabled() const;
     bool showInSimpleTree() const;
@@ -131,7 +131,7 @@ public:
     bool removeFiles(const QStringList &filePaths, QStringList *notRemoved = 0);
     bool renameFile(const QString &filePath, const QString &newFilePath);
 
-    void setBusyProductData(const busy::Project &project, const busy::ProductData prd);
+    void setBusyProductData(const busy::Module &project, const busy::ProductData prd);
     const busy::ProductData busyProductData() const { return m_qbsProductData; }
 
     QList<ProjectExplorer::RunConfiguration *> runConfigurations() const;
@@ -154,13 +154,13 @@ public:
     ~BusyProjectNode();
 
     virtual BusyProject *project() const;
-    const busy::Project busyProject() const;
+    const busy::Module busyProject() const;
     const busy::ProjectData busyProjectData() const { return m_projectData; }
 
     bool showInSimpleTree() const;
 
 protected:
-    void update(const busy::Project &busyProject, const busy::ProjectData &prjData);
+    void update(const busy::Module &busyProject, const busy::ProjectData &prjData);
 
 private:
     void ctor();
@@ -187,7 +187,7 @@ public:
     BusyProject *project() const { return m_project; }
 
 private:
-    QStringList unreferencedBuildSystemFiles(const busy::Project &p) const;
+    QStringList unreferencedBuildSystemFiles(const busy::Module &p) const;
 
     BusyProject * const m_project;
     ProjectExplorer::FolderNode *m_buildSystemFiles;

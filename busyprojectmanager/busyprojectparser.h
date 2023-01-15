@@ -48,7 +48,7 @@ public:
     void parse(const QVariantMap &config, const Utils::Environment &env, const QString &dir);
     void cancel();
 
-    busy::Project busyProject() const;
+    busy::Module busyProject() const;
     busy::ErrorInfo error();
 
 signals:
@@ -67,7 +67,7 @@ private:
     QString m_projectFilePath;
     busy::SetupProjectJob *m_qbsSetupProjectJob;
     busy::ErrorInfo m_error;
-    busy::Project m_project;
+    busy::Module m_project;
 
     QFutureInterface<bool> *m_fi;
     int m_currentProgressBase;

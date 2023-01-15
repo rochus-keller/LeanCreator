@@ -15,3 +15,30 @@
 */
 
 #include "busyapi.h"
+using namespace busy;
+
+class Internal::ProjectImp : public QSharedData
+{
+
+};
+
+Module::Module()
+{
+
+}
+
+Module::Module(const Module& other) : d_imp(other.d_imp)
+{
+
+}
+
+Module&Module::operator=(const Module& other)
+{
+    d_imp = other.d_imp;
+    return *this;
+}
+
+Module::~Module()
+{
+
+}

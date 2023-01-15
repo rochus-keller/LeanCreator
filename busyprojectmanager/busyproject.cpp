@@ -417,7 +417,7 @@ bool BusyProject::hasParseResult() const
     return busyProject().isValid();
 }
 
-busy::Project BusyProject::busyProject() const
+busy::Module BusyProject::busyProject() const
 {
     return m_qbsProject;
 }
@@ -622,7 +622,7 @@ void BusyProject::generateErrors(const busy::ErrorInfo &e)
 
 }
 
-QString BusyProject::productDisplayName(const busy::Project &project,
+QString BusyProject::productDisplayName(const busy::Module &project,
                                        const busy::ProductData &product)
 {
     QString displayName = product.name();

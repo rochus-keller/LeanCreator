@@ -4,10 +4,14 @@
 submod busy = ../../BUSY
 
 let lib_conf : Config {
-	.include_dirs += [ .. . busy.include_dir ]
+	.include_dirs += [ .. . ]
 	.defines += [ 
 	 ]
 	#.configs += ^cpp11conf
+}
+
+let conf * : Config {
+	.include_dirs += abspath(busy)
 }
 
 let run_rcc : Rcc {
@@ -24,12 +28,10 @@ let run_moc : Moc {
 let lib * : Library {
 	.sources += [
 		./busyapi.cpp
-		./busySynTree.cpp
-		./busyTokenType.cpp
-		./Parser.cpp
 		./busyLexer.cpp
+		./Engine.cpp
 	]
 	.deps += [ run_rcc run_moc busy.lib busy.run_rcc ]
 	.include_dirs += build_dir()
-	.configs += [ ^qt.qt_client_config lib_conf ]
+	.configs += [ ^qt.qt_client_config lib_conf conf ]
 }

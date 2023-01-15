@@ -728,6 +728,13 @@ void MainWindow::registerDefaultActions()
     tmpaction->setEnabled(true);
     connect(tmpaction, &QAction::triggered, this, &MainWindow::aboutQtCreator);
 
+    tmpaction = new QAction(tr("About Lean&Qt..."), this);
+    tmpaction->setMenuRole(QAction::ApplicationSpecificRole);
+    cmd = ActionManager::registerAction(tmpaction, Constants::ABOUT_QT);
+    mhelp->addAction(cmd, Constants::G_HELP_ABOUT);
+    tmpaction->setEnabled(true);
+    connect(tmpaction, &QAction::triggered, this, &MainWindow::aboutQt);
+
     //About Plugins Action
     tmpaction = new QAction(tr("About &Plugins..."), this);
     tmpaction->setMenuRole(QAction::ApplicationSpecificRole);
@@ -1076,6 +1083,11 @@ void MainWindow::aboutQtCreator()
                 this, &MainWindow::destroyVersionDialog);
     }
     m_versionDialog->show();
+}
+
+void MainWindow::aboutQt()
+{
+    QMessageBox::aboutQt(this);
 }
 
 void MainWindow::destroyVersionDialog()

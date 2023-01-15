@@ -111,7 +111,7 @@ void BusyProjectParser::cancel()
     m_qbsSetupProjectJob->cancel();
 }
 
-busy::Project BusyProjectParser::busyProject() const
+busy::Module BusyProjectParser::busyProject() const
 {
     return m_project;
 }

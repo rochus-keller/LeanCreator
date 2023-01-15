@@ -125,6 +125,7 @@ const char GOTOPREVINHISTORY[]     = "LeanCreator.GotoPreviousInHistory";
 const char GO_BACK[]               = "LeanCreator.GoBack";
 const char GO_FORWARD[]            = "LeanCreator.GoForward";
 const char ABOUT_QTCREATOR[]       = "LeanCreator.AboutQtCreator";
+const char ABOUT_QT[]              = "LeanCreator.AboutQt";
 const char ABOUT_PLUGINS[]         = "LeanCreator.AboutPlugins";
 const char S_RETURNTOEDITOR[]      = "LeanCreator.ReturnToEditor";
 

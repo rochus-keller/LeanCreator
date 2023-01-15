@@ -1,3 +1,5 @@
+![icon](http://software.rochus-keller.ch/creator-logo-100x460.png)
+
 ## Welcome to LeanCreator - a lean version of Qt Creator
 
 NOTE that this project is in an early stage and there is no MVP yet.

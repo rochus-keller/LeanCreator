@@ -95,6 +95,8 @@ bool BusyProjectManagerPlugin::initialize(const QStringList &arguments, QString 
 
     const Core::Context projectContext(::BusyProjectManager::Constants::PROJECT_ID);
 
+    // TODO ModelManager::instance()->setParent(this);
+
     // Core::FileIconProvider::registerIconOverlayForSuffix(QtSupport::Constants::ICON_QT_PROJECT, "qbs");
     Utils::MimeDatabase::addMimeTypes(QLatin1String(":/busyprojectmanager/BusyProjectManager.mimetypes.xml"));
     TextEditor::TextEditorSettings::registerMimeTypeForLanguageId(Constants::MIME_TYPE, Constants::LANG);

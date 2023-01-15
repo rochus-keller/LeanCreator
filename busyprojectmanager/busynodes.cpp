@@ -570,7 +570,7 @@ ProjectExplorer::FileType BusyGroupNode::fileType(const busy::GroupData &group,
 // BusyProductNode:
 // --------------------------------------------------------------------
 
-BusyProductNode::BusyProductNode(const busy::Project &project, const busy::ProductData &prd) :
+BusyProductNode::BusyProductNode(const busy::Module &project, const busy::ProductData &prd) :
     BusyBaseProjectNode(Utils::FileName::fromString(prd.location().filePath()))
 {
     if (m_productIcon.isNull())
@@ -654,7 +654,7 @@ bool BusyProductNode::renameFile(const QString &filePath, const QString &newFile
                                                    grp);
 }
 
-void BusyProductNode::setBusyProductData(const busy::Project &project, const busy::ProductData prd)
+void BusyProductNode::setBusyProductData(const busy::Module &project, const busy::ProductData prd)
 {
     if (m_qbsProductData == prd)
         return;
@@ -750,7 +750,7 @@ BusyProjectNode::~BusyProjectNode()
     // do not delete m_project
 }
 
-void BusyProjectNode::update(const busy::Project &qbsProject, const busy::ProjectData &prjData)
+void BusyProjectNode::update(const busy::Module &qbsProject, const busy::ProjectData &prjData)
 {
     QList<ProjectExplorer::ProjectNode *> toAdd;
     QList<ProjectExplorer::ProjectNode *> toRemove = subProjectNodes();
@@ -793,7 +793,7 @@ BusyProject *BusyProjectNode::project() const
     return static_cast<BusyProjectNode *>(parentFolderNode())->project();
 }
 
-const busy::Project BusyProjectNode::busyProject() const
+const busy::Module BusyProjectNode::busyProject() const
 {
     return project()->busyProject();
 }
@@ -881,7 +881,7 @@ static QSet<QString> referencedBuildSystemFiles(const busy::ProjectData &data)
     return result;
 }
 
-QStringList BusyRootProjectNode::unreferencedBuildSystemFiles(const busy::Project &p) const
+QStringList BusyRootProjectNode::unreferencedBuildSystemFiles(const busy::Module &p) const
 {
     return p.buildSystemFiles().subtract(referencedBuildSystemFiles(p.projectData())).toList();
 }

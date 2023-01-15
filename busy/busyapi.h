@@ -25,6 +25,11 @@
 namespace busy
 {
 
+namespace Internal
+{
+    class ProjectImp;
+}
+
 // TODO: we don't need profiles and groups
 
 class CodeLocation
@@ -297,10 +302,14 @@ class CleanJob;
 class InstallJob;
 class SetupProjectJob;
 
-// a Qbs Project corresponds to a module in BUSY
-class Project
+class Module // originally Qbs Project
 {
 public:
+    Module();
+    Module(const Module &other);
+    Module &operator=(const Module &other);
+    ~Module();
+
     SetupProjectJob *setupProject(const SetupProjectParameters &parameters,
                                   ILogSink *logSink, QObject *jobOwner) { return 0; }
 
@@ -341,12 +350,15 @@ public:
                        const QStringList &filePaths) { return ErrorInfo(); }
     ErrorInfo removeFiles(const ProductData &product, const GroupData &group,
                           const QStringList &filePaths) { return ErrorInfo(); }
+private:
+    friend class Internal::ProjectImp;
+    QExplicitlySharedDataPointer<Internal::ProjectImp> d_imp;
 };
 
 class SetupProjectJob : public AbstractJob
 {
 public:
-    Project project() const { return Project(); }
+    Module project() const { return Module(); }
 };
 
 class BuildJob : public AbstractJob

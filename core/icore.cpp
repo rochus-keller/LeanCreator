@@ -488,8 +488,7 @@ QString ICore::versionString()
 
 QString ICore::buildCompatibilityString()
 {
-    return tr("Based on Qt %1 (%2, %3 bit)").arg(QLatin1String(qVersion()),
-                                                 compilerString(),
+    return tr("Based on LeanQt (%1, %2 bit)").arg(compilerString(),
                                                  QString::number(QSysInfo::WordSize));
 }
 

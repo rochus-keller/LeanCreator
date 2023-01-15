@@ -48,7 +48,8 @@ Token Lexer::peekToken(int off)
     {
         BSToken t = bslex_peek(d_lex,off);
         res.d_lineNr = t.loc.row;
-        res.d_colNr = t.loc.col + 1;
+        if( t.loc.row )
+            res.d_colNr = t.loc.col + 1;
         res.d_sourcePath = d_sourcePath;
         res.d_type = t.tok;
         res.d_val = QByteArray::fromRawData(t.val,t.len);
@@ -64,7 +65,8 @@ Token Lexer::nextToken()
     {
         BSToken t = bslex_next(d_lex);
         res.d_lineNr = t.loc.row;
-        res.d_colNr = t.loc.col + 1;
+        if( t.loc.row )
+            res.d_colNr = t.loc.col + 1;
         res.d_sourcePath = d_sourcePath;
         res.d_type = t.tok;
         res.d_val = QByteArray::fromRawData(t.val,t.len);

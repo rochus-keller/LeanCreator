@@ -38,8 +38,8 @@ namespace Constants {
 #define IDE_VERSION_RELEASE 1
 
 const char * const IDE_VERSION_LONG      = IDE_VERSION_STR;
-const char * const IDE_AUTHOR            = "The Qt Company Ltd";
-const char * const IDE_YEAR              = "2016";
+const char * const IDE_AUTHOR            = "The Qt Company Ltd and others";
+const char * const IDE_YEAR              = "2023";
 
 #ifdef IDE_VERSION_DESCRIPTION
 const char * const IDE_VERSION_DESCRIPTION_STR = STRINGIFY(IDE_VERSION_DESCRIPTION);

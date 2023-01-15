@@ -74,6 +74,7 @@ VersionDialog::VersionDialog(QWidget *parent)
         "%4"
         "%5"
         "<br/>"
+        "<p>See <a href=\"https://github.com/rochus-keller/LeanCreator\">the Github page</a> for more information.</p>"
         "Copyright 2008-%6 %7. All rights reserved.<br/>"
         "<br/>"
         "The program is provided AS IS with NO WARRANTY OF ANY KIND, "

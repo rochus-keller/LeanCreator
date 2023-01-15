@@ -25,6 +25,8 @@
 #include <texteditor/texteditorconstants.h>
 #include <texteditor/fontsettings.h>
 
+#include <QFileInfo>
+
 using namespace BusyProjectManager;
 
 
@@ -68,6 +70,8 @@ EditorDocument::EditorDocument()
 
 Core::IDocument::OpenResult EditorDocument::open(QString* errorString, const QString& fileName, const QString& realFileName)
 {
+    // TODO: we need the model for the virtual path; the physical path is not always what is relevant
+    setPreferredDisplayName(QFileInfo(fileName).canonicalPath().split('/').last()+"/BUSY");
 
     return TextDocument::open(errorString, fileName, realFileName );
 }
