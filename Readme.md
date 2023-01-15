@@ -16,12 +16,12 @@ Successfully tested so far on Linux x86.
 
 - [x] Basic, stand-alone application with statically linked plugins
 - [x] C++ support
+- [x] rebranding
+- [ ] deep BUSY integration (instead of qmake)
 - [ ] GCC, Clang and MSVC support
 - [ ] GDB and CDB support
-- [ ] deep BUSY integration (instead of qmake)
 - [ ] Lua automation (instead of JS)
 - [ ] Designer integration
-- [ ] rebranding
 
 ### No support planned
 
