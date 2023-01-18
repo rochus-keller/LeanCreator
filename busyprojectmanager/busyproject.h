@@ -47,7 +47,6 @@ namespace Internal {
 class BusyBaseProjectNode;
 class BusyProjectNode;
 class BusyRootProjectNode;
-class BusyProjectParser;
 class BusyBuildConfiguration;
 
 class BusyProject : public ProjectExplorer::Project
@@ -68,13 +67,13 @@ public:
 
     bool isProjectEditable() const;
     bool addFilesToProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
-                           const busy::ProductData &productData, const busy::GroupData &groupData,
+                           const busy::Product &productData, const busy::GroupData &groupData,
                            QStringList *notAdded);
     bool removeFilesFromProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
-            const busy::ProductData &productData, const busy::GroupData &groupData,
+            const busy::Product &productData, const busy::GroupData &groupData,
             QStringList *notRemoved);
     bool renameFileInProduct(BusyBaseProjectNode *node, const QString &oldPath,
-            const QString &newPath, const busy::ProductData &productData,
+            const QString &newPath, const busy::Product &productData,
             const busy::GroupData &groupData);
 
     busy::BuildJob *build(const busy::BuildOptions &opts, QStringList products, QString &error);
@@ -92,17 +91,15 @@ public:
     void cancelParsing();
     void updateAfterBuild();
 
-    void registerBusyProjectParser(BusyProjectParser *p);
-
     busy::Module busyModule() const;
-    busy::ModuleData busyModuleData() const;
+    busy::Module busyModuleData() const;
 
     bool needsSpecialDeployment() const;
     void generateErrors(const busy::ErrorInfo &e);
 
     static QString productDisplayName(const busy::Module &project,
-                                      const busy::ProductData &product);
-    static QString uniqueProductName(const busy::ProductData &product);
+                                      const busy::Product &product);
+    static QString uniqueProductName(const busy::Product &product);
 
 public slots:
     void invalidate();
@@ -136,18 +133,16 @@ private:
 
     static bool ensureWriteableBusyFile(const QString &file);
 
-    busy::GroupData reRetrieveGroupData(const busy::ProductData &oldProduct,
+    busy::GroupData reRetrieveGroupData(const busy::Product &oldProduct,
                                        const busy::GroupData &oldGroup);
 
     BusyManager *const m_manager;
     const QString m_projectName;
     const QString m_fileName;
+    busy::Project m_project;
     busy::Module m_rootModule;
-    busy::ModuleData m_rootModuleData;
     QSet<Core::IDocument *> m_qbsDocuments;
     BusyRootProjectNode *m_rootProjectNode;
-
-    BusyProjectParser *m_qbsProjectParser;
 
     QFutureInterface<bool> *m_qbsUpdateFutureInterface;
     bool m_parsingScheduled;

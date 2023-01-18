@@ -1,6 +1,10 @@
 # Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 # licensed under GPL/LGPL
 
+if busy_version < "2023-01-15" {
+	error("this version of BUSY is not compatible with this build")
+}
+
 param HAVE_NOOPT = false
 param HAVE_SHARED_QT = false
 

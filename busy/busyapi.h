@@ -25,9 +25,13 @@
 namespace busy
 {
 
+class Engine;
+
 namespace Internal
 {
     class ModuleImp;
+    class ProjectImp;
+    class ProductImp;
 }
 
 // TODO: we don't need profiles and groups
@@ -35,10 +39,16 @@ namespace Internal
 class CodeLocation
 {
 public:
-    QString filePath() const { return QString(); }
-    int line() const { return 0; }
-    int column() const { return 0; }
-    bool operator==(const CodeLocation& rhs) const { return false; }
+    CodeLocation():d_row(0),d_col(0){}
+    bool operator==(const CodeLocation& rhs) const { return d_path == rhs.d_path &&
+                d_row == rhs.d_row && d_col == rhs.d_col; }
+
+    QString filePath() const { return d_path; }
+    int line() const { return d_row; }
+    int column() const { return d_col; }
+
+    QString d_path;
+    int d_row, d_col;
 };
 
 class ErrorItem
@@ -134,7 +144,7 @@ public:
     QStringList fileTags() const { return QStringList(); }
 };
 
-class GroupData
+class GroupData // BUSY doesn't use file groups
 {
 public:
     bool isValid() const { return false; }
@@ -234,34 +244,29 @@ public:
     bool isExecutable() const { return false; }
 };
 
-class ProductData
+class Product
 {
 public:
-    bool isValid() const { return false; }
+    Product(Engine*,int id);
+    Product();
+    Product(const Product &other);
+    Product &operator=(const Product &other);
+    bool operator==( const Product& ) const;
+    ~Product();
 
-    QString name() const { return QString(); }
-    QString profile() const { return QString(); }
-    CodeLocation location() const { return CodeLocation(); }
-    QList<TargetArtifact> targetArtifacts() const { return QList<TargetArtifact>(); }
-    QList<GroupData> groups() const { return QList<GroupData>(); }
-    QVariantMap properties() const { return QVariantMap(); }
-    bool isEnabled() const { return false; }
-    bool isRunnable() const { return false; }
-    bool operator==( const ProductData& ) const { return false; }
-};
+    bool isValid() const;
 
-class ModuleData
-{
-public:
-    bool isValid() const { return false; }
-
-    QString name() const { return QString(); }
-    CodeLocation location() const { return CodeLocation(); }
-    QString buildDirectory() const { return QString(); }
-    QList<ProductData> products() const { return QList<ProductData>(); }
-    QList<ModuleData> subModules() const { return QList<ModuleData>(); }
-    QList<ProductData> allProducts() const { return QList<ProductData>(); }
-    bool operator!=( const ModuleData& ) const { return false; }
+    QString name() const;
+    QString profile() const;
+    CodeLocation location() const;
+    QList<TargetArtifact> targetArtifacts() const;
+    QList<GroupData> groups() const;
+    QVariantMap properties() const;
+    bool isEnabled() const;
+    bool isRunnable() const;
+private:
+    friend class Internal::ProductImp;
+    QExplicitlySharedDataPointer<Internal::ProductImp> d_imp;
 };
 
 class RunEnvironment
@@ -280,45 +285,36 @@ public:
 
 typedef QList<RuleCommand> RuleCommandList;
 
-class SetupProjectParameters
-{
-public:
-    void setProjectFilePath(const QString &projectFilePath) {}
-    void setBuildRoot(const QString &buildRoot) {}
-    void setSearchPaths(const QStringList &searchPaths) {}
-    void setPluginPaths(const QStringList &pluginPaths) {}
-    void setLibexecPath(const QString &libexecPath) {}
-    void setSettingsDirectory(const QString &settingsBaseDir) {}
-    void setOverriddenValues(const QVariantMap &values) {}
-    void setIgnoreDifferentProjectFilePath(bool doIgnore) {}
-    void setDryRun(bool dryRun) {}
-    void setEnvironment(const QProcessEnvironment &env) {}
-    void setTopLevelProfile(const QString &profile) {}
-    void setBuildVariant(const QString &buildVariant) {}
-};
-
 class BuildJob;
 class CleanJob;
 class InstallJob;
-class SetupProjectJob;
 
 class Module // originally Qbs Project
 {
 public:
+    Module(Engine*,int id);
     Module();
     Module(const Module &other);
     Module &operator=(const Module &other);
     ~Module();
 
-    SetupProjectJob *setupProject(const SetupProjectParameters &parameters,
-                                  ILogSink *logSink, QObject *jobOwner) { return 0; }
+    bool isValid() const;
 
-    bool isValid() const { return false; }
+    QString name() const;
+    CodeLocation location() const; // path to the submod declaration
+    QString busyFile() const;
+    QString buildDirectory() const;
+    QList<Product> products() const;
+    QList<Module> subModules() const;
+    QList<Product> allProducts() const;
+
+
+    QSet<QString> buildSystemFiles() const;
+
     QString profile() const { return QString(); }
-    ModuleData projectData() const { return ModuleData(); }
-    QString targetExecutable(const ProductData &product,
+    QString targetExecutable(const Product &product,
                              const InstallOptions &installoptions) const { return QString(); }
-    RunEnvironment getRunEnvironment(const ProductData &product,
+    RunEnvironment getRunEnvironment(const Product &product,
             const InstallOptions &installOptions,
             const QProcessEnvironment &environment, Settings *settings) const { return RunEnvironment(); }
 
@@ -326,7 +322,7 @@ public:
     BuildJob *buildAllProducts(const BuildOptions &options,
                                ProductSelection productSelection = ProductSelectionDefaultOnly,
                                QObject *jobOwner = 0) const { return 0; }
-    BuildJob *buildSomeProducts(const QList<ProductData> &products, const BuildOptions &options,
+    BuildJob *buildSomeProducts(const QList<Product> &products, const BuildOptions &options,
                                 QObject *jobOwner = 0) const { return 0; }
 
     CleanJob *cleanAllProducts(const CleanOptions &options, QObject *jobOwner = 0) const { return 0; }
@@ -335,30 +331,46 @@ public:
                                    ProductSelection productSelection = ProductSelectionDefaultOnly,
                                    QObject *jobOwner = 0) const { return 0; }
 
-    QList<InstallableFile> installableFilesForProject(const ModuleData &project,
+    QList<InstallableFile> installableFilesForProject(const Module &project,
                                    const InstallOptions &options) const { return QList<InstallableFile>(); }
 
-    QStringList generatedFiles(const ProductData &product, const QString &file,
+    QStringList generatedFiles(const Product &product, const QString &file,
                                const QStringList &tags = QStringList()) const { return QStringList(); }
 
-    QSet<QString> buildSystemFiles() const { return QSet<QString>(); }
-
-    RuleCommandList ruleCommands(const ProductData &product, const QString &inputFilePath,
+    RuleCommandList ruleCommands(const Product &product, const QString &inputFilePath,
                          const QString &outputFileTag, ErrorInfo *error = 0) const { return RuleCommandList(); }
 
-    ErrorInfo addFiles(const ProductData &product, const GroupData &group,
+    ErrorInfo addFiles(const Product &product, const GroupData &group,
                        const QStringList &filePaths) { return ErrorInfo(); }
-    ErrorInfo removeFiles(const ProductData &product, const GroupData &group,
+    ErrorInfo removeFiles(const Product &product, const GroupData &group,
                           const QStringList &filePaths) { return ErrorInfo(); }
 private:
     friend class Internal::ModuleImp;
     QExplicitlySharedDataPointer<Internal::ModuleImp> d_imp;
 };
 
-class SetupProjectJob : public AbstractJob
+class Project
 {
 public:
-    Module project() const { return Module(); }
+    Project(const QString& path);
+    Project(const Project &other);
+    Project &operator=(const Project &other);
+    ~Project();
+
+    // TODO void setupProject(const SetupProjectParameters &parameters, ILogSink *logSink)
+
+
+    bool isValid() const;
+
+    bool parse();
+
+    ErrorInfo errors() const;
+
+    Module topModule() const;
+
+private:
+    friend class Internal::ProjectImp;
+    QExplicitlySharedDataPointer<Internal::ProjectImp> d_imp;
 };
 
 class BuildJob : public AbstractJob

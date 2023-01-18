@@ -122,7 +122,7 @@ private:
 class BusyProductNode : public BusyBaseProjectNode
 {
 public:
-    explicit BusyProductNode(const busy::Module &project, const busy::ProductData &prd);
+    explicit BusyProductNode(const busy::Module &project, const busy::Product &prd);
 
     bool isEnabled() const;
     bool showInSimpleTree() const;
@@ -131,15 +131,15 @@ public:
     bool removeFiles(const QStringList &filePaths, QStringList *notRemoved = 0);
     bool renameFile(const QString &filePath, const QString &newFilePath);
 
-    void setBusyProductData(const busy::Module &project, const busy::ProductData prd);
-    const busy::ProductData busyProductData() const { return m_qbsProductData; }
+    void setBusyProductData(const busy::Module &project, const busy::Product prd);
+    const busy::Product busyProductData() const { return m_qbsProductData; }
 
     QList<ProjectExplorer::RunConfiguration *> runConfigurations() const;
 
 private:
     BusyGroupNode *findGroupNode(const QString &name);
 
-    busy::ProductData m_qbsProductData;
+    busy::Product m_qbsProductData;
     static QIcon m_productIcon;
 };
 
@@ -155,12 +155,12 @@ public:
 
     virtual BusyProject *project() const;
     const busy::Module busyProject() const;
-    const busy::ModuleData busyProjectData() const { return m_projectData; }
+    const busy::Module busyProjectData() const { return m_projectData; }
 
     bool showInSimpleTree() const;
 
 protected:
-    void update(const busy::Module &busyProject, const busy::ModuleData &prjData);
+    void update(const busy::Module &busyProject, const busy::Module &prjData);
 
 private:
     void ctor();
@@ -169,7 +169,7 @@ private:
     BusyProjectNode *findProjectNode(const QString &name);
 
     static QIcon m_projectIcon;
-    busy::ModuleData m_projectData;
+    busy::Module m_projectData;
 };
 
 // --------------------------------------------------------------------

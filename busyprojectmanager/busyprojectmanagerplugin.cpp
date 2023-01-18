@@ -409,7 +409,7 @@ void BusyProjectManagerPlugin::buildSubprojectContextMenu()
     QTC_ASSERT(subProject, return);
 
     QStringList toBuild;
-    foreach (const busy::ProductData &data, subProject->busyProjectData().allProducts())
+    foreach (const busy::Product &data, subProject->busyProjectData().allProducts())
         toBuild << BusyProject::uniqueProductName(data);
 
     buildProducts(m_selectedProject, toBuild);
@@ -435,7 +435,7 @@ void BusyProjectManagerPlugin::buildSubproject()
         return;
 
     QStringList toBuild;
-    foreach (const busy::ProductData &data, subproject->busyProjectData().allProducts())
+    foreach (const busy::Product &data, subproject->busyProjectData().allProducts())
         toBuild << BusyProject::uniqueProductName(data);
 
     buildProducts(m_editorProject, toBuild);

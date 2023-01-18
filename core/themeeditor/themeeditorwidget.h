@@ -35,6 +35,7 @@
 
 QT_BEGIN_NAMESPACE
 class QSortFilterProxyModel;
+class QModelIndex;
 QT_END_NAMESPACE
 
 namespace Utils { class Theme; }

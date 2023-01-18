@@ -356,7 +356,7 @@ int main(int argc, char **argv)
     Q_INIT_RESOURCE(themes);
     Q_INIT_RESOURCE(utils);
     Q_INIT_RESOURCE(busyprojectmanager);
-
+    Q_INIT_RESOURCE(busy);
 
     CrashHandlerSetup setupCrashHandler; // Display a backtrace once a serious signal is delivered.
 

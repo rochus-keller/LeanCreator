@@ -33,7 +33,6 @@ let run_moc : Moc {
 		./busyproject.h
 		./busyprojectmanager.h
 		./busyprojectmanagerplugin.h
-		./busyprojectparser.h
 		./busyrunconfiguration.h
 		./busyprofilessettingspage.cpp
 		./busyeditor.h
@@ -68,7 +67,6 @@ let lib * : Library {
 		./busyprojectfile.cpp 
 		./busyprojectmanager.cpp 
 		./busyprojectmanagerplugin.cpp 
-		./busyprojectparser.cpp 
 		./busyrunconfiguration.cpp
 		./busyeditor.cpp
 		./busyhighlighter.cpp

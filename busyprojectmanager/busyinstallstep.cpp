@@ -130,7 +130,7 @@ QString BusyInstallStep::installRoot() const
 
 QString BusyInstallStep::absoluteInstallRoot() const
 {
-    const busy::ModuleData data = static_cast<BusyProject *>(project())->busyModuleData();
+    const busy::Module data = static_cast<BusyProject *>(project())->busyModuleData();
     QString path = installRoot();
     if (data.isValid() && !data.buildDirectory().isEmpty() && !path.isEmpty())
         path = QDir(data.buildDirectory()).absoluteFilePath(path);
