@@ -36,6 +36,9 @@
 #include <utils/algorithm.h>
 #include <utils/hostosinfo.h>
 #include <utils/qtcassert.h>
+extern "C" {
+#include <bsrunner.h>
+}
 
 #include <QtDebug>
 #include <QDir>
@@ -79,7 +82,7 @@ static QIcon generateIcon(const QString &overlay)
 namespace BusyProjectManager {
 namespace Internal {
 
-QIcon BusyGroupNode::m_groupIcon;
+//QIcon BusyGroupNode::m_groupIcon;
 QIcon BusyProjectNode::m_projectIcon;
 QIcon BusyProductNode::m_productIcon;
 
@@ -103,6 +106,7 @@ static BusyProductNode *parentBusyProductNode(ProjectExplorer::Node *node)
     return 0;
 }
 
+#if 0
 static busy::GroupData findMainBusyGroup(const busy::Product &productData)
 {
     foreach (const busy::GroupData &grp, productData.groups()) {
@@ -111,6 +115,7 @@ static busy::GroupData findMainBusyGroup(const busy::Product &productData)
     }
     return busy::GroupData();
 }
+#endif
 
 class FileTreeNode {
 public:
@@ -311,6 +316,159 @@ QList<ProjectExplorer::ProjectAction> BusyBaseProjectNode::supportedActions(Proj
 // BusyGroupNode:
 // --------------------------------------------------------------------
 
+void BusyGroupNode::setupFiles(ProjectExplorer::FolderNode *root, const busy::Product & product,
+        const QStringList &files, const QString &productPath, bool updateExisting)
+{
+    // Build up a tree of nodes:
+    FileTreeNode tree;
+
+    foreach (const QString &path, files) {
+        QStringList pathSegments = path.split(QLatin1Char('/'), QString::SkipEmptyParts);
+
+        FileTreeNode *root = &tree;
+        while (!pathSegments.isEmpty()) {
+            bool isFile = pathSegments.count() == 1;
+            root = root->addPart(pathSegments.takeFirst(), isFile);
+        }
+    }
+
+    FileTreeNode::reorder(&tree, productPath);
+    FileTreeNode::simplify(&tree);
+
+    setupFolder(root, product, &tree, productPath, updateExisting);
+}
+
+void BusyGroupNode::setupFolder(ProjectExplorer::FolderNode *root, const busy::Product &product,
+                               const FileTreeNode *fileTree, const QString &baseDir,
+                               bool updateExisting)
+{
+    // We only need to care about FileNodes and FolderNodes here. Everything else is
+    // handled elsewhere.
+    // BusyGroupNodes are managed by the BusyProductNode.
+    // The buildsystem file is either managed by BusyProductNode or by updateBusyGroupData(...).
+
+    QList<ProjectExplorer::FileNode *> filesToRemove;
+    foreach (ProjectExplorer::FileNode *fn, root->fileNodes()) {
+        if (!dynamic_cast<BusyFileNode *>(fn))
+            filesToRemove << fn;
+    }
+    QList<ProjectExplorer::FileNode *> filesToAdd;
+
+    QList<ProjectExplorer::FolderNode *> foldersToRemove;
+    foreach (ProjectExplorer::FolderNode *fn, root->subFolderNodes()) {
+        if (fn->nodeType() == ProjectExplorer::ProjectNodeType)
+            continue; // Skip ProjectNodes mixed into the folders...
+        foldersToRemove.append(fn);
+    }
+
+    foreach (FileTreeNode *c, fileTree->children) {
+        Utils::FileName path = Utils::FileName::fromString(c->path());
+        const ProjectExplorer::FileType newFileType = fileType(product, *c);
+        const bool isQrcFile = newFileType == ProjectExplorer::ResourceType;
+
+        // Handle files:
+        if (c->isFile() && !isQrcFile) {
+            ProjectExplorer::FileNode *fn = 0;
+            foreach (ProjectExplorer::FileNode *f, root->fileNodes()) {
+                // There can be one match only here!
+                if (f->path() != path || f->fileType() != newFileType)
+                    continue;
+                fn = f;
+                break;
+            }
+            if (fn) {
+                filesToRemove.removeOne(fn);
+                if (updateExisting)
+                    fn->emitNodeUpdated();
+            } else {
+                fn = new ProjectExplorer::FileNode(path, newFileType, false);
+                filesToAdd.append(fn);
+            }
+            continue;
+        } else {
+            ProjectExplorer::FolderNode *fn = 0;
+            foreach (ProjectExplorer::FolderNode *f, root->subFolderNodes()) {
+                // There can be one match only here!
+                if (f->path() != path)
+                    continue;
+                fn = f;
+                break;
+            }
+            using ResourceEditor::ResourceTopLevelNode;
+            if (!fn) {
+                if (isQrcFile) {
+                    fn = new ResourceTopLevelNode(Utils::FileName::fromString(c->path()), root);
+                } else {
+                    fn = new BusyFolderNode(Utils::FileName::fromString(c->path()),
+                                           ProjectExplorer::FolderNodeType,
+                                           displayNameFromPath(c->path(), baseDir));
+                }
+                root->addFolderNodes(QList<ProjectExplorer::FolderNode *>() << fn);
+            } else {
+                foldersToRemove.removeOne(fn);
+                if (updateExisting)
+                    fn->emitNodeUpdated();
+                fn->setDisplayName(displayNameFromPath(c->path(), baseDir));
+            }
+
+            if (isQrcFile)
+                static_cast<ResourceTopLevelNode *>(fn)->update();
+            else
+                setupFolder(fn, product, c, c->path(), updateExisting);
+
+        }
+    }
+    root->removeFileNodes(filesToRemove);
+    root->removeFolderNodes(foldersToRemove);
+    root->addFileNodes(filesToAdd);
+}
+
+ProjectExplorer::FileType BusyGroupNode::fileType(const busy::Product &product,
+                                                 const FileTreeNode &fileNode)
+{
+    if (!product.isValid())
+        return ProjectExplorer::UnknownFileType;
+    const QByteArray suffix = QFileInfo(fileNode.path()).suffix().toLower().toUtf8();
+    const int lang = bs_guessLang(suffix.constData());
+
+    if( lang == BS_header )
+        return ProjectExplorer::HeaderType;
+    else if( lang == BS_unknownLang )
+    {
+        if( suffix == "qrc" )
+            return ProjectExplorer::ResourceType;
+        else if( suffix == "ui" )
+            return ProjectExplorer::FormType;
+        else
+            return ProjectExplorer::UnknownFileType;
+    }else
+        return ProjectExplorer::SourceType;
+
+#if 0
+    const busy::SourceArtifact artifact = Utils::findOrDefault(product.allFilePaths(),
+            [&fileNode](const QString &sa) { return sa == fileNode.path(); });
+    QTC_ASSERT(artifact.isValid() || !fileNode.isFile(),
+               qDebug() << fileNode.path() << product.name(); return ProjectExplorer::UnknownFileType);
+    if (!artifact.isValid())
+        return ProjectExplorer::UnknownFileType;
+
+    if (artifact.fileTags().contains(QLatin1String("c"))
+            || artifact.fileTags().contains(QLatin1String("cpp"))
+            || artifact.fileTags().contains(QLatin1String("objc"))
+            || artifact.fileTags().contains(QLatin1String("objcpp"))) {
+        return ProjectExplorer::SourceType;
+    }
+    if (artifact.fileTags().contains(QLatin1String("hpp")))
+        return ProjectExplorer::HeaderType;
+    if (artifact.fileTags().contains(QLatin1String("qrc")))
+        return ProjectExplorer::ResourceType;
+    if (artifact.fileTags().contains(QLatin1String("ui")))
+        return ProjectExplorer::FormType;
+    return ProjectExplorer::UnknownFileType;
+#endif
+}
+
+#if 0
 BusyGroupNode::BusyGroupNode(const busy::GroupData &grp, const QString &productPath) :
     BusyBaseProjectNode(Utils::FileName())
 {
@@ -432,145 +590,13 @@ void BusyGroupNode::updateBusyGroupData(const busy::GroupData &grp, const QStrin
         emitNodeUpdated();
 }
 
-void BusyGroupNode::setupFiles(ProjectExplorer::FolderNode *root, const busy::GroupData &group,
-        const QStringList &files, const QString &productPath, bool updateExisting)
-{
-    // Build up a tree of nodes:
-    FileTreeNode tree;
-
-    foreach (const QString &path, files) {
-        QStringList pathSegments = path.split(QLatin1Char('/'), QString::SkipEmptyParts);
-
-        FileTreeNode *root = &tree;
-        while (!pathSegments.isEmpty()) {
-            bool isFile = pathSegments.count() == 1;
-            root = root->addPart(pathSegments.takeFirst(), isFile);
-        }
-    }
-
-    FileTreeNode::reorder(&tree, productPath);
-    FileTreeNode::simplify(&tree);
-
-    setupFolder(root, group, &tree, productPath, updateExisting);
-}
-
-void BusyGroupNode::setupFolder(ProjectExplorer::FolderNode *root, const busy::GroupData &group,
-                               const FileTreeNode *fileTree, const QString &baseDir,
-                               bool updateExisting)
-{
-    // We only need to care about FileNodes and FolderNodes here. Everything else is
-    // handled elsewhere.
-    // BusyGroupNodes are managed by the BusyProductNode.
-    // The buildsystem file is either managed by BusyProductNode or by updateBusyGroupData(...).
-
-    QList<ProjectExplorer::FileNode *> filesToRemove;
-    foreach (ProjectExplorer::FileNode *fn, root->fileNodes()) {
-        if (!dynamic_cast<BusyFileNode *>(fn))
-            filesToRemove << fn;
-    }
-    QList<ProjectExplorer::FileNode *> filesToAdd;
-
-    QList<ProjectExplorer::FolderNode *> foldersToRemove;
-    foreach (ProjectExplorer::FolderNode *fn, root->subFolderNodes()) {
-        if (fn->nodeType() == ProjectExplorer::ProjectNodeType)
-            continue; // Skip ProjectNodes mixed into the folders...
-        foldersToRemove.append(fn);
-    }
-
-    foreach (FileTreeNode *c, fileTree->children) {
-        Utils::FileName path = Utils::FileName::fromString(c->path());
-        const ProjectExplorer::FileType newFileType = fileType(group, *c);
-        const bool isQrcFile = newFileType == ProjectExplorer::ResourceType;
-
-        // Handle files:
-        if (c->isFile() && !isQrcFile) {
-            ProjectExplorer::FileNode *fn = 0;
-            foreach (ProjectExplorer::FileNode *f, root->fileNodes()) {
-                // There can be one match only here!
-                if (f->path() != path || f->fileType() != newFileType)
-                    continue;
-                fn = f;
-                break;
-            }
-            if (fn) {
-                filesToRemove.removeOne(fn);
-                if (updateExisting)
-                    fn->emitNodeUpdated();
-            } else {
-                fn = new ProjectExplorer::FileNode(path, newFileType, false);
-                filesToAdd.append(fn);
-            }
-            continue;
-        } else {
-            ProjectExplorer::FolderNode *fn = 0;
-            foreach (ProjectExplorer::FolderNode *f, root->subFolderNodes()) {
-                // There can be one match only here!
-                if (f->path() != path)
-                    continue;
-                fn = f;
-                break;
-            }
-            using ResourceEditor::ResourceTopLevelNode;
-            if (!fn) {
-                if (isQrcFile) {
-                    fn = new ResourceTopLevelNode(Utils::FileName::fromString(c->path()), root);
-                } else {
-                    fn = new BusyFolderNode(Utils::FileName::fromString(c->path()),
-                                           ProjectExplorer::FolderNodeType,
-                                           displayNameFromPath(c->path(), baseDir));
-                }
-                root->addFolderNodes(QList<FolderNode *>() << fn);
-            } else {
-                foldersToRemove.removeOne(fn);
-                if (updateExisting)
-                    fn->emitNodeUpdated();
-                fn->setDisplayName(displayNameFromPath(c->path(), baseDir));
-            }
-
-            if (isQrcFile)
-                static_cast<ResourceTopLevelNode *>(fn)->update();
-            else
-                setupFolder(fn, group, c, c->path(), updateExisting);
-
-        }
-    }
-    root->removeFileNodes(filesToRemove);
-    root->removeFolderNodes(foldersToRemove);
-    root->addFileNodes(filesToAdd);
-}
-
-ProjectExplorer::FileType BusyGroupNode::fileType(const busy::GroupData &group,
-                                                 const FileTreeNode &fileNode)
-{
-    if (!group.isValid())
-        return ProjectExplorer::UnknownFileType;
-    const busy::SourceArtifact artifact = Utils::findOrDefault(group.allSourceArtifacts(),
-            [&fileNode](const busy::SourceArtifact &sa) { return sa.filePath() == fileNode.path(); });
-    QTC_ASSERT(artifact.isValid() || !fileNode.isFile(),
-               qDebug() << fileNode.path() << group.name(); return ProjectExplorer::UnknownFileType);
-    if (!artifact.isValid())
-        return ProjectExplorer::UnknownFileType;
-
-    if (artifact.fileTags().contains(QLatin1String("c"))
-            || artifact.fileTags().contains(QLatin1String("cpp"))
-            || artifact.fileTags().contains(QLatin1String("objc"))
-            || artifact.fileTags().contains(QLatin1String("objcpp"))) {
-        return ProjectExplorer::SourceType;
-    }
-    if (artifact.fileTags().contains(QLatin1String("hpp")))
-        return ProjectExplorer::HeaderType;
-    if (artifact.fileTags().contains(QLatin1String("qrc")))
-        return ProjectExplorer::ResourceType;
-    if (artifact.fileTags().contains(QLatin1String("ui")))
-        return ProjectExplorer::FormType;
-    return ProjectExplorer::UnknownFileType;
-}
+#endif
 
 // --------------------------------------------------------------------
 // BusyProductNode:
 // --------------------------------------------------------------------
 
-BusyProductNode::BusyProductNode(const busy::Module &project, const busy::Product &prd) :
+BusyProductNode::BusyProductNode(const busy::Project& project, const busy::Product &prd) :
     BusyBaseProjectNode(Utils::FileName::fromString(prd.location().filePath()))
 {
     if (m_productIcon.isNull())
@@ -613,13 +639,7 @@ bool BusyProductNode::addFiles(const QStringList &filePaths, QStringList *notAdd
         return false;
     }
 
-    busy::GroupData grp = findMainBusyGroup(m_qbsProductData);
-    if (grp.isValid()) {
-        return prjNode->project()->addFilesToProduct(this, filePaths, m_qbsProductData, grp,
-                                                     notAdded);
-    }
-
-    QTC_ASSERT(false, return false);
+        return prjNode->project()->addFilesToProduct(this, filePaths, m_qbsProductData, notAdded);
 }
 
 bool BusyProductNode::removeFiles(const QStringList &filePaths, QStringList *notRemoved)
@@ -634,27 +654,18 @@ bool BusyProductNode::removeFiles(const QStringList &filePaths, QStringList *not
         return false;
     }
 
-    busy::GroupData grp = findMainBusyGroup(m_qbsProductData);
-    if (grp.isValid()) {
-        return prjNode->project()->removeFilesFromProduct(this, filePaths, m_qbsProductData, grp,
-                                                          notRemoved);
-    }
-
-    QTC_ASSERT(false, return false);
-}
+    return prjNode->project()->removeFilesFromProduct(this, filePaths, m_qbsProductData, notRemoved);
+ }
 
 bool BusyProductNode::renameFile(const QString &filePath, const QString &newFilePath)
 {
     BusyProjectNode * const prjNode = parentBusyProjectNode(this);
     if (!prjNode || !prjNode->busyProject().isValid())
         return false;
-    const busy::GroupData grp = findMainBusyGroup(m_qbsProductData);
-    QTC_ASSERT(grp.isValid(), return false);
-    return prjNode->project()->renameFileInProduct(this, filePath, newFilePath, m_qbsProductData,
-                                                   grp);
+    return prjNode->project()->renameFileInProduct(this, filePath, newFilePath, m_qbsProductData);
 }
 
-void BusyProductNode::setBusyProductData(const busy::Module &project, const busy::Product prd)
+void BusyProductNode::setBusyProductData(const busy::Project& project, const busy::Product prd)
 {
     if (m_qbsProductData == prd)
         return;
@@ -681,21 +692,7 @@ void BusyProductNode::setBusyProductData(const busy::Module &project, const busy
     QList<ProjectExplorer::ProjectNode *> toAdd;
     QList<ProjectExplorer::ProjectNode *> toRemove = subProjectNodes();
 
-    foreach (const busy::GroupData &grp, prd.groups()) {
-        if (grp.name() == prd.name() && grp.location() == prd.location()) {
-            // Set implicit product group right onto this node:
-            BusyGroupNode::setupFiles(this, grp, grp.allFilePaths(), productPath, updateExisting);
-            continue;
-        }
-        BusyGroupNode *gn = findGroupNode(grp.name());
-        if (gn) {
-            toRemove.removeOne(gn);
-            gn->updateBusyGroupData(grp, productPath, productWasEnabled, productIsEnabled);
-        } else {
-            gn = new BusyGroupNode(grp, productPath);
-            toAdd.append(gn);
-        }
-    }
+    BusyGroupNode::setupFiles(this, prd, prd.allFilePaths(), productPath, updateExisting);
 
     addProjectNodes(toAdd);
     removeProjectNodes(toRemove);
@@ -725,6 +722,7 @@ QList<ProjectExplorer::RunConfiguration *> BusyProductNode::runConfigurations() 
     return result;
 }
 
+#if 0
 BusyGroupNode *BusyProductNode::findGroupNode(const QString &name)
 {
     foreach (ProjectExplorer::ProjectNode *n, subProjectNodes()) {
@@ -734,6 +732,7 @@ BusyGroupNode *BusyProductNode::findGroupNode(const QString &name)
     }
     return 0;
 }
+#endif
 
 // --------------------------------------------------------------------
 // BusyProjectNode:
@@ -750,12 +749,12 @@ BusyProjectNode::~BusyProjectNode()
     // do not delete m_project
 }
 
-void BusyProjectNode::update(const busy::Module &qbsProject, const busy::Module &prjData)
+void BusyProjectNode::update(const busy::Project& qbsProject, const busy::Module &module)
 {
     QList<ProjectExplorer::ProjectNode *> toAdd;
     QList<ProjectExplorer::ProjectNode *> toRemove = subProjectNodes();
 
-    foreach (const busy::Module &subData, prjData.subModules()) {
+    foreach (const busy::Module &subData, module.subModules()) {
         BusyProjectNode *qn = findProjectNode(subData.name());
         if (!qn) {
             auto subProject =
@@ -768,7 +767,7 @@ void BusyProjectNode::update(const busy::Module &qbsProject, const busy::Module 
         }
     }
 
-    foreach (const busy::Product &prd, prjData.products()) {
+    foreach (const busy::Product &prd, module.products()) {
         BusyProductNode *qn = findProductNode(BusyProject::uniqueProductName(prd));
         if (!qn) {
             toAdd << new BusyProductNode(qbsProject, prd);
@@ -778,8 +777,8 @@ void BusyProjectNode::update(const busy::Module &qbsProject, const busy::Module 
         }
     }
 
-    if (!prjData.name().isEmpty())
-        setDisplayName(prjData.name());
+    if (!module.name().isEmpty())
+        setDisplayName(module.name());
     else
     {
         BusyProject* p = project();
@@ -791,7 +790,8 @@ void BusyProjectNode::update(const busy::Module &qbsProject, const busy::Module 
 
     removeProjectNodes(toRemove);
     addProjectNodes(toAdd);
-    m_projectData = prjData;
+    m_project = qbsProject;
+    m_module = module;
 }
 
 BusyProject *BusyProjectNode::project() const
@@ -803,9 +803,9 @@ BusyProject *BusyProjectNode::project() const
         return 0;
 }
 
-const busy::Module BusyProjectNode::busyProject() const
+const busy::Project BusyProjectNode::busyProject() const
 {
-    return project()->busyModule();
+    return m_project; // project()->busyProject();
 }
 
 bool BusyProjectNode::showInSimpleTree() const
@@ -840,7 +840,7 @@ BusyProjectNode *BusyProjectNode::findProjectNode(const QString &name)
 {
     foreach (ProjectExplorer::ProjectNode *n, subProjectNodes()) {
         BusyProjectNode *qn = dynamic_cast<BusyProjectNode *>(n);
-        if (qn && qn->busyProjectData().name() == name)
+        if (qn && qn->busyModule().name() == name)
             return qn;
     }
     return 0;
@@ -870,10 +870,10 @@ void BusyRootProjectNode::update()
         if (Utils::FileName::fromString(f).isChildOf(base))
                 projectBuildSystemFiles.append(f);
     }
-    BusyGroupNode::setupFiles(m_buildSystemFiles, busy::GroupData(), projectBuildSystemFiles,
+    BusyGroupNode::setupFiles(m_buildSystemFiles, busy::Product(), projectBuildSystemFiles,
                              base.toString(), false);
 
-    update(m_project->busyModule(), m_project->busyModuleData());
+    update(m_project->busyProject(), m_project->busyModule());
 }
 
 static QSet<QString> referencedBuildSystemFiles(const busy::Module &data)
@@ -884,8 +884,6 @@ static QSet<QString> referencedBuildSystemFiles(const busy::Module &data)
         result.unite(referencedBuildSystemFiles(subProject));
     foreach (const busy::Product &product, data.products()) {
         result.insert(product.location().filePath());
-        foreach (const busy::GroupData &group, product.groups())
-            result.insert(group.location().filePath());
     }
 
     return result;

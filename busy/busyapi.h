@@ -34,8 +34,6 @@ namespace Internal
     class ProductImp;
 }
 
-// TODO: we don't need profiles and groups
-
 class CodeLocation
 {
 public:
@@ -133,29 +131,6 @@ class PropertyMap
 public:
     QStringList getModulePropertiesAsStringList(const QString &moduleName, const QString &propertyName) const { return QStringList(); }
     QVariant getModuleProperty(const QString &moduleName, const QString &propertyName) const { return QVariant(); }
-};
-
-class SourceArtifact
-{
-public:
-    bool isValid() const { return false; }
-
-    QString filePath() const { return QString(); }
-    QStringList fileTags() const { return QStringList(); }
-};
-
-class GroupData // BUSY doesn't use file groups
-{
-public:
-    bool isValid() const { return false; }
-
-    CodeLocation location() const { return CodeLocation(); }
-    QString name() const { return QString(); }
-    QList<SourceArtifact> allSourceArtifacts() const { return QList<SourceArtifact>(); }
-    PropertyMap properties() const { return PropertyMap(); }
-    bool isEnabled() const { return false; }
-    QStringList allFilePaths() const { return QStringList(); }
-    bool operator==(const GroupData&) const { return false; }
 };
 
 enum LoggerLevel
@@ -256,23 +231,18 @@ public:
 
     bool isValid() const;
 
-    QString name() const;
+    QString name(bool altName = false) const;
     QString profile() const;
     CodeLocation location() const;
     QList<TargetArtifact> targetArtifacts() const;
-    QList<GroupData> groups() const;
     QVariantMap properties() const;
     bool isEnabled() const;
     bool isRunnable() const;
+    QStringList allFilePaths() const;
+    PropertyMap properties2() const;
 private:
     friend class Internal::ProductImp;
     QExplicitlySharedDataPointer<Internal::ProductImp> d_imp;
-};
-
-class RunEnvironment
-{
-public:
-    const QProcessEnvironment runEnvironment() const { return QProcessEnvironment(); }
 };
 
 class RuleCommand
@@ -306,17 +276,43 @@ public:
     QString buildDirectory() const;
     QList<Product> products() const;
     QList<Module> subModules() const;
-    QList<Product> allProducts() const;
 
 
     QSet<QString> buildSystemFiles() const;
-
     QString profile() const { return QString(); }
+
+private:
+    friend class Internal::ModuleImp;
+    QExplicitlySharedDataPointer<Internal::ModuleImp> d_imp;
+};
+
+class Project
+{
+public:
+    Project(const QString& path);
+    Project();
+    Project(const Project &other);
+    Project &operator=(const Project &other);
+    ~Project();
+
+    // TODO void setupProject(const SetupProjectParameters &parameters, ILogSink *logSink)
+
+
+    bool isValid() const;
+
+    bool parse();
+
+    ErrorInfo errors() const;
+
+    Module topModule() const;
+    QList<Product> allProducts(bool onlyRunnables = false) const;
+    QString profile() const { return QString(); }
+
     QString targetExecutable(const Product &product,
                              const InstallOptions &installoptions) const { return QString(); }
-    RunEnvironment getRunEnvironment(const Product &product,
+    QProcessEnvironment getRunEnvironment(const Product &product,
             const InstallOptions &installOptions,
-            const QProcessEnvironment &environment, Settings *settings) const { return RunEnvironment(); }
+            const QProcessEnvironment &environment, Settings *settings) const { return QProcessEnvironment(); }
 
     enum ProductSelection { ProductSelectionDefaultOnly, ProductSelectionWithNonDefault };
     BuildJob *buildAllProducts(const BuildOptions &options,
@@ -340,34 +336,8 @@ public:
     RuleCommandList ruleCommands(const Product &product, const QString &inputFilePath,
                          const QString &outputFileTag, ErrorInfo *error = 0) const { return RuleCommandList(); }
 
-    ErrorInfo addFiles(const Product &product, const GroupData &group,
-                       const QStringList &filePaths) { return ErrorInfo(); }
-    ErrorInfo removeFiles(const Product &product, const GroupData &group,
-                          const QStringList &filePaths) { return ErrorInfo(); }
-private:
-    friend class Internal::ModuleImp;
-    QExplicitlySharedDataPointer<Internal::ModuleImp> d_imp;
-};
-
-class Project
-{
-public:
-    Project(const QString& path);
-    Project(const Project &other);
-    Project &operator=(const Project &other);
-    ~Project();
-
-    // TODO void setupProject(const SetupProjectParameters &parameters, ILogSink *logSink)
-
-
-    bool isValid() const;
-
-    bool parse();
-
-    ErrorInfo errors() const;
-
-    Module topModule() const;
-
+    ErrorInfo addFiles(const Product &product, const QStringList &filePaths) { return ErrorInfo(); }
+    ErrorInfo removeFiles(const Product &product, const QStringList &filePaths) { return ErrorInfo(); }
 private:
     friend class Internal::ProjectImp;
     QExplicitlySharedDataPointer<Internal::ProjectImp> d_imp;

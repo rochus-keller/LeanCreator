@@ -169,11 +169,8 @@ static void collectFilesForProject(const busy::Module &project, QSet<QString> &r
 {
     result.insert(project.busyFile());
     foreach (const busy::Product &prd, project.products()) {
-        foreach (const busy::GroupData &grp, prd.groups()) {
-            foreach (const QString &file, grp.allFilePaths())
-                result.insert(file);
-            result.insert(grp.location().filePath());
-        }
+        foreach (const QString &file, prd.allFilePaths())
+            result.insert(file);
         result.insert(prd.location().filePath());
     }
     foreach (const busy::Module &subProject, project.subModules())
@@ -247,35 +244,16 @@ bool BusyProject::ensureWriteableBusyFile(const QString &file)
     return true;
 }
 
-busy::GroupData BusyProject::reRetrieveGroupData(const busy::Product &oldProduct,
-                                          const busy::GroupData &oldGroup)
-{
-    busy::GroupData newGroup;
-    foreach (const busy::Product &pd, m_rootModule.allProducts()) {
-        if (uniqueProductName(pd) == uniqueProductName(oldProduct)) {
-            foreach (const busy::GroupData &gd, pd.groups()) {
-                if (gd.location() == oldGroup.location()) {
-                    newGroup = gd;
-                    break;
-                }
-            }
-            break;
-        }
-    }
-    QTC_CHECK(newGroup.isValid());
-    return newGroup;
-}
-
 bool BusyProject::addFilesToProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
-        const busy::Product &productData, const busy::GroupData &groupData, QStringList *notAdded)
+        const busy::Product &productData, QStringList *notAdded)
 {
     QTC_ASSERT(m_rootModule.isValid(), return false);
-    QStringList allPaths = groupData.allFilePaths();
+    QStringList allPaths = productData.allFilePaths();
     const QString productFilePath = productData.location().filePath();
     ChangeExpector expector(productFilePath, m_qbsDocuments);
     ensureWriteableBusyFile(productFilePath);
     foreach (const QString &path, filePaths) {
-        busy::ErrorInfo err = m_rootModule.addFiles(productData, groupData, QStringList() << path);
+        busy::ErrorInfo err = m_project.addFiles(productData, QStringList() << path);
         if (err.hasError()) {
             MessageManager::write(err.toString());
             *notAdded += path;
@@ -284,7 +262,7 @@ bool BusyProject::addFilesToProduct(BusyBaseProjectNode *node, const QStringList
         }
     }
     if (notAdded->count() != filePaths.count()) {
-        BusyGroupNode::setupFiles(node, reRetrieveGroupData(productData, groupData),
+        BusyGroupNode::setupFiles(node, productData,
                                  allPaths, QFileInfo(productFilePath).absolutePath(), true);
         m_rootProjectNode->update();
         emit fileListChanged();
@@ -293,17 +271,17 @@ bool BusyProject::addFilesToProduct(BusyBaseProjectNode *node, const QStringList
 }
 
 bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
-        const busy::Product &productData, const busy::GroupData &groupData,
+        const busy::Product &productData,
         QStringList *notRemoved)
 {
     QTC_ASSERT(m_rootModule.isValid(), return false);
-    QStringList allPaths = groupData.allFilePaths();
+    QStringList allPaths = productData.allFilePaths();
     const QString productFilePath = productData.location().filePath();
     ChangeExpector expector(productFilePath, m_qbsDocuments);
     ensureWriteableBusyFile(productFilePath);
     foreach (const QString &path, filePaths) {
         busy::ErrorInfo err
-                = m_rootModule.removeFiles(productData, groupData, QStringList() << path);
+                = m_project.removeFiles(productData, QStringList() << path);
         if (err.hasError()) {
             MessageManager::write(err.toString());
             *notRemoved += path;
@@ -312,7 +290,7 @@ bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStrin
         }
     }
     if (notRemoved->count() != filePaths.count()) {
-        BusyGroupNode::setupFiles(node, reRetrieveGroupData(productData, groupData), allPaths,
+        BusyGroupNode::setupFiles(node, productData, allPaths,
                                  QFileInfo(productFilePath).absolutePath(), true);
         m_rootProjectNode->update();
         emit fileListChanged();
@@ -321,16 +299,15 @@ bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStrin
 }
 
 bool BusyProject::renameFileInProduct(BusyBaseProjectNode *node, const QString &oldPath,
-        const QString &newPath, const busy::Product &productData,
-        const busy::GroupData &groupData)
+        const QString &newPath, const busy::Product &productData)
 {
     if (newPath.isEmpty())
         return false;
     QStringList dummy;
-    if (!removeFilesFromProduct(node, QStringList() << oldPath, productData, groupData, &dummy))
+    if (!removeFilesFromProduct(node, QStringList() << oldPath, productData, &dummy))
         return false;
     busy::Product newProductData;
-    foreach (const busy::Product &p, m_rootModule.allProducts()) {
+    foreach (const busy::Product &p, m_project.allProducts()) {
         if (uniqueProductName(p) == uniqueProductName(productData)) {
             newProductData = p;
             break;
@@ -338,6 +315,7 @@ bool BusyProject::renameFileInProduct(BusyBaseProjectNode *node, const QString &
     }
     if (!newProductData.isValid())
         return false;
+#if 0
     busy::GroupData newGroupData;
     foreach (const busy::GroupData &g, newProductData.groups()) {
         if (g.name() == groupData.name()) {
@@ -347,8 +325,9 @@ bool BusyProject::renameFileInProduct(BusyBaseProjectNode *node, const QString &
     }
     if (!newGroupData.isValid())
         return false;
+#endif
 
-    return addFilesToProduct(node, QStringList() << newPath, newProductData, newGroupData, &dummy);
+    return addFilesToProduct(node, QStringList() << newPath, newProductData, &dummy);
 }
 
 void BusyProject::invalidate()
@@ -359,16 +338,16 @@ void BusyProject::invalidate()
 busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList productNames,
                                  QString &error)
 {
-    QTC_ASSERT(busyModule().isValid(), return 0);
+    QTC_ASSERT(busyProject().isValid(), return 0);
     QTC_ASSERT(!isParsing(), return 0);
 
     if (productNames.isEmpty())
-        return busyModule().buildAllProducts(opts);
+        return busyProject().buildAllProducts(opts);
 
     QList<busy::Product> products;
     foreach (const QString &productName, productNames) {
         bool found = false;
-        foreach (const busy::Product &data, busyModuleData().allProducts()) {
+        foreach (const busy::Product &data, busyProject().allProducts()) {
             if (uniqueProductName(data) == productName) {
                 found = true;
                 products.append(data);
@@ -381,21 +360,21 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
         }
     }
 
-    return busyModule().buildSomeProducts(products, opts);
+    return busyProject().buildSomeProducts(products, opts);
 }
 
 busy::CleanJob *BusyProject::clean(const busy::CleanOptions &opts)
 {
-    if (!busyModule().isValid())
+    if (!busyProject().isValid())
         return 0;
-    return busyModule().cleanAllProducts(opts);
+    return busyProject().cleanAllProducts(opts);
 }
 
 busy::InstallJob *BusyProject::install(const busy::InstallOptions &opts)
 {
-    if (!busyModule().isValid())
+    if (!busyProject().isValid())
         return 0;
-    return busyModule().installAllProducts(opts);
+    return busyProject().installAllProducts(opts);
 }
 
 QString BusyProject::profileForTarget(const Target *t) const
@@ -418,9 +397,9 @@ busy::Module BusyProject::busyModule() const
     return m_rootModule;
 }
 
-busy::Module BusyProject::busyModuleData() const
+busy::Project BusyProject::busyProject() const
 {
-    return m_rootModule;
+    return m_project;
 }
 
 bool BusyProject::needsSpecialDeployment() const
@@ -442,7 +421,7 @@ void BusyProject::handleBusyParsingDone(bool success)
     generateErrors(m_project.errors());
 
     bool dataChanged = false;
-    if (success) {
+    if (true) { // NOTE: also show tree in case of parser error, not only if success is true
         m_rootModule = m_project.topModule();
         QTC_CHECK(m_rootModule.isValid());
 
@@ -451,11 +430,11 @@ void BusyProject::handleBusyParsingDone(bool success)
         updateDocuments(m_rootModule.isValid()
                         ? m_rootModule.buildSystemFiles() : QSet<QString>() << m_fileName);
         dataChanged = true;
-    } else {
-        m_qbsUpdateFutureInterface->reportCanceled();
     }
 
     if (m_qbsUpdateFutureInterface) {
+        if( !success )
+            m_qbsUpdateFutureInterface->reportCanceled();
         m_qbsUpdateFutureInterface->reportFinished();
         delete m_qbsUpdateFutureInterface;
         m_qbsUpdateFutureInterface = 0;
@@ -593,10 +572,10 @@ void BusyProject::generateErrors(const busy::ErrorInfo &e)
 
 }
 
-QString BusyProject::productDisplayName(const busy::Module &project,
+QString BusyProject::productDisplayName(const busy::Project &project,
                                        const busy::Product &product)
 {
-    QString displayName = product.name();
+    QString displayName = product.name(true);
     if (product.profile() != project.profile())
         displayName.append(QLatin1String(" [")).append(product.profile()).append(QLatin1Char(']'));
     return displayName;
@@ -693,77 +672,75 @@ void BusyProject::updateCppCodeModel()
     }
 
     QHash<QString, QString> uiFiles;
-    foreach (const busy::Product &prd, m_rootModule.allProducts()) {
-        foreach (const busy::GroupData &grp, prd.groups()) {
-            const busy::PropertyMap &props = grp.properties();
+    foreach (const busy::Product &prd, m_project.allProducts()) {
+        const busy::PropertyMap &props = prd.properties2();
 
-            ppBuilder.setCxxFlags(props.getModulePropertiesAsStringList(
-                                      QLatin1String(CONFIG_CPP_MODULE),
-                                      QLatin1String(CONFIG_CXXFLAGS)));
-            ppBuilder.setCFlags(props.getModulePropertiesAsStringList(
-                                    QLatin1String(CONFIG_CPP_MODULE),
-                                    QLatin1String(CONFIG_CFLAGS)));
+        ppBuilder.setCxxFlags(props.getModulePropertiesAsStringList(
+                                  QLatin1String(CONFIG_CPP_MODULE),
+                                  QLatin1String(CONFIG_CXXFLAGS)));
+        ppBuilder.setCFlags(props.getModulePropertiesAsStringList(
+                                QLatin1String(CONFIG_CPP_MODULE),
+                                QLatin1String(CONFIG_CFLAGS)));
 
-            QStringList list = props.getModulePropertiesAsStringList(
-                        QLatin1String(CONFIG_CPP_MODULE),
-                        QLatin1String(CONFIG_DEFINES));
-            QByteArray grpDefines;
-            foreach (const QString &def, list) {
-                QByteArray data = def.toUtf8();
-                int pos = data.indexOf('=');
-                if (pos >= 0)
-                    data[pos] = ' ';
-                else
-                    data.append(" 1"); // cpp.defines: [ "FOO" ] is considered to be "FOO=1"
-                grpDefines += (QByteArray("#define ") + data + '\n');
-            }
-            ppBuilder.setDefines(grpDefines);
-
-            list = props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                         QLatin1String(CONFIG_INCLUDEPATHS));
-            list.append(props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                              QLatin1String(CONFIG_SYSTEM_INCLUDEPATHS)));
-            CppTools::ProjectPart::HeaderPaths grpHeaderPaths;
-            foreach (const QString &p, list)
-                grpHeaderPaths += CppTools::ProjectPart::HeaderPath(
-                            FileName::fromUserInput(p).toString(),
-                            CppTools::ProjectPart::HeaderPath::IncludePath);
-
-            list = props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                         QLatin1String(CONFIG_FRAMEWORKPATHS));
-            list.append(props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                              QLatin1String(CONFIG_SYSTEM_FRAMEWORKPATHS)));
-            foreach (const QString &p, list)
-                grpHeaderPaths += CppTools::ProjectPart::HeaderPath(
-                            FileName::fromUserInput(p).toString(),
-                            CppTools::ProjectPart::HeaderPath::FrameworkPath);
-
-            ppBuilder.setHeaderPaths(grpHeaderPaths);
-
-            const QString pch = props.getModuleProperty(QLatin1String(CONFIG_CPP_MODULE),
-                    QLatin1String(CONFIG_PRECOMPILEDHEADER)).toString();
-            ppBuilder.setPreCompiledHeaders(QStringList() << pch);
-
-            ppBuilder.setDisplayName(grp.name());
-            ppBuilder.setProjectFile(QString::fromLatin1("%1:%2:%3")
-                    .arg(grp.location().filePath())
-                    .arg(grp.location().line())
-                    .arg(grp.location().column()));
-
-            foreach (const QString &file, grp.allFilePaths()) {
-                if (file.endsWith(QLatin1String(".ui"))) {
-                    QStringList generated = m_rootProjectNode->busyProject()
-                            .generatedFiles(prd, file, QStringList(QLatin1String("hpp")));
-                    if (generated.count() == 1)
-                        uiFiles.insert(file, generated.at(0));
-                }
-            }
-
-            const QList<Id> languages =
-                    ppBuilder.createProjectPartsForFiles(grp.allFilePaths());
-            foreach (Id language, languages)
-                setProjectLanguage(language, true);
+        QStringList list = props.getModulePropertiesAsStringList(
+                    QLatin1String(CONFIG_CPP_MODULE),
+                    QLatin1String(CONFIG_DEFINES));
+        QByteArray grpDefines;
+        foreach (const QString &def, list) {
+            QByteArray data = def.toUtf8();
+            int pos = data.indexOf('=');
+            if (pos >= 0)
+                data[pos] = ' ';
+            else
+                data.append(" 1"); // cpp.defines: [ "FOO" ] is considered to be "FOO=1"
+            grpDefines += (QByteArray("#define ") + data + '\n');
         }
+        ppBuilder.setDefines(grpDefines);
+
+        list = props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
+                                                     QLatin1String(CONFIG_INCLUDEPATHS));
+        list.append(props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
+                                                          QLatin1String(CONFIG_SYSTEM_INCLUDEPATHS)));
+        CppTools::ProjectPart::HeaderPaths grpHeaderPaths;
+        foreach (const QString &p, list)
+            grpHeaderPaths += CppTools::ProjectPart::HeaderPath(
+                        FileName::fromUserInput(p).toString(),
+                        CppTools::ProjectPart::HeaderPath::IncludePath);
+
+        list = props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
+                                                     QLatin1String(CONFIG_FRAMEWORKPATHS));
+        list.append(props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
+                                                          QLatin1String(CONFIG_SYSTEM_FRAMEWORKPATHS)));
+        foreach (const QString &p, list)
+            grpHeaderPaths += CppTools::ProjectPart::HeaderPath(
+                        FileName::fromUserInput(p).toString(),
+                        CppTools::ProjectPart::HeaderPath::FrameworkPath);
+
+        ppBuilder.setHeaderPaths(grpHeaderPaths);
+
+        const QString pch = props.getModuleProperty(QLatin1String(CONFIG_CPP_MODULE),
+                QLatin1String(CONFIG_PRECOMPILEDHEADER)).toString();
+        ppBuilder.setPreCompiledHeaders(QStringList() << pch);
+
+        ppBuilder.setDisplayName(prd.name(true));
+        ppBuilder.setProjectFile(QString::fromLatin1("%1:%2:%3")
+                .arg(prd.location().filePath())
+                .arg(prd.location().line())
+                .arg(prd.location().column()));
+
+        foreach (const QString &file, prd.allFilePaths()) {
+            if (file.endsWith(QLatin1String(".ui"))) {
+                QStringList generated = m_rootProjectNode->busyProject()
+                        .generatedFiles(prd, file, QStringList(QLatin1String("hpp")));
+                if (generated.count() == 1)
+                    uiFiles.insert(file, generated.at(0));
+            }
+        }
+
+        const QList<Id> languages =
+                ppBuilder.createProjectPartsForFiles(prd.allFilePaths());
+        foreach (Id language, languages)
+            setProjectLanguage(language, true);
     }
 
     pinfo.finish();
@@ -783,33 +760,29 @@ void BusyProject::updateCppCompilerCallData()
     QTC_ASSERT(m_codeModelProjectInfo == modelManager->projectInfo(this), return);
 
     CppTools::ProjectInfo::CompilerCallData data;
-    foreach (const busy::Product &product, m_rootModule.allProducts()) {
+    foreach (const busy::Product &product, m_project.allProducts()) {
         if (!product.isEnabled())
             continue;
 
-        foreach (const busy::GroupData &group, product.groups()) {
-            if (!group.isEnabled())
+
+        foreach (const QString &file, product.allFilePaths()) {
+            if (!CppTools::ProjectFile::isSource(CppTools::ProjectFile::classify(file)))
                 continue;
 
-            foreach (const QString &file, group.allFilePaths()) {
-                if (!CppTools::ProjectFile::isSource(CppTools::ProjectFile::classify(file)))
-                    continue;
+            busy::ErrorInfo errorInfo;
+            const busy::RuleCommandList ruleCommands
+                   = m_project.ruleCommands(product, file, QLatin1String("obj"), &errorInfo);
+            if (errorInfo.hasError())
+                continue;
 
-                busy::ErrorInfo errorInfo;
-                const busy::RuleCommandList ruleCommands
-                       = m_rootModule.ruleCommands(product, file, QLatin1String("obj"), &errorInfo);
-                if (errorInfo.hasError())
-                    continue;
-
-                QList<QStringList> calls;
-                foreach (const busy::RuleCommand &ruleCommand, ruleCommands) {
-                    if (ruleCommand.type() == busy::RuleCommand::ProcessCommandType)
-                        calls << ruleCommand.arguments();
-                }
-
-                if (!calls.isEmpty())
-                    data.insert(file, calls);
+            QList<QStringList> calls;
+            foreach (const busy::RuleCommand &ruleCommand, ruleCommands) {
+                if (ruleCommand.type() == busy::RuleCommand::ProcessCommandType)
+                    calls << ruleCommand.arguments();
             }
+
+            if (!calls.isEmpty())
+                data.insert(file, calls);
         }
     }
 
@@ -843,10 +816,8 @@ void BusyProject::updateQmlJsCodeModel()
 void BusyProject::updateApplicationTargets()
 {
     BuildTargetInfoList applications;
-    foreach (const busy::Product &productData, m_rootModule.allProducts()) {
-        if (!productData.isEnabled() || !productData.isRunnable())
-            continue;
-        const QString displayName = productDisplayName(m_rootModule, productData);
+    foreach (const busy::Product &productData, m_project.allProducts(true)) {
+        const QString displayName = productDisplayName(m_project, productData);
         if (productData.targetArtifacts().isEmpty()) { // No build yet.
             applications.list << BuildTargetInfo(displayName,
                     FileName(),
@@ -871,7 +842,7 @@ void BusyProject::updateDeploymentInfo()
     if (m_rootModule.isValid()) {
         busy::InstallOptions installOptions;
         installOptions.setInstallRoot(QLatin1String("/"));
-        foreach (const busy::InstallableFile &f, m_rootModule
+        foreach (const busy::InstallableFile &f, m_project
                      .installableFilesForProject(m_rootModule, installOptions)) {
             deploymentData.addFile(f.sourceFilePath(), QFileInfo(f.targetFilePath()).path(),
                     f.isExecutable() ? DeployableFile::TypeExecutable : DeployableFile::TypeNormal);

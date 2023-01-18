@@ -82,6 +82,19 @@ private:
 // BusyGroupNode:
 // --------------------------------------------------------------------
 
+class BusyGroupNode
+{
+public:
+    static void setupFiles(ProjectExplorer::FolderNode *root, const busy::Product & product, const QStringList &files,
+                           const QString &productPath, bool updateExisting);
+private:
+    static void setupFolder(ProjectExplorer::FolderNode *folder, const busy::Product & product,
+            const FileTreeNode *subFileTree, const QString &baseDir, bool updateExisting);
+    static ProjectExplorer::FileType fileType(const busy::Product &product,
+                                              const FileTreeNode &fileNode);
+};
+
+#if 0
 class BusyGroupNode : public BusyBaseProjectNode
 {
 public:
@@ -114,6 +127,7 @@ private:
 
     static QIcon m_groupIcon;
 };
+#endif
 
 // --------------------------------------------------------------------
 // BusyProductNode:
@@ -122,7 +136,7 @@ private:
 class BusyProductNode : public BusyBaseProjectNode
 {
 public:
-    explicit BusyProductNode(const busy::Module &project, const busy::Product &prd);
+    explicit BusyProductNode(const busy::Project &project, const busy::Product &prd);
 
     bool isEnabled() const;
     bool showInSimpleTree() const;
@@ -131,13 +145,13 @@ public:
     bool removeFiles(const QStringList &filePaths, QStringList *notRemoved = 0);
     bool renameFile(const QString &filePath, const QString &newFilePath);
 
-    void setBusyProductData(const busy::Module &project, const busy::Product prd);
+    void setBusyProductData(const busy::Project &project, const busy::Product prd);
     const busy::Product busyProductData() const { return m_qbsProductData; }
 
     QList<ProjectExplorer::RunConfiguration *> runConfigurations() const;
 
 private:
-    BusyGroupNode *findGroupNode(const QString &name);
+    //BusyGroupNode *findGroupNode(const QString &name);
 
     busy::Product m_qbsProductData;
     static QIcon m_productIcon;
@@ -154,13 +168,13 @@ public:
     ~BusyProjectNode();
 
     virtual BusyProject *project() const;
-    const busy::Module busyProject() const;
-    const busy::Module busyProjectData() const { return m_projectData; }
+    const busy::Project busyProject() const;
+    const busy::Module busyModule() const { return m_module; }
 
     bool showInSimpleTree() const;
 
 protected:
-    void update(const busy::Module &busyProject, const busy::Module &prjData);
+    void update(const busy::Project &busyProject, const busy::Module &module);
 
 private:
     void ctor();
@@ -169,7 +183,8 @@ private:
     BusyProjectNode *findProjectNode(const QString &name);
 
     static QIcon m_projectIcon;
-    busy::Module m_projectData;
+    busy::Module m_module;
+    busy::Project m_project;
 };
 
 // --------------------------------------------------------------------

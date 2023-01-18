@@ -34,11 +34,12 @@ public:
 
     int getRootModule() const;
     QList<int> getSubModules(int) const;
-    QList<int> getAllProducts(int, bool withSourceOnly = false) const;
+    QList<int> getAllProducts(int module, bool withSourceOnly = false, bool runnableOnly = false) const;
+    QStringList getAllSources(int product) const;
     bool isExecutable(int) const;
-    QByteArray getString(int inst, const char* field) const;
-    int getInteger(int inst, const char* field) const;
-    int getOwner(int inst) const;
+    QByteArray getString(int def, const char* field, bool inst = false) const;
+    int getInteger(int def, const char* field) const;
+    int getOwner(int def) const;
 protected:
     bool pushInst(int ref) const;
 private:

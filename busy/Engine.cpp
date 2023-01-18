@@ -23,6 +23,7 @@ extern "C" {
 #include <lualib.h>
 #include <bslib.h>
 #include <bsparser.h>
+#include <bshost.h>
 }
 
 using namespace busy;
@@ -194,15 +195,20 @@ QList<int> Engine::getSubModules(int id) const
     return res;
 }
 
-QList<int> Engine::getAllProducts(int id, bool withSourceOnly) const
+QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly) const
 {
+    if( runnableOnly )
+        withSourceOnly = false;
     const int top = lua_gettop(d_imp->L);
     QList<int> res;
     if( d_imp->ok() && pushInst(id) )
     {
         const int inst = lua_gettop(d_imp->L);
         lua_getglobal(d_imp->L,"#builtins");
-        lua_getfield(d_imp->L,-1,"Product");
+        if( runnableOnly )
+            lua_getfield(d_imp->L,-1,"Executable");
+        else
+            lua_getfield(d_imp->L,-1,"Product");
         lua_replace(d_imp->L,-2);
         const int productClass = lua_gettop(d_imp->L);
 
@@ -226,8 +232,9 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly) const
                     if( withSourceOnly )
                     {
                         lua_getfield(d_imp->L,-1,"sources");
-                        hasSource = !lua_isnil(d_imp->L,-1);
-                        lua_pop(d_imp->L,1);
+                        lua_getfield(d_imp->L,-2,"use_deps"); // exclude Copy
+                        hasSource = !lua_isnil(d_imp->L,-2) && lua_isnil(d_imp->L,-1);
+                        lua_pop(d_imp->L,2);
                     }
                     lua_pop(d_imp->L,1);
                     if( isProduct )
@@ -247,6 +254,46 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly) const
         lua_pop(d_imp->L,2);
     }
     Q_ASSERT( top == lua_gettop(d_imp->L) );
+    return res;
+}
+
+QStringList Engine::getAllSources(int product) const
+{
+    QStringList res;
+    if( d_imp->ok() && pushInst(product) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+
+        lua_getfield(d_imp->L,decl,"#owner");
+        lua_getfield(d_imp->L,-1,"#dir");
+        lua_replace(d_imp->L,-2);
+        const int absDir = lua_gettop(d_imp->L);
+
+        lua_getfield(d_imp->L,decl,"#inst");
+        lua_getfield(d_imp->L,-1,"sources");
+        lua_replace(d_imp->L,-2);
+        const int sources = lua_gettop(d_imp->L);
+
+
+        if( !lua_isnil(d_imp->L,sources) )
+        {
+            const int n = lua_objlen(d_imp->L,sources);
+            for( int i = 1; i <= n; i++ )
+            {
+                lua_rawgeti(d_imp->L,sources,i);
+                const int file = lua_gettop(d_imp->L);
+                if( *lua_tostring(d_imp->L,file) != '/' )
+                {
+                    if( bs_add_path(d_imp->L,absDir,file) == 0 )
+                        lua_replace(d_imp->L,file);
+                }
+                res << QString::fromUtf8( bs_denormalize_path(lua_tostring(d_imp->L,file)) );
+
+                lua_pop(d_imp->L,1);
+            }
+        }
+        lua_pop(d_imp->L,3);
+    }
     return res;
 }
 
@@ -281,10 +328,18 @@ bool Engine::isExecutable(int id) const
         return false;
 }
 
-QByteArray Engine::getString(int inst, const char* field) const
+QByteArray Engine::getString(int def, const char* field, bool inst) const
 {
-    if( d_imp->ok() && pushInst(inst) )
+    if( d_imp->ok() && pushInst(def) )
     {
+        if( inst )
+        {
+            lua_getfield(d_imp->L,-1,"#inst");
+            if( !lua_isnil(d_imp->L,-1) )
+                lua_replace(d_imp->L,-2);
+            else
+                lua_pop(d_imp->L,1);
+        }
         lua_getfield(d_imp->L,-1,field);
         const QByteArray res = lua_tostring(d_imp->L,-1);
         lua_pop(d_imp->L,2);
@@ -293,9 +348,9 @@ QByteArray Engine::getString(int inst, const char* field) const
     return QByteArray();
 }
 
-int Engine::getInteger(int inst, const char* field) const
+int Engine::getInteger(int def, const char* field) const
 {
-    if( d_imp->ok() && pushInst(inst) )
+    if( d_imp->ok() && pushInst(def) )
     {
         lua_getfield(d_imp->L,-1,field);
         const int res = lua_tointeger(d_imp->L,-1);
@@ -305,10 +360,10 @@ int Engine::getInteger(int inst, const char* field) const
     return 0;
 }
 
-int Engine::getOwner(int inst) const
+int Engine::getOwner(int def) const
 {
     int res = 0;
-    if( d_imp->ok() && pushInst(inst) )
+    if( d_imp->ok() && pushInst(def) )
     {
         lua_getfield(d_imp->L,-1,"#owner");
         if( lua_istable(d_imp->L,-1) )

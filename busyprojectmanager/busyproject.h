@@ -67,14 +67,11 @@ public:
 
     bool isProjectEditable() const;
     bool addFilesToProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
-                           const busy::Product &productData, const busy::GroupData &groupData,
-                           QStringList *notAdded);
+                           const busy::Product &productData, QStringList *notAdded);
     bool removeFilesFromProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
-            const busy::Product &productData, const busy::GroupData &groupData,
-            QStringList *notRemoved);
+            const busy::Product &productData, QStringList *notRemoved);
     bool renameFileInProduct(BusyBaseProjectNode *node, const QString &oldPath,
-            const QString &newPath, const busy::Product &productData,
-            const busy::GroupData &groupData);
+            const QString &newPath, const busy::Product &productData );
 
     busy::BuildJob *build(const busy::BuildOptions &opts, QStringList products, QString &error);
     busy::CleanJob *clean(const busy::CleanOptions &opts);
@@ -92,12 +89,12 @@ public:
     void updateAfterBuild();
 
     busy::Module busyModule() const;
-    busy::Module busyModuleData() const;
+    busy::Project busyProject() const;
 
     bool needsSpecialDeployment() const;
     void generateErrors(const busy::ErrorInfo &e);
 
-    static QString productDisplayName(const busy::Module &project,
+    static QString productDisplayName(const busy::Project& project,
                                       const busy::Product &product);
     static QString uniqueProductName(const busy::Product &product);
 
@@ -132,9 +129,6 @@ private:
     void updateBuildTargetData();
 
     static bool ensureWriteableBusyFile(const QString &file);
-
-    busy::GroupData reRetrieveGroupData(const busy::Product &oldProduct,
-                                       const busy::GroupData &oldGroup);
 
     BusyManager *const m_manager;
     const QString m_projectName;
