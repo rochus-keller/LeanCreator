@@ -110,6 +110,12 @@ Engine::~Engine()
     delete d_imp;
 }
 
+void Engine::registerLogger(BSLogger l, void* data)
+{
+    if( d_imp->ok() )
+        bs_preset_logger(d_imp->L,l,data);
+}
+
 bool Engine::parse(const QByteArray& dir)
 {
     // TODO: set #build_mode

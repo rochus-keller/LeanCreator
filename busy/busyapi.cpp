@@ -21,6 +21,8 @@ extern "C" {
 #include <bsparser.h>
 }
 #include <QFileInfo>
+#include <QDir>
+#include <QtDebug>
 using namespace busy;
 
 class Internal::ModuleImp : public QSharedData
@@ -137,6 +139,66 @@ class Internal::ProjectImp : public QSharedData
 public:
     QString d_path;
     Engine::Ptr d_eng;
+    ErrorInfo d_errs;
+    ILogSink* d_log;
+
+    ProjectImp():d_log(0){}
+    ~ProjectImp()
+    {
+        if( d_eng.data() )
+            d_eng->registerLogger(0,0);
+    }
+
+    static inline LoggerLevel map(BSLogLevel ll)
+    {
+        switch( ll )
+        {
+        case BS_Info:
+            return LoggerInfo;
+        case BS_Debug:
+            return LoggerDebug;
+        case BS_Warning:
+            return LoggerWarning;
+        case BS_Error:
+        case BS_Critical:
+            return LoggerError;
+        }
+    }
+
+    static void logger(BSLogLevel ll, void* data, const char* file, BSRowCol loc, const char* format, va_list args)
+    {
+        ProjectImp* _this = (ProjectImp*)data;
+        QByteArray tmp;
+        tmp.resize(2000);
+        qvsnprintf(tmp.data(),tmp.size(),format,args);
+        const QString msg = QString::fromUtf8(tmp);
+        LoggerLevel level = map(ll);
+        if( ll >= BS_Warning )
+        {
+            ErrorItem item;
+            if( file )
+                item.d_loc.d_path = QString::fromUtf8(file);
+            if( loc.row )
+            {
+                item.d_loc.d_row = loc.row;
+                item.d_loc.d_col = loc.col + 1;
+            }
+            item.d_msg = msg;
+            if( ll >= BS_Error )
+                _this->d_errs.d_errs.append(item);
+            if( _this->d_log )
+            {
+                if( ll == BS_Warning )
+                {
+                    ErrorInfo ei;
+                    ei.d_errs.append(item);
+                    _this->d_log->printWarning(ei);
+                }
+            }
+        }
+        if( _this->d_log && ll != BS_Warning )
+            _this->d_log->printMessage(level,msg, ILogSink::logLevelTag(level));
+    }
 };
 
 Project::Project()
@@ -152,6 +214,7 @@ Project::Project(const QString& path)
     else
         d_imp->d_path = path;
     d_imp->d_eng = new Engine();
+    d_imp->d_eng->registerLogger(Internal::ProjectImp::logger,d_imp.data());
 }
 
 Project::Project(const Project& other) : d_imp(other.d_imp)
@@ -175,16 +238,18 @@ bool Project::isValid() const
     return d_imp->d_eng;
 }
 
-bool Project::parse()
+bool Project::parse(const SetupProjectParameters& parameters, ILogSink* logSink)
 {
     if( !isValid() )
         return false;
+    d_imp->d_errs.d_errs.clear();
+    d_imp->d_log = logSink;
     return d_imp->d_eng->parse(d_imp->d_path.toUtf8());
 }
 
 ErrorInfo Project::errors() const
 {
-    return ErrorInfo(); // TODO
+    return d_imp->d_errs;
 }
 
 Module Project::topModule() const
@@ -330,3 +395,82 @@ QList<Product> Project::allProducts(bool onlyRunnables) const
     return res;
 }
 
+QString ErrorInfo::toString() const
+{
+    QStringList lines;
+    foreach (const ErrorItem &e, d_errs)
+    {
+        QString str;
+        if (!e.codeLocation().filePath().isEmpty()) {
+            str = QDir::toNativeSeparators(e.codeLocation().filePath());
+            QString lineAndColumn;
+            if (e.codeLocation().line() > 0 && !str.contains(QRegExp(QLatin1String(":[0-9]+$"))))
+                lineAndColumn += QLatin1Char(':') + QString::number(e.codeLocation().line());
+            if (e.codeLocation().column() > 0 && !str.contains(QRegExp(QLatin1String(":[0-9]+:[0-9]+$"))))
+                lineAndColumn += QLatin1Char(':') + QString::number(e.codeLocation().column());
+            str += lineAndColumn;
+        }
+        if (!str.isEmpty())
+            str += QLatin1Char(' ');
+        str += e.description();
+        lines.append(str);
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
+ILogSink::ILogSink():d_level(LoggerInfo)
+{
+
+}
+
+ILogSink::~ILogSink()
+{
+
+}
+
+void ILogSink::printWarning(const ErrorInfo& warning)
+{
+    if (willPrint(LoggerWarning)) {
+        //d->mutex.lock();
+        doPrintWarning(warning);
+        //d->mutex.unlock();
+    }
+}
+
+void ILogSink::printMessage(LoggerLevel level, const QString& message, const QString& tag, bool force)
+{
+    if (force || willPrint(level)) {
+        //d->mutex.lock();
+        doPrintMessage(level, message, tag);
+        //d->mutex.unlock();
+    }
+}
+
+static QString logLevelName(LoggerLevel level)
+{
+    switch (level) {
+    case LoggerError:
+        return QLatin1String("error");
+    case LoggerWarning:
+        return QLatin1String("warning");
+    case LoggerInfo:
+        return QLatin1String("info");
+    case LoggerDebug:
+        return QLatin1String("debug");
+    case LoggerTrace:
+        return QLatin1String("trace");
+    default:
+        break;
+    }
+    return QString();
+}
+
+QString ILogSink::logLevelTag(LoggerLevel level)
+{
+    if (level == LoggerInfo)
+        return QString();
+    QString str = logLevelName(level).toUpper();
+    if (!str.isEmpty())
+        str.append(QLatin1String(": "));
+    return str;
+}

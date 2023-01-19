@@ -19,6 +19,7 @@
 
 #include <QSharedData>
 #include <QString>
+#include <bslogger.h>
 
 namespace busy
 {
@@ -30,8 +31,9 @@ public:
     Engine();
     ~Engine();
 
-    bool parse( const QByteArray& dir );
+    void registerLogger(BSLogger,void* data);
 
+    bool parse( const QByteArray& dir );
     int getRootModule() const;
     QList<int> getSubModules(int) const;
     QList<int> getAllProducts(int module, bool withSourceOnly = false, bool runnableOnly = false) const;

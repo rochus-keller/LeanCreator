@@ -36,6 +36,7 @@ let run_moc : Moc {
 		./busyrunconfiguration.h
 		./busyprofilessettingspage.cpp
 		./busyeditor.h
+		./busyeditoroutline.h
 	]
 }
 
@@ -71,6 +72,7 @@ let lib * : Library {
 		./busyeditor.cpp
 		./busyhighlighter.cpp
 		./busyindenter.cpp
+		./busyeditoroutline.cpp
 	]
 	.deps += [ run_rcc run_moc run_uic ]
 	.include_dirs += build_dir()

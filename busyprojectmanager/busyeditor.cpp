@@ -18,6 +18,7 @@
 #include "busyprojectmanagerconstants.h"
 #include "busyhighlighter.h"
 #include "busyindenter.h"
+#include "busyeditoroutline.h"
 
 #include <texteditor/texteditoractionhandler.h>
 #include <texteditor/texteditorsettings.h>
@@ -106,8 +107,8 @@ void EditorWidget::finalizeInitialization()
     //connect(d_outline, SIGNAL(activated(int)), this, SLOT(gotoSymbolInEditor()));
     //connect(d_outline, SIGNAL(currentIndexChanged(int)), this, SLOT(updateToolTip()));
 
-    //OutlineMdl1* outline = new OutlineMdl1(this);
-    //d_outline->setModel(outline);
+    busy::EditorOutline* outline = new busy::EditorOutline(this);
+    d_outline->setModel(outline);
     //connect( outline, SIGNAL(modelReset()), this, SLOT(onCursor()) );
 
     insertExtraToolBarWidget(TextEditorWidget::Left, d_outline );

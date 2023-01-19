@@ -593,7 +593,8 @@ void BusyProject::parse(const QVariantMap &config, const Environment &env, const
     m_parsingDelay.stop();
 
     BusyManager::instance()->updateProfileIfNecessary(activeTarget()->kit());
-    const bool res = m_project.parse();
+    busy::SetupProjectParameters params; // TODO
+    const bool res = m_project.parse(params, BusyManager::logSink());
     //  void parse(const QVariantMap &config, const Utils::Environment &env, const QString &dir);
     emit projectParsingStarted();
     handleBusyParsingDone(res);

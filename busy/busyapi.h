@@ -52,17 +52,21 @@ public:
 class ErrorItem
 {
 public:
-    QString description() const { return QString(); }
-    CodeLocation codeLocation() const { return CodeLocation(); }
-    QString toString() const { return QString(); }
+    QString description() const { return d_msg; }
+    CodeLocation codeLocation() const { return d_loc; }
+
+    QString d_msg;
+    CodeLocation d_loc;
 };
 
 class ErrorInfo
 {
 public:
-    QList<ErrorItem> items() const { return QList<ErrorItem>(); }
-    QString toString() const { return QString(); }
-    bool hasError() const { return false; }
+    QList<ErrorItem> items() const { return d_errs; }
+    QString toString() const;
+    bool hasError() const { return !d_errs.isEmpty(); }
+
+    QList<ErrorItem> d_errs;
 };
 
 class AbstractJob : public QObject
@@ -148,11 +152,21 @@ class ILogSink
 {
     Q_DISABLE_COPY(ILogSink)
 public:
-    ILogSink() {}
-    void setLogLevel(LoggerLevel level) {}
-};
+    ILogSink();
+    virtual ~ILogSink();
 
-inline QString logLevelTag(LoggerLevel level) { return QString(); }
+    void setLogLevel(LoggerLevel level){ d_level = level; }
+    bool willPrint(LoggerLevel level) const { return level <= d_level; }
+    void printWarning(const ErrorInfo &warning);
+    void printMessage(LoggerLevel level, const QString &message, const QString &tag = QString(),bool force = false);
+
+    static QString logLevelTag(LoggerLevel level);
+protected:
+    virtual void doPrintWarning(const ErrorInfo &warning) = 0;
+    virtual void doPrintMessage(LoggerLevel level, const QString &message, const QString &tag) = 0;
+private:
+    LoggerLevel d_level;
+};
 
 class InstallableFile
 {
@@ -286,6 +300,23 @@ private:
     QExplicitlySharedDataPointer<Internal::ModuleImp> d_imp;
 };
 
+class SetupProjectParameters
+{
+public:
+    void setProjectFilePath(const QString &projectFilePath) {}
+    void setBuildRoot(const QString &buildRoot) {}
+    void setSearchPaths(const QStringList &searchPaths) {}
+    void setPluginPaths(const QStringList &pluginPaths) {}
+    void setLibexecPath(const QString &libexecPath) {}
+    void setSettingsDirectory(const QString &settingsBaseDir) {}
+    void setOverriddenValues(const QVariantMap &values) {}
+    void setIgnoreDifferentProjectFilePath(bool doIgnore) {}
+    void setDryRun(bool dryRun) {}
+    void setEnvironment(const QProcessEnvironment &env) {}
+    void setTopLevelProfile(const QString &profile) {}
+    void setBuildVariant(const QString &buildVariant) {}
+};
+
 class Project
 {
 public:
@@ -295,12 +326,9 @@ public:
     Project &operator=(const Project &other);
     ~Project();
 
-    // TODO void setupProject(const SetupProjectParameters &parameters, ILogSink *logSink)
-
-
     bool isValid() const;
 
-    bool parse();
+    bool parse(const SetupProjectParameters &parameters, ILogSink *logSink);
 
     ErrorInfo errors() const;
 

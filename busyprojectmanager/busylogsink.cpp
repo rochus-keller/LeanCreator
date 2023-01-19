@@ -77,7 +77,7 @@ void BusyLogSink::doPrintMessage(busy::LoggerLevel level, const QString &message
 
     {
         QMutexLocker l(&m_mutex);
-        m_messages.append(busy::logLevelTag(level) + message);
+        m_messages.append(busy::ILogSink::logLevelTag(level) + message);
     }
     QMetaObject::invokeMethod(this, "sendMessages", Qt::QueuedConnection);
 }
