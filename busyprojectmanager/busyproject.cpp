@@ -79,7 +79,6 @@ namespace Internal {
 // Constants:
 // --------------------------------------------------------------------
 
-static const char CONFIG_CPP_MODULE[] = "cpp";
 static const char CONFIG_CXXFLAGS[] = "cxxFlags";
 static const char CONFIG_CFLAGS[] = "cFlags";
 static const char CONFIG_DEFINES[] = "defines";
@@ -674,18 +673,12 @@ void BusyProject::updateCppCodeModel()
 
     QHash<QString, QString> uiFiles;
     foreach (const busy::Product &prd, m_project.allProducts()) {
-        const busy::PropertyMap &props = prd.properties2();
+        const busy::PropertyMap &props = prd.buildConfig();
 
-        ppBuilder.setCxxFlags(props.getModulePropertiesAsStringList(
-                                  QLatin1String(CONFIG_CPP_MODULE),
-                                  QLatin1String(CONFIG_CXXFLAGS)));
-        ppBuilder.setCFlags(props.getModulePropertiesAsStringList(
-                                QLatin1String(CONFIG_CPP_MODULE),
-                                QLatin1String(CONFIG_CFLAGS)));
+        ppBuilder.setCxxFlags(props.properties[busy::PropertyMap::CXXFLAGS]);
+        ppBuilder.setCFlags(props.properties[busy::PropertyMap::CFLAGS]);
 
-        QStringList list = props.getModulePropertiesAsStringList(
-                    QLatin1String(CONFIG_CPP_MODULE),
-                    QLatin1String(CONFIG_DEFINES));
+        QStringList list = props.properties[busy::PropertyMap::DEFINES];
         QByteArray grpDefines;
         foreach (const QString &def, list) {
             QByteArray data = def.toUtf8();
@@ -698,20 +691,16 @@ void BusyProject::updateCppCodeModel()
         }
         ppBuilder.setDefines(grpDefines);
 
-        list = props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                     QLatin1String(CONFIG_INCLUDEPATHS));
-        list.append(props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                          QLatin1String(CONFIG_SYSTEM_INCLUDEPATHS)));
+        list = props.properties[busy::PropertyMap::INCLUDEPATHS];
+        list.append(props.properties[busy::PropertyMap::SYSTEM_INCLUDEPATHS]);
         CppTools::ProjectPart::HeaderPaths grpHeaderPaths;
         foreach (const QString &p, list)
             grpHeaderPaths += CppTools::ProjectPart::HeaderPath(
                         FileName::fromUserInput(p).toString(),
                         CppTools::ProjectPart::HeaderPath::IncludePath);
 
-        list = props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                     QLatin1String(CONFIG_FRAMEWORKPATHS));
-        list.append(props.getModulePropertiesAsStringList(QLatin1String(CONFIG_CPP_MODULE),
-                                                          QLatin1String(CONFIG_SYSTEM_FRAMEWORKPATHS)));
+        list = props.properties[busy::PropertyMap::FRAMEWORKPATHS];
+        list.append(props.properties[busy::PropertyMap::SYSTEM_FRAMEWORKPATHS]);
         foreach (const QString &p, list)
             grpHeaderPaths += CppTools::ProjectPart::HeaderPath(
                         FileName::fromUserInput(p).toString(),
@@ -719,9 +708,8 @@ void BusyProject::updateCppCodeModel()
 
         ppBuilder.setHeaderPaths(grpHeaderPaths);
 
-        const QString pch = props.getModuleProperty(QLatin1String(CONFIG_CPP_MODULE),
-                QLatin1String(CONFIG_PRECOMPILEDHEADER)).toString();
-        ppBuilder.setPreCompiledHeaders(QStringList() << pch);
+        const QStringList pch = props.properties[busy::PropertyMap::PRECOMPILEDHEADER];
+        ppBuilder.setPreCompiledHeaders(pch);
 
         ppBuilder.setDisplayName(prd.name(true));
         ppBuilder.setProjectFile(QString::fromLatin1("%1:%2:%3")

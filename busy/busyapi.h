@@ -133,8 +133,18 @@ public:
 class PropertyMap
 {
 public:
-    QStringList getModulePropertiesAsStringList(const QString &moduleName, const QString &propertyName) const { return QStringList(); }
-    QVariant getModuleProperty(const QString &moduleName, const QString &propertyName) const { return QVariant(); }
+    enum Property {
+        CXXFLAGS,
+        CFLAGS,
+        DEFINES,
+        INCLUDEPATHS,
+        SYSTEM_INCLUDEPATHS,
+        FRAMEWORKPATHS,
+        SYSTEM_FRAMEWORKPATHS,
+        PRECOMPILEDHEADER,
+        MaxProperty
+    };
+    QStringList properties[MaxProperty];
 };
 
 enum LoggerLevel
@@ -253,7 +263,7 @@ public:
     bool isEnabled() const;
     bool isRunnable() const;
     QStringList allFilePaths() const;
-    PropertyMap properties2() const;
+    PropertyMap buildConfig() const;
 private:
     friend class Internal::ProductImp;
     QExplicitlySharedDataPointer<Internal::ProductImp> d_imp;
@@ -327,6 +337,7 @@ public:
     ~Project();
 
     bool isValid() const;
+    Engine* getEngine() const;
 
     bool parse(const SetupProjectParameters &parameters, ILogSink *logSink);
 

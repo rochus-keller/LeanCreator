@@ -35,12 +35,20 @@ public:
 
     bool parse( const QByteArray& dir );
     int getRootModule() const;
+    int findModule(const QString& path) const;
+    QList<int> findDeclByPos(const QString& path, int row, int col ) const;
     QList<int> getSubModules(int) const;
     QList<int> getAllProducts(int module, bool withSourceOnly = false, bool runnableOnly = false) const;
+    QList<int> getAllDecls(int module) const;
     QStringList getAllSources(int product) const;
+    QStringList getIncludePaths(int product) const;
+    QStringList getDefines(int product) const;
+    QStringList getCppFlags(int product) const;
+    QStringList getCFlags(int product) const;
     bool isExecutable(int) const;
     QByteArray getString(int def, const char* field, bool inst = false) const;
     int getInteger(int def, const char* field) const;
+    int getObject(int def, const char* field) const;
     int getOwner(int def) const;
 protected:
     bool pushInst(int ref) const;

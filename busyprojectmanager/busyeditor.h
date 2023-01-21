@@ -20,6 +20,7 @@
 #include <texteditor/texteditor.h>
 #include <texteditor/textdocument.h>
 #include <utils/treeviewcombobox.h>
+#include <utils/fileutils.h>
 
 namespace Core { class SearchResultItem; }
 
@@ -59,6 +60,10 @@ namespace BusyProjectManager
         ~EditorWidget();
 
         void finalizeInitialization(); // override
+    protected slots:
+        void onDocReady(Utils::FileName oldName,Utils::FileName newName);
+        void onCursor();
+        void gotoSymbolInEditor();
     private:
         Utils::TreeViewComboBox* d_outline;
     };

@@ -10,6 +10,11 @@ class EditorOutline : public QAbstractItemModel
     Q_OBJECT
 public:
     explicit EditorOutline(QObject *parent = 0);
+    ~EditorOutline();
+
+    void setFileName(const QString&);
+    bool getRowCol( const QModelIndex &, int& row, int& col ) const;
+    QModelIndex findByPosition( int row, int col) const;
 
     // overrides
     QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
@@ -18,14 +23,12 @@ public:
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
+protected slots:
+    void fileUpdated();
 private:
-    struct Slot
-    {
-        //CrossRefModel::SymRef d_sym;
-        QByteArray d_name;
-        bool operator<( const Slot& rhs ) const { return qstricmp( d_name, rhs.d_name ) < 0; }
-    };
-    QList<Slot> d_rows;
+    void fill();
+    class Imp;
+    Imp* d_imp;
 };
 }
 

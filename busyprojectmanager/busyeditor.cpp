@@ -25,8 +25,10 @@
 #include <texteditor/textdocumentlayout.h>
 #include <texteditor/texteditorconstants.h>
 #include <texteditor/fontsettings.h>
+#include <core/editormanager/editormanager.h>
 
 #include <QFileInfo>
+#include <QtDebug>
 
 using namespace BusyProjectManager;
 
@@ -104,7 +106,10 @@ void EditorWidget::finalizeInitialization()
     d_outline->setMaxVisibleItems(40);
 
     d_outline->setContextMenuPolicy(Qt::ActionsContextMenu);
-    //connect(d_outline, SIGNAL(activated(int)), this, SLOT(gotoSymbolInEditor()));
+    connect( textDocument(), SIGNAL(filePathChanged(Utils::FileName,Utils::FileName)),
+             this, SLOT(onDocReady(Utils::FileName,Utils::FileName)) );
+    connect( this, SIGNAL(cursorPositionChanged()), this, SLOT(onCursor()) );
+    connect(d_outline, SIGNAL(activated(int)), this, SLOT(gotoSymbolInEditor()));
     //connect(d_outline, SIGNAL(currentIndexChanged(int)), this, SLOT(updateToolTip()));
 
     busy::EditorOutline* outline = new busy::EditorOutline(this);
@@ -112,4 +117,53 @@ void EditorWidget::finalizeInitialization()
     //connect( outline, SIGNAL(modelReset()), this, SLOT(onCursor()) );
 
     insertExtraToolBarWidget(TextEditorWidget::Left, d_outline );
+}
+
+void EditorWidget::onDocReady(Utils::FileName oldName,Utils::FileName newName)
+{
+    const QString fileName = newName.toString();
+    //CrossRefModel* mdl = ModelManager::instance()->getModelForCurrentProjectOrDirPath( fileName, true);
+                // in case there is no project create one with current file path and parse each Verilog file
+                // found there
+    //Q_ASSERT(mdl != 0 );
+    //connect( mdl, SIGNAL(sigFileUpdated(QString)), this, SLOT(onFileUpdated(QString)) );
+
+    busy::EditorOutline* outline = static_cast<busy::EditorOutline*>( d_outline->model() );
+    outline->setFileName(fileName);
+}
+
+void EditorWidget::onCursor()
+{
+    QTextCursor cur = textCursor();
+    cur.movePosition(QTextCursor::StartOfWord);
+    const int line = cur.blockNumber() + 1;
+    const int col = cur.columnNumber() + 1;
+
+    busy::EditorOutline* mdl = static_cast<busy::EditorOutline*>( d_outline->model() );
+    if( mdl )
+    {
+        QModelIndex pos = mdl->findByPosition(line,col);
+        if( !pos.isValid() )
+            pos = mdl->index(0,0);
+        const bool blocked = d_outline->blockSignals(true);
+        d_outline->setCurrentIndex(pos);
+        //updateToolTip();
+        d_outline->blockSignals(blocked);
+    }
+}
+
+void EditorWidget::gotoSymbolInEditor()
+{
+    busy::EditorOutline* mdl = static_cast<busy::EditorOutline*>( d_outline->model() );
+    const QModelIndex modelIndex = d_outline->view()->currentIndex();
+
+    int row, col;
+    if( mdl->getRowCol(modelIndex,row,col) && row > 0 )
+    {
+        Core::EditorManager::cutForwardNavigationHistory();
+        Core::EditorManager::addCurrentPositionToNavigationHistory();
+        gotoLine( row, col );
+        //emit sigGotoSymbol( row, col );
+        activateEditor();
+    }
 }

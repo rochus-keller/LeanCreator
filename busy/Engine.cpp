@@ -24,6 +24,7 @@ extern "C" {
 #include <bslib.h>
 #include <bsparser.h>
 #include <bshost.h>
+#include <bsrunner.h>
 }
 
 using namespace busy;
@@ -168,6 +169,64 @@ int Engine::getRootModule() const
     return 0;
 }
 
+int Engine::findModule(const QString& path) const
+{
+    int res = 0;
+    lua_getglobal(d_imp->L,"#refs");
+    if( lua_istable(d_imp->L,-1) )
+    {
+        lua_pushstring(d_imp->L,path.toUtf8().constData());
+        lua_rawget(d_imp->L,-2);
+        if( lua_istable(d_imp->L,-1) )
+        {
+            lua_getfield(d_imp->L,-1,"#ref");
+            res = lua_tointeger(d_imp->L,-1);
+            lua_pop(d_imp->L,1);
+        }
+        lua_pop(d_imp->L,1);
+    }
+    lua_pop(d_imp->L,1);
+    return res;
+}
+
+QList<int> Engine::findDeclByPos(const QString& path, int row, int col) const
+{
+    const int top = lua_gettop(d_imp->L);
+    QList<int> res;
+    lua_getglobal(d_imp->L,"#xref");
+    if( lua_istable(d_imp->L,-1) )
+    {
+        // filepath -> list_of_idents{ rowcol -> set_of_decls }
+        lua_pushstring(d_imp->L,path.toUtf8().constData());
+        lua_rawget(d_imp->L,-2);
+        if( lua_istable(d_imp->L,-1) )
+        {
+            const int list_of_idents = lua_gettop(d_imp->L);
+            lua_pushinteger(d_imp->L, bs_torowcol(row,col) );
+            lua_rawget(d_imp->L,list_of_idents);
+            if( lua_istable(d_imp->L,-1) )
+            {
+                const int set_of_decls = lua_gettop(d_imp->L);
+                lua_pushnil(d_imp->L);  /* first key */
+                while (lua_next(d_imp->L, set_of_decls) != 0)
+                {
+                    const int key = lua_gettop(d_imp->L)-1;
+                    lua_getfield(d_imp->L,key,"#ref");
+                    const int ref = lua_tointeger(d_imp->L,-1);
+                    if( ref )
+                        res << ref;
+                    lua_pop(d_imp->L, 2);
+                }
+            }
+            lua_pop(d_imp->L,1);
+        }
+        lua_pop(d_imp->L,1);
+    }
+    lua_pop(d_imp->L,1);
+    Q_ASSERT( top == lua_gettop(d_imp->L) );
+    return res;
+}
+
 QList<int> Engine::getSubModules(int id) const
 {
     const int top = lua_gettop(d_imp->L);
@@ -263,6 +322,31 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly
     return res;
 }
 
+QList<int> Engine::getAllDecls(int module) const
+{
+    QList<int> res;
+    if( d_imp->ok() && pushInst(module) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+        const int n = lua_objlen(d_imp->L,decl);
+        for( int i = 1; i <= n; i++ )
+        {
+            lua_rawgeti(d_imp->L,decl,i);
+            if( lua_istable(d_imp->L,-1) )
+            {
+                lua_getfield(d_imp->L,-1,"#ref");
+                const int id = lua_tointeger(d_imp->L,-1);
+                if( id )
+                    res.append(id);
+                lua_pop(d_imp->L,1);
+            }
+            lua_pop(d_imp->L,1);
+        }
+        lua_pop(d_imp->L,1);
+    }
+    return res;
+}
+
 QStringList Engine::getAllSources(int product) const
 {
     QStringList res;
@@ -299,6 +383,104 @@ QStringList Engine::getAllSources(int product) const
             }
         }
         lua_pop(d_imp->L,3);
+    }
+    return res;
+}
+
+static void fetchConfig(lua_State* L,int inst, const char* field, QStringList& result, bool isPath)
+{
+    lua_getfield(L,inst,"configs");
+    const int configs = lua_gettop(L);
+    size_t i;
+    for( i = 1; i <= lua_objlen(L,configs); i++ )
+    {
+        lua_rawgeti(L,configs,i);
+        const int config = lua_gettop(L);
+        // TODO: check for circular deps
+        fetchConfig(L,config,field,result, isPath);
+        lua_pop(L,1); // config
+    }
+    lua_pop(L,1); // configs
+
+    bs_getModuleVar(L,inst,"#dir");
+    const int absDir = lua_gettop(L);
+
+    lua_getfield(L,inst,field);
+    const int list = lua_gettop(L);
+
+    for( i = 1; i <= lua_objlen(L,list); i++ )
+    {
+        lua_rawgeti(L,list,i);
+        const int item = lua_gettop(L);
+        if( isPath && *lua_tostring(L,-1) != '/' )
+        {
+            // relative path
+            if( bs_add_path(L,absDir,item) == 0 )
+                lua_replace(L,item);
+        }
+        if( isPath )
+            result << QString::fromUtf8( bs_denormalize_path(lua_tostring(L,item)) );
+        else
+            result << QString::fromUtf8( lua_tostring(L,item) );
+        lua_pop(L,1); // path
+    }
+    lua_pop(L,2); // absDir, list
+}
+
+QStringList Engine::getIncludePaths(int product) const
+{
+    QStringList res;
+    if( d_imp->ok() && pushInst(product) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,decl,"#inst");
+        const int inst = lua_gettop(d_imp->L);
+        fetchConfig(d_imp->L,inst,"include_dirs",res,true);
+        lua_pop(d_imp->L,2);
+    }
+    return res;
+}
+
+QStringList Engine::getDefines(int product) const
+{
+    QStringList res;
+    if( d_imp->ok() && pushInst(product) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,decl,"#inst");
+        const int inst = lua_gettop(d_imp->L);
+        fetchConfig(d_imp->L,inst,"defines",res,false);
+        lua_pop(d_imp->L,2);
+    }
+    return res;
+}
+
+QStringList Engine::getCppFlags(int product) const
+{
+    QStringList res;
+    if( d_imp->ok() && pushInst(product) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,decl,"#inst");
+        const int inst = lua_gettop(d_imp->L);
+        fetchConfig(d_imp->L,inst,"cflags",res,false);
+        fetchConfig(d_imp->L,inst,"cflags_cc",res,false);
+        lua_pop(d_imp->L,2);
+    }
+    return res;
+}
+
+QStringList Engine::getCFlags(int product) const
+{
+    QStringList res;
+    if( d_imp->ok() && pushInst(product) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,decl,"#inst");
+        const int inst = lua_gettop(d_imp->L);
+        fetchConfig(d_imp->L,inst,"cflags",res,false);
+        fetchConfig(d_imp->L,inst,"cflags_c",res,false);
+        lua_pop(d_imp->L,2);
     }
     return res;
 }
@@ -364,6 +546,38 @@ int Engine::getInteger(int def, const char* field) const
         return res;
     }
     return 0;
+}
+
+int Engine::getObject(int def, const char* field) const
+{
+    const int top = lua_gettop(d_imp->L);
+    int res = 0;
+    if( d_imp->ok() && pushInst(def) )
+    {
+        lua_getfield(d_imp->L,-1,field);
+        if( lua_istable(d_imp->L,-1) )
+        {
+            const int table = lua_gettop(d_imp->L);
+            lua_getfield(d_imp->L,table,"#ref");
+            if( lua_isnil(d_imp->L,-1) )
+            {
+                // the object doesn't have a ref, so create and register one
+                lua_getglobal(d_imp->L,"#refs");
+                const int refs = lua_gettop(d_imp->L);
+                res = lua_objlen(d_imp->L,refs) + 1;
+                lua_pushinteger(d_imp->L,res);
+                lua_setfield(d_imp->L,table,"#ref");
+                lua_pushvalue(d_imp->L,table);
+                lua_rawseti(d_imp->L,refs,res);
+                lua_pop(d_imp->L,1);
+            }else
+                res = lua_tointeger(d_imp->L,-1);
+            lua_pop(d_imp->L,1);
+        }
+        lua_pop(d_imp->L,2);
+    }
+    Q_ASSERT( top == lua_gettop(d_imp->L));
+    return res;
 }
 
 int Engine::getOwner(int def) const

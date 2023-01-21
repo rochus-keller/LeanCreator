@@ -128,9 +128,10 @@ QList<Module> Module::subModules() const
 QSet<QString> Module::buildSystemFiles() const
 {
     // TODO: not sure whether this is supposed to return all BUSY files of the project or just
-    // the one of the module; in any case the result is apparently not needed
+    // the one of the module; in any case the result is apparently not needed (besides the
+    // default in BusyProject::updateDocuments)
     QSet<QString> res;
-    // res << busyFile();
+    res << busyFile();
     return res;
 }
 
@@ -196,8 +197,11 @@ public:
                 }
             }
         }
+        const QString tag = ILogSink::logLevelTag(level);
         if( _this->d_log && ll != BS_Warning )
-            _this->d_log->printMessage(level,msg, ILogSink::logLevelTag(level));
+            _this->d_log->printMessage(level,msg, tag);
+
+        qDebug() << (level == LoggerInfo ? "INF" : tag ) << msg; // TEST
     }
 };
 
@@ -235,7 +239,12 @@ Project::~Project()
 
 bool Project::isValid() const
 {
-    return d_imp->d_eng;
+    return d_imp->d_eng.constData() != 0;
+}
+
+Engine*Project::getEngine() const
+{
+    return d_imp->d_eng.data();
 }
 
 bool Project::parse(const SetupProjectParameters& parameters, ILogSink* logSink)
@@ -370,9 +379,16 @@ QStringList Product::allFilePaths() const
     return d_imp->d_eng->getAllSources(d_imp->d_id);
 }
 
-PropertyMap Product::properties2() const
+PropertyMap Product::buildConfig() const
 {
-    return PropertyMap();
+    PropertyMap res;
+    if( !isValid() )
+        return res;
+
+    res.properties[PropertyMap::INCLUDEPATHS] = d_imp->d_eng->getIncludePaths(d_imp->d_id);
+    res.properties[PropertyMap::DEFINES] = d_imp->d_eng->getDefines(d_imp->d_id);
+    // TODO: the other properties
+    return res;
 }
 
 static void walkAllProducts(Engine* eng, int module, QList<int>& res, bool onlyRunnables )
