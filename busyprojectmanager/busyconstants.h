@@ -50,6 +50,7 @@ const char BUSY_SETTINGS_CATEGORY_ICON[]  = ":/projectexplorer/images/build.png"
 
 const char BUSY_PROPERTIES_KEY_FOR_KITS[] = "BusyProjectManager.busy-properties";
 
+
 } // namespace Constants
 } // namespace BusyProjectManager
 

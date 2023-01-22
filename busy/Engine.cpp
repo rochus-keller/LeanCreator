@@ -191,8 +191,10 @@ int Engine::findModule(const QString& path) const
 
 QList<int> Engine::findDeclByPos(const QString& path, int row, int col) const
 {
-    const int top = lua_gettop(d_imp->L);
     QList<int> res;
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
     lua_getglobal(d_imp->L,"#xref");
     if( lua_istable(d_imp->L,-1) )
     {
@@ -211,11 +213,93 @@ QList<int> Engine::findDeclByPos(const QString& path, int row, int col) const
                 while (lua_next(d_imp->L, set_of_decls) != 0)
                 {
                     const int key = lua_gettop(d_imp->L)-1;
-                    lua_getfield(d_imp->L,key,"#ref");
-                    const int ref = lua_tointeger(d_imp->L,-1);
+                    const int ref = assureRef(key);
                     if( ref )
                         res << ref;
-                    lua_pop(d_imp->L, 2);
+                    lua_pop(d_imp->L,1);
+                }
+            }
+            lua_pop(d_imp->L,1);
+        }
+        lua_pop(d_imp->L,1);
+    }
+    lua_pop(d_imp->L,1);
+    Q_ASSERT( top == lua_gettop(d_imp->L) );
+    return res;
+}
+
+QList<Engine::AllLocsInFile> Engine::findAllLocsOf(int id) const
+{
+    const int top = lua_gettop(d_imp->L);
+    QList<Engine::AllLocsInFile> res;
+    if( d_imp->ok() && pushInst(id) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,decl,"#name");
+        const QString name = QString::fromUtf8(lua_tostring(d_imp->L,-1));
+        lua_pop(d_imp->L,1);
+        lua_getfield(d_imp->L,decl,"#xref");
+        const int refs = lua_gettop(d_imp->L);
+        if( lua_istable(d_imp->L,refs) )
+        {
+            lua_pushnil(d_imp->L);  /* first key */
+            while (lua_next(d_imp->L, refs) != 0)
+            {
+                AllLocsInFile a;
+                a.d_file = QString::fromUtf8(lua_tostring(d_imp->L,-2));
+                const int set_of_rowcol = lua_gettop(d_imp->L);
+                lua_pushnil(d_imp->L);  /* first key */
+                while (lua_next(d_imp->L, set_of_rowcol) != 0)
+                {
+                    const int rowCol = lua_tointeger(d_imp->L,-2);
+                    Loc l;
+                    l.d_row = bs_torow(rowCol);
+                    l.d_col = bs_tocol(rowCol) + 1;
+                    l.d_len = name.size();
+                    a.d_locs.append(l);
+                    lua_pop(d_imp->L, 1);
+                }
+                lua_pop(d_imp->L, 1);
+                res.append(a);
+            }
+        }
+        lua_pop(d_imp->L,1);
+    }
+    lua_pop(d_imp->L,1);
+    Q_ASSERT( top == lua_gettop(d_imp->L) );
+    return res;
+}
+
+QList<Engine::Loc> Engine::findDeclInstsInFile(const QString& path, int id) const
+{
+    const int top = lua_gettop(d_imp->L);
+    QList<Engine::Loc> res;
+    if( d_imp->ok() && pushInst(id) )
+    {
+        const int decl = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,decl,"#name");
+        const QString name = QString::fromUtf8(lua_tostring(d_imp->L,-1));
+        lua_pop(d_imp->L,1);
+        lua_getfield(d_imp->L,decl,"#xref");
+        const int refs = lua_gettop(d_imp->L);
+        if( lua_istable(d_imp->L,refs) )
+        {
+            lua_pushstring(d_imp->L,path.toUtf8().constData());
+            lua_rawget(d_imp->L,refs);
+            const int set_of_rowcol = lua_gettop(d_imp->L);
+            if( lua_istable(d_imp->L,-1) )
+            {
+                lua_pushnil(d_imp->L);  /* first key */
+                while (lua_next(d_imp->L, set_of_rowcol) != 0)
+                {
+                    const int key = lua_gettop(d_imp->L)-1;
+                    const int rowCol = lua_tointeger(d_imp->L,key);
+                    Loc loc;
+                    loc.d_row = bs_torow(rowCol);
+                    loc.d_col = bs_tocol(rowCol)+1;
+                    loc.d_len = name.size();
+                    res << loc;
+                    lua_pop(d_imp->L, 1);
                 }
             }
             lua_pop(d_imp->L,1);
@@ -334,11 +418,16 @@ QList<int> Engine::getAllDecls(int module) const
             lua_rawgeti(d_imp->L,decl,i);
             if( lua_istable(d_imp->L,-1) )
             {
-                lua_getfield(d_imp->L,-1,"#ref");
-                const int id = lua_tointeger(d_imp->L,-1);
-                if( id )
-                    res.append(id);
+                lua_getfield(d_imp->L,-1,"#kind");
+                const int k = lua_tointeger(d_imp->L,-1);
                 lua_pop(d_imp->L,1);
+                if( k == BS_ModuleDef || k == BS_ClassDecl || k == BS_EnumDecl ||
+                        k == BS_VarDecl || k == BS_FieldDecl || k == BS_MacroDef )
+                {
+                    const int id = assureRef(-1);
+                    if( id )
+                        res.append(id);
+                }
             }
             lua_pop(d_imp->L,1);
         }
@@ -548,6 +637,18 @@ int Engine::getInteger(int def, const char* field) const
     return 0;
 }
 
+QString Engine::getPath(int def, const char* field) const
+{
+    if( d_imp->ok() && pushInst(def) )
+    {
+        lua_getfield(d_imp->L,-1,field);
+        const QByteArray res = lua_tostring(d_imp->L,-1);
+        lua_pop(d_imp->L,2);
+        return QString::fromUtf8(bs_denormalize_path(res.constData()));
+    }
+    return QString();
+}
+
 int Engine::getObject(int def, const char* field) const
 {
     const int top = lua_gettop(d_imp->L);
@@ -558,24 +659,43 @@ int Engine::getObject(int def, const char* field) const
         if( lua_istable(d_imp->L,-1) )
         {
             const int table = lua_gettop(d_imp->L);
-            lua_getfield(d_imp->L,table,"#ref");
-            if( lua_isnil(d_imp->L,-1) )
-            {
-                // the object doesn't have a ref, so create and register one
-                lua_getglobal(d_imp->L,"#refs");
-                const int refs = lua_gettop(d_imp->L);
-                res = lua_objlen(d_imp->L,refs) + 1;
-                lua_pushinteger(d_imp->L,res);
-                lua_setfield(d_imp->L,table,"#ref");
-                lua_pushvalue(d_imp->L,table);
-                lua_rawseti(d_imp->L,refs,res);
-                lua_pop(d_imp->L,1);
-            }else
-                res = lua_tointeger(d_imp->L,-1);
-            lua_pop(d_imp->L,1);
+            res = assureRef(table);
         }
         lua_pop(d_imp->L,2);
     }
+    Q_ASSERT( top == lua_gettop(d_imp->L));
+    return res;
+}
+
+int Engine::getOwningModule(int def) const
+{
+    const int top = lua_gettop(d_imp->L);
+    int res = 0;
+    if( d_imp->ok() && pushInst(def) )
+    {
+        lua_getfield(d_imp->L,-1,"#owner");
+        const int table = lua_gettop(d_imp->L);
+        while( !lua_isnil(d_imp->L,table) )
+        {
+            lua_getfield(d_imp->L,table,"#kind");
+            const int k = lua_tointeger(d_imp->L,-1);
+            lua_pop(d_imp->L,1);
+            if( k == BS_ModuleDef )
+            {
+                lua_getfield(d_imp->L,table,"#ref");
+                res = lua_tointeger(d_imp->L,-1);
+                lua_pop(d_imp->L,1);
+                lua_pushnil(d_imp->L);
+                lua_replace(d_imp->L,table);
+            }else
+            {
+                lua_getfield(d_imp->L,table,"#owner");
+                lua_replace(d_imp->L,table);
+            }
+        }
+        lua_pop(d_imp->L,1);
+    }
+    lua_pop(d_imp->L,1);
     Q_ASSERT( top == lua_gettop(d_imp->L));
     return res;
 }
@@ -613,5 +733,29 @@ bool Engine::pushInst(int ref) const
     }
     lua_pop(d_imp->L,n);
     return false;
+}
+
+int Engine::assureRef(int table) const
+{
+    int res = 0;
+    const int top = lua_gettop(d_imp->L);
+    if( table <= 0 )
+        table += top + 1;
+    lua_getfield(d_imp->L,table,"#ref");
+    if( lua_isnil(d_imp->L,-1) )
+    {
+        // the object doesn't have a ref, so create and register one
+        lua_getglobal(d_imp->L,"#refs");
+        const int refs = lua_gettop(d_imp->L);
+        res = lua_objlen(d_imp->L,refs) + 1;
+        lua_pushinteger(d_imp->L,res);
+        lua_setfield(d_imp->L,table,"#ref");
+        lua_pushvalue(d_imp->L,table);
+        lua_rawseti(d_imp->L,refs,res);
+        lua_pop(d_imp->L,1);
+    }else
+        res = lua_tointeger(d_imp->L,-1);
+    lua_pop(d_imp->L,1);
+    return res;
 }
 

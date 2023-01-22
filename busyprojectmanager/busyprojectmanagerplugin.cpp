@@ -53,7 +53,7 @@
 #include <projectexplorer/session.h>
 #include <projectexplorer/target.h>
 #include <texteditor/texteditorsettings.h>
-//#include <qtsupport/qtsupportconstants.h>
+#include <texteditor/texteditorconstants.h>
 
 #include <utils/fileutils.h>
 #include <utils/qtcassert.h>
@@ -93,11 +93,11 @@ bool BusyProjectManagerPlugin::initialize(const QStringList &arguments, QString 
     Q_UNUSED(arguments);
     Q_UNUSED(errorMessage);
 
-    const Core::Context projectContext(::BusyProjectManager::Constants::PROJECT_ID);
+    const Core::Context projectContext(BusyProjectManager::Constants::PROJECT_ID);
+    const Core::Context editorContext(BusyProjectManager::Constants::BUSY_EDITOR_ID);
 
-    // TODO ModelManager::instance()->setParent(this);
 
-    // Core::FileIconProvider::registerIconOverlayForSuffix(QtSupport::Constants::ICON_QT_PROJECT, "qbs");
+    // TODO Core::FileIconProvider::registerIconOverlayForSuffix(QtSupport::Constants::ICON_QT_PROJECT, "qbs");
     Utils::MimeDatabase::addMimeTypes(QLatin1String(":/busyprojectmanager/BusyProjectManager.mimetypes.xml"));
     TextEditor::TextEditorSettings::registerMimeTypeForLanguageId(Constants::MIME_TYPE, Constants::LANG);
 
@@ -187,6 +187,29 @@ bool BusyProjectManagerPlugin::initialize(const QStringList &arguments, QString 
     command->setDefaultKeySequence(QKeySequence(tr("Ctrl+Shift+B")));
     mbuild->addAction(command, ProjectExplorer::Constants::G_BUILD_BUILD);
     connect(m_buildSubproject, SIGNAL(triggered()), this, SLOT(buildSubproject()));
+
+    Core::ActionContainer *contextMenu1 = Core::ActionManager::createMenu(
+                BusyProjectManager::Constants::EditorContextMenuId);
+
+    command = Core::ActionManager::command(TextEditor::Constants::FOLLOW_SYMBOL_UNDER_CURSOR);
+    contextMenu1->addAction(command);
+    // toolsMenu->addAction(command);
+
+    d_findUsagesAction = new QAction(tr("Find Usages"), this);
+    command = Core::ActionManager::registerAction(d_findUsagesAction, Constants::ACTION_FIND_USAGES, editorContext);
+    command->setKeySequence(QKeySequence(tr("Ctrl+Shift+U")));
+    connect(d_findUsagesAction, SIGNAL(triggered()), this, SLOT(onFindUsages()));
+    contextMenu1->addAction(command);
+    //toolsMenu->addAction(command);
+
+    Core::Command *sep = contextMenu1->addSeparator();
+
+    command = Core::ActionManager::command(TextEditor::Constants::AUTO_INDENT_SELECTION);
+    contextMenu1->addAction(command);
+
+    command = Core::ActionManager::command(TextEditor::Constants::UN_COMMENT_SELECTION);
+    contextMenu1->addAction(command);
+
 
     // Connect
     connect(ProjectTree::instance(), &ProjectTree::currentNodeChanged,
@@ -523,6 +546,13 @@ void BusyProjectManagerPlugin::reparseProject(BusyProject *project)
         project->scheduleParsing();
     else
         project->parseCurrentBuildConfiguration();
+}
+
+void BusyProjectManagerPlugin::onFindUsages()
+{
+    EditorWidget* e = qobject_cast<EditorWidget*>(Core::EditorManager::currentEditor()->widget());
+    if(e)
+        e->onFindUsages();
 }
 
 } // namespace Internal

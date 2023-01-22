@@ -27,6 +27,17 @@ class Engine : public QSharedData
 {
 public:
     typedef QExplicitlySharedDataPointer<Engine> Ptr;
+    struct Loc
+    {
+        int d_row;
+        short d_col, d_len;
+        Loc():d_row(0),d_col(0),d_len(0){}
+    };
+    struct AllLocsInFile
+    {
+        QList<Loc> d_locs;
+        QString d_file;
+    };
 
     Engine();
     ~Engine();
@@ -35,8 +46,10 @@ public:
 
     bool parse( const QByteArray& dir );
     int getRootModule() const;
-    int findModule(const QString& path) const;
+    int findModule(const QString& path) const; // TODO: path can point to more than one module
     QList<int> findDeclByPos(const QString& path, int row, int col ) const;
+    QList<Loc> findDeclInstsInFile(const QString& path, int decl) const;
+    QList<AllLocsInFile> findAllLocsOf(int decl) const;
     QList<int> getSubModules(int) const;
     QList<int> getAllProducts(int module, bool withSourceOnly = false, bool runnableOnly = false) const;
     QList<int> getAllDecls(int module) const;
@@ -48,10 +61,13 @@ public:
     bool isExecutable(int) const;
     QByteArray getString(int def, const char* field, bool inst = false) const;
     int getInteger(int def, const char* field) const;
+    QString getPath(int def, const char* field) const;
     int getObject(int def, const char* field) const;
+    int getOwningModule(int def) const;
     int getOwner(int def) const;
 protected:
     bool pushInst(int ref) const;
+    int assureRef(int table) const;
 private:
     class Imp;
     Imp* d_imp;

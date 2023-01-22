@@ -45,6 +45,10 @@ const char ACTION_BUILD_PRODUCT_CONTEXT[] = "Busy.BuildProductCtx";
 const char ACTION_BUILD_PRODUCT[] = "Busy.BuildProduct";
 const char ACTION_BUILD_SUBPROJECT_CONTEXT[] = "Busy.BuildSubprojectCtx";
 const char ACTION_BUILD_SUBPROJECT[] = "Busy.BuildSubproduct";
+const char ACTION_FIND_USAGES[] = "Busy.FindUsages";
+
+// Menus
+const char EditorContextMenuId[] = "Busy.ContextMenu";
 
 // Ids:
 const char BUSY_BUILDSTEP_ID[] = "Busy.BuildStep";
@@ -58,10 +62,6 @@ static const char BUSY_VARIANT_RELEASE[] = "release";
 
 static const char BUSY_CONFIG_VARIANT_KEY[] = "busy.buildVariant";
 static const char BUSY_CONFIG_PROFILE_KEY[] = "busy.profile";
-#if 0
-static const char BUSY_CONFIG_DECLARATIVE_DEBUG_KEY[] = "Qt.declarative.qmlDebugging";
-static const char BUSY_CONFIG_QUICK_DEBUG_KEY[] = "Qt.quick.qmlDebugging";
-#endif
 
 // Icons:
 static const char BUSY_GROUP_ICON[] = ":/busyprojectmanager/images/groups.png";

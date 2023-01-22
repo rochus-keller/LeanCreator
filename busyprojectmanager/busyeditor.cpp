@@ -19,6 +19,7 @@
 #include "busyhighlighter.h"
 #include "busyindenter.h"
 #include "busyeditoroutline.h"
+#include <busy/Engine.h>
 
 #include <texteditor/texteditoractionhandler.h>
 #include <texteditor/texteditorsettings.h>
@@ -26,8 +27,13 @@
 #include <texteditor/texteditorconstants.h>
 #include <texteditor/fontsettings.h>
 #include <core/editormanager/editormanager.h>
+#include <core/actionmanager/actionmanager.h>
+#include <core/actionmanager/command.h>
+#include <core/actionmanager/actioncontainer.h>
+#include <core/find/searchresultwindow.h>
 
 #include <QFileInfo>
+#include <QMenu>
 #include <QtDebug>
 
 using namespace BusyProjectManager;
@@ -85,7 +91,7 @@ bool EditorDocument::save(QString* errorString, const QString& fileName, bool au
 }
 
 
-EditorWidget::EditorWidget():d_outline(0)
+EditorWidget::EditorWidget():d_outline(0),d_mdl(0)
 {
 
 }
@@ -110,10 +116,10 @@ void EditorWidget::finalizeInitialization()
              this, SLOT(onDocReady(Utils::FileName,Utils::FileName)) );
     connect( this, SIGNAL(cursorPositionChanged()), this, SLOT(onCursor()) );
     connect(d_outline, SIGNAL(activated(int)), this, SLOT(gotoSymbolInEditor()));
-    //connect(d_outline, SIGNAL(currentIndexChanged(int)), this, SLOT(updateToolTip()));
+    connect(d_outline, SIGNAL(currentIndexChanged(int)), this, SLOT(updateToolTip()));
 
-    busy::EditorOutline* outline = new busy::EditorOutline(this);
-    d_outline->setModel(outline);
+    d_mdl = new busy::EditorOutline(this);
+    d_outline->setModel(d_mdl);
     //connect( outline, SIGNAL(modelReset()), this, SLOT(onCursor()) );
 
     insertExtraToolBarWidget(TextEditorWidget::Left, d_outline );
@@ -121,49 +127,206 @@ void EditorWidget::finalizeInitialization()
 
 void EditorWidget::onDocReady(Utils::FileName oldName,Utils::FileName newName)
 {
-    const QString fileName = newName.toString();
-    //CrossRefModel* mdl = ModelManager::instance()->getModelForCurrentProjectOrDirPath( fileName, true);
-                // in case there is no project create one with current file path and parse each Verilog file
-                // found there
-    //Q_ASSERT(mdl != 0 );
-    //connect( mdl, SIGNAL(sigFileUpdated(QString)), this, SLOT(onFileUpdated(QString)) );
+    d_mdl->setFileName(newName.toString());
+}
 
-    busy::EditorOutline* outline = static_cast<busy::EditorOutline*>( d_outline->model() );
-    outline->setFileName(fileName);
+static bool lessThan2(const QTextEdit::ExtraSelection &s1, const QTextEdit::ExtraSelection &s2)
+{
+    return s1.cursor.position() < s2.cursor.position();
+}
+
+typedef QList<QTextEdit::ExtraSelection> ExtraSelections;
+static ExtraSelections toExtraSelections(const QList<busy::Engine::Loc>& uses,
+                                                           TextEditor::TextStyle style, TextEditor::TextDocument* document )
+{
+    ExtraSelections result;
+
+    QTextDocument* doc = document->document();
+
+    foreach (const busy::Engine::Loc& use, uses)
+    {
+        const int position = doc->findBlockByNumber(use.d_row - 1).position() + use.d_col - 2;
+        const int anchor = position + use.d_len;
+
+        QTextEdit::ExtraSelection sel;
+        sel.format = document->fontSettings().toTextCharFormat(style);
+        sel.cursor = QTextCursor(doc);
+        sel.cursor.setPosition(anchor);
+        sel.cursor.setPosition(position, QTextCursor::KeepAnchor);
+
+        result.append(sel);
+    }
+
+    std::sort(result.begin(), result.end(), lessThan2);
+    return result;
 }
 
 void EditorWidget::onCursor()
 {
+    if( d_mdl->getEngine() == 0 )
+        return;
+
     QTextCursor cur = textCursor();
     cur.movePosition(QTextCursor::StartOfWord);
     const int line = cur.blockNumber() + 1;
     const int col = cur.columnNumber() + 1;
 
-    busy::EditorOutline* mdl = static_cast<busy::EditorOutline*>( d_outline->model() );
-    if( mdl )
+    QModelIndex pos = d_mdl->findByPosition(line,col);
+    if( !pos.isValid() )
+        pos = d_mdl->index(0,0);
+    const bool blocked = d_outline->blockSignals(true);
+    d_outline->setCurrentIndex(pos);
+    updateToolTip();
+    d_outline->blockSignals(blocked);
+
+    QList<int> found = d_mdl->getEngine()->findDeclByPos(d_mdl->getFileName(),line,col);
+    if( !found.isEmpty() )
     {
-        QModelIndex pos = mdl->findByPosition(line,col);
-        if( !pos.isValid() )
-            pos = mdl->index(0,0);
-        const bool blocked = d_outline->blockSignals(true);
-        d_outline->setCurrentIndex(pos);
-        //updateToolTip();
-        d_outline->blockSignals(blocked);
-    }
+        QList<busy::Engine::Loc> pos = d_mdl->getEngine()->
+                findDeclInstsInFile(d_mdl->getFileName(),found.first());
+        setExtraSelections(TextEditor::TextEditorWidget::CodeSemanticsSelection,
+                           toExtraSelections(pos, TextEditor::C_OCCURRENCES, textDocument() ) );
+    }else
+        setExtraSelections(TextEditor::TextEditorWidget::CodeSemanticsSelection, ExtraSelections() );
 }
 
 void EditorWidget::gotoSymbolInEditor()
 {
-    busy::EditorOutline* mdl = static_cast<busy::EditorOutline*>( d_outline->model() );
     const QModelIndex modelIndex = d_outline->view()->currentIndex();
 
     int row, col;
-    if( mdl->getRowCol(modelIndex,row,col) && row > 0 )
+    if( d_mdl->getRowCol(modelIndex,row,col) && row > 0 )
     {
         Core::EditorManager::cutForwardNavigationHistory();
         Core::EditorManager::addCurrentPositionToNavigationHistory();
         gotoLine( row, col );
-        //emit sigGotoSymbol( row, col );
+        emit sigGotoSymbol( row, col );
         activateEditor();
     }
+}
+
+void EditorWidget::updateToolTip()
+{
+    d_outline->setToolTip(d_outline->currentText());
+}
+
+void EditorWidget::onOpenEditor(const Core::SearchResultItem& item)
+{
+    Core::EditorManager::openEditorAt( item.path.first(), item.lineNumber, item.textMarkPos);
+}
+
+void EditorWidget::onFindUsages()
+{
+    if( d_mdl->getEngine() == 0 )
+        return;
+
+    QTextCursor cur = textCursor();
+    cur.movePosition(QTextCursor::StartOfWord);
+    const int line = cur.blockNumber() + 1;
+    const int col = cur.columnNumber() + 1;
+
+    QList<int> found = d_mdl->getEngine()->findDeclByPos(d_mdl->getFileName(),line,col);
+    if( found.isEmpty() )
+        return;
+
+    cur.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
+
+    typedef QMap<QPair<int,int>, QString> PosText;
+    typedef QMap<QString,PosText> FilePosText;
+    FilePosText order;
+    int len = 0;
+    for( int i = 0; i < found.size(); i++ )
+    {
+        QList<busy::Engine::AllLocsInFile> res = d_mdl->getEngine()->findAllLocsOf(found[i]);
+        for( int j = 0; j < res.size(); j++ )
+        {
+            PosText& pt = order[res[j].d_file];
+            for(int k = 0; k < res[j].d_locs.size(); k++ )
+            {
+                const busy::Engine::Loc loc = res[j].d_locs[k];
+                pt[ qMakePair(loc.d_row,loc.d_col) ] = QString();
+                if( len == 0 )
+                    len = loc.d_len;
+            }
+        }
+    }
+    Core::SearchResult *search = Core::SearchResultWindow::instance()->startNewSearch(
+                                                tr("BUSY Usages:"),
+                                                QString(),
+                                                cur.selectedText(),
+                                                Core::SearchResultWindow::SearchOnly,
+                                                Core::SearchResultWindow::PreserveCaseDisabled,
+                                                QString());
+
+    for( FilePosText::const_iterator i = order.begin(); i != order.end(); ++i )
+    {
+        // TODO: make this more efficient and support not-yet saved files
+        QFile in(i.key());
+        in.open(QIODevice::ReadOnly);
+        const QByteArrayList lines = in.readAll().split('\n');
+        for( PosText::const_iterator j = i.value().begin(); j != i.value().end(); ++j )
+            search->addResult( i.key(), j.key().first,
+                           lines[j.key().first-1],
+                           j.key().second - 2, len);
+    }
+    search->finishSearch(false);
+    connect(search, SIGNAL(activated(Core::SearchResultItem)), this, SLOT(onOpenEditor(Core::SearchResultItem)));
+
+    Core::SearchResultWindow::instance()->popup(Core::IOutputPane::ModeSwitch | Core::IOutputPane::WithFocus);
+    search->popup();
+
+}
+
+TextEditor::TextEditorWidget::Link EditorWidget::findLinkAt(const QTextCursor& in, bool resolveTarget, bool inNextSplit)
+{
+    Q_UNUSED(resolveTarget);
+    Q_UNUSED(inNextSplit);
+    if( d_mdl->getEngine() == 0 )
+        return Link();
+
+    QTextCursor cur = in;
+    cur.movePosition(QTextCursor::StartOfWord);
+    const int line = cur.blockNumber() + 1;
+    const int col = cur.columnNumber() + 1;
+
+    QList<int> found = d_mdl->getEngine()->findDeclByPos(d_mdl->getFileName(),line,col);
+    if( !found.isEmpty() )
+    {
+        const QString path = d_mdl->getEngine()->getPath(
+                    d_mdl->getEngine()->getOwningModule(found.first()),"#file");
+        int r = d_mdl->getEngine()->getInteger(found.first(),"#row");
+        int c = d_mdl->getEngine()->getInteger(found.first(),"#col") - 1;
+        const QString name = QString::fromUtf8(d_mdl->getEngine()->getString(found.first(),"#name"));
+        if( path.isEmpty() )
+            return Link();
+        if( r == 0 )
+            r = c = 1;
+        Link l( path, r, c);
+        l.linkTextStart = cur.position();
+        l.linkTextEnd = cur.position() + name.size();
+        return l;
+    // TODO selector for found.size() > 1
+    }else
+        return Link();
+}
+
+void EditorWidget::contextMenuEvent(QContextMenuEvent* e)
+{
+    QPointer<QMenu> menu(new QMenu(this));
+
+    Core::ActionContainer *mcontext = Core::ActionManager::actionContainer(
+                BusyProjectManager::Constants::EditorContextMenuId);
+    Q_ASSERT(mcontext);
+    QMenu *contextMenu = mcontext->menu();
+
+    foreach (QAction *action, contextMenu->actions()) {
+        menu->addAction(action);
+    }
+
+    appendStandardContextMenuActions(menu);
+
+    menu->exec(e->globalPos());
+    if (!menu)
+        return;
+    delete menu;
 }

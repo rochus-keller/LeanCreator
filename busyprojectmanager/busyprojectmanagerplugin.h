@@ -77,6 +77,8 @@ private slots:
     void reparseCurrentProject();
     void reparseProject(BusyProject *project);
 
+    void onFindUsages();
+
 private:
     void updateContextActions();
     void updateReparseBusyAction();
@@ -92,6 +94,7 @@ private:
     QAction *m_buildFileCtx;
     QAction *m_buildProductCtx;
     QAction *m_buildSubprojectCtx;
+    QAction* d_findUsagesAction;
     Utils::ParameterAction *m_buildFile;
     Utils::ParameterAction *m_buildProduct;
     Utils::ParameterAction *m_buildSubproject;

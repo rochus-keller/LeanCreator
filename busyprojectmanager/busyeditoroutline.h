@@ -5,6 +5,8 @@
 
 namespace busy
 {
+class Engine;
+
 class EditorOutline : public QAbstractItemModel
 {
     Q_OBJECT
@@ -13,8 +15,11 @@ public:
     ~EditorOutline();
 
     void setFileName(const QString&);
+    const QString& getFileName() const;
     bool getRowCol( const QModelIndex &, int& row, int& col ) const;
     QModelIndex findByPosition( int row, int col) const;
+    int getDecl(const QModelIndex &) const;
+    Engine* getEngine() const;
 
     // overrides
     QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;

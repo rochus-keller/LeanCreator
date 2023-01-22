@@ -23,6 +23,7 @@
 #include <utils/fileutils.h>
 
 namespace Core { class SearchResultItem; }
+namespace busy { class EditorOutline; }
 
 namespace BusyProjectManager
 {
@@ -59,13 +60,28 @@ namespace BusyProjectManager
         EditorWidget();
         ~EditorWidget();
 
-        void finalizeInitialization(); // override
+        void finalizeInitialization();
+
+    signals:
+        void sigGotoSymbol( quint32 line, quint16 col );
+
+    public slots:
+        void onFindUsages();
+
     protected slots:
         void onDocReady(Utils::FileName oldName,Utils::FileName newName);
         void onCursor();
         void gotoSymbolInEditor();
+        void updateToolTip();
+        void onOpenEditor(const Core::SearchResultItem &);
+
+    protected:
+        Link findLinkAt(const QTextCursor &, bool resolveTarget = true,
+                        bool inNextSplit = false);
+        void contextMenuEvent(QContextMenuEvent *e);
     private:
         Utils::TreeViewComboBox* d_outline;
+        busy::EditorOutline* d_mdl;
     };
 }
 

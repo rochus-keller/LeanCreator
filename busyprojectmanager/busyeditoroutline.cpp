@@ -54,6 +54,11 @@ void EditorOutline::setFileName(const QString& path)
     endResetModel();
 }
 
+const QString&EditorOutline::getFileName() const
+{
+    return d_imp->d_path;
+}
+
 bool EditorOutline::getRowCol(const QModelIndex& index, int& row, int& col) const
 {
     if( !index.isValid() )
@@ -79,6 +84,22 @@ QModelIndex EditorOutline::findByPosition(int row, int col) const
             return index(i+1,0);
     }
     return QModelIndex();
+}
+
+int EditorOutline::getDecl(const QModelIndex& index) const
+{
+    if( !index.isValid() )
+        return 0;
+    const int id = index.internalId();
+    if( id == 0 )
+        return false;
+    Q_ASSERT( id <= d_imp->d_rows.size() );
+    return d_imp->d_rows[id-1].d_id;
+}
+
+Engine*EditorOutline::getEngine() const
+{
+    return d_imp->d_eng.data();
 }
 
 QModelIndex EditorOutline::index(int row, int column, const QModelIndex& parent) const
