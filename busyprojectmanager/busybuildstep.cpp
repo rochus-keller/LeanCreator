@@ -91,6 +91,8 @@ bool BusyBuildStep::init()
     if (static_cast<BusyProject *>(project())->isParsing() || m_job)
         return false;
 
+    ProjectExplorer::Kit *kit = target()->kit();
+
     BusyBuildConfiguration *bc = static_cast<BusyBuildConfiguration *>(buildConfiguration());
     if (!bc)
         bc = static_cast<BusyBuildConfiguration *>(target()->activeBuildConfiguration());

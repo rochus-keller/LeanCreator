@@ -591,8 +591,41 @@ void BusyProject::parse(const QVariantMap &config, const Environment &env, const
 
     m_parsingDelay.stop();
 
-    BusyManager::instance()->updateProfileIfNecessary(activeTarget()->kit());
-    busy::SetupProjectParameters params; // TODO
+    ProjectExplorer::Kit *kit = activeTarget()->kit();
+    Q_ASSERT(kit);
+
+    BusyManager::instance()->updateProfileIfNecessary(kit);
+
+    busy::SetupProjectParameters params;
+    QVariantMap userConfig = config;
+    params.buildDir = dir;
+    QString specialKey = QLatin1String(Constants::BUSY_CONFIG_PROFILE_KEY);
+    specialKey = QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY);
+    params.buildVariant = userConfig.take(specialKey).toString();
+    params.userConfig = userConfig;
+    params.projectFilePath = projectFilePath().toString();
+
+    ProjectExplorer::ToolChain *tc = ProjectExplorer::ToolChainKitInformation::toolChain(kit);
+
+    if( tc )
+    {
+        Core::Id id = tc->typeId();
+        if( id == ProjectExplorer::Constants::GCC_TOOLCHAIN_TYPEID )
+            params.toolchain = "gcc";
+        else if( id == ProjectExplorer::Constants::CLANG_TOOLCHAIN_TYPEID )
+            params.toolchain = "clang";
+        else if( id == ProjectExplorer::Constants::MSVC_TOOLCHAIN_TYPEID )
+            params.toolchain = "msvc";
+        else if( id == ProjectExplorer::Constants::MINGW_TOOLCHAIN_TYPEID )
+            params.toolchain = "gcc";
+        params.compilerCommand = tc->compilerCommand().toString();
+        params.abi = tc->targetAbi();
+        Environment tmp = env;
+        tc->addToEnvironment(tmp);
+        params.env = tmp.toProcessEnvironment();
+    }else
+        params.env = env.toProcessEnvironment();
+
     const bool res = m_project.parse(params, BusyManager::logSink());
     //  void parse(const QVariantMap &config, const Utils::Environment &env, const QString &dir);
     emit projectParsingStarted();

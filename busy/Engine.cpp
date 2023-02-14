@@ -117,9 +117,12 @@ void Engine::registerLogger(BSLogger l, void* data)
         bs_preset_logger(d_imp->L,l,data);
 }
 
-bool Engine::parse(const QByteArray& dir)
+bool Engine::parse(const ParseParams& params)
 {
-    // TODO: set #build_mode
+
+    lua_pushstring(d_imp->L,params.build_mode.constData());
+    lua_setglobal(d_imp->L,"#build_mode");
+
     QFile script(":/busy/builtins.lua");
     if( !script.open(QIODevice::ReadOnly) )
     {
@@ -127,14 +130,76 @@ bool Engine::parse(const QByteArray& dir)
         return false;
     }
     const QByteArray source = script.readAll();
-    if( loadLib(d_imp->L,source,"builtins") )
-        lua_setglobal(d_imp->L,"#builtins");
-    else
+
+    if( !loadLib(d_imp->L,source,"builtins") )
         return false;
+    const int builtins = lua_gettop(d_imp->L);
+    lua_pushvalue(d_imp->L,builtins);
+    lua_setglobal(d_imp->L,"#builtins");
+    lua_getfield(d_imp->L,builtins,"#inst");
+    lua_replace(d_imp->L,builtins);
+
+    lua_pushstring(d_imp->L,params.cpu);
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"host_cpu");
+    lua_setfield(d_imp->L,builtins,"target_cpu");
+
+    lua_pushstring(d_imp->L,params.os);
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"host_os");
+    lua_setfield(d_imp->L,builtins,"target_os");
+
+    lua_pushstring(d_imp->L,params.wordsize);
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"host_wordsize");
+    lua_setfield(d_imp->L,builtins,"target_wordsize");
+
+    lua_pushstring(d_imp->L,params.toolchain);
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"host_toolchain");
+    lua_setfield(d_imp->L,builtins,"target_toolchain");
+
+    lua_pushstring(d_imp->L,params.toolchain_path); // TODO normalize
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"#toolchain_path");
+    lua_setfield(d_imp->L,builtins,"target_toolchain_path");
+
+    lua_pushstring(d_imp->L,params.toolchain_prefix);
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"#toolchain_prefix");
+    lua_setfield(d_imp->L,builtins,"target_toolchain_prefix");
+
+    lua_pushinteger(d_imp->L,0);
+    lua_pushvalue(d_imp->L,-1);
+    lua_pushvalue(d_imp->L,-1);
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"host_cpu_ver");
+    lua_setfield(d_imp->L,builtins,"host_toolchain_ver");
+    lua_setfield(d_imp->L,builtins,"target_cpu_ver");
+    lua_setfield(d_imp->L,builtins,"target_toolchain_ver");
+
+    lua_pop(d_imp->L,1); // builtins
 
     lua_pushcfunction(d_imp->L, bs_compile);
-    lua_pushstring(d_imp->L,dir.constData());
-    const int err = lua_pcall(d_imp->L,1,0,0);
+    lua_pushstring(d_imp->L,params.root_source_dir.constData());
+    lua_pushstring(d_imp->L,params.root_build_dir.constData());
+    if( params.params.isEmpty() )
+        lua_pushnil(d_imp->L);
+    else
+    {
+        lua_createtable(d_imp->L,0,params.params.size());
+        const int table = lua_gettop(d_imp->L);
+        for( int i = 0; i < params.params.size(); i++ )
+        {
+            lua_pushstring(d_imp->L,params.params[i].first.constData());
+            if( params.params[i].second.isEmpty() )
+                lua_pushstring(d_imp->L,"true");
+            else
+                lua_pushstring(d_imp->L,params.params[i].second.constData());
+            lua_rawset(d_imp->L,table);
+        }
+    }
+    const int err = lua_pcall(d_imp->L,3,0,0);
     switch( err )
     {
     case LUA_ERRRUN:

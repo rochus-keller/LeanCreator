@@ -142,6 +142,7 @@ public:
     Engine::Ptr d_eng;
     ErrorInfo d_errs;
     ILogSink* d_log;
+    QProcessEnvironment env;
 
     ProjectImp():d_log(0){}
     ~ProjectImp()
@@ -247,13 +248,109 @@ Engine*Project::getEngine() const
     return d_imp->d_eng.data();
 }
 
-bool Project::parse(const SetupProjectParameters& parameters, ILogSink* logSink)
+bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
 {
     if( !isValid() )
         return false;
+    ErrorItem err;
     d_imp->d_errs.d_errs.clear();
     d_imp->d_log = logSink;
-    return d_imp->d_eng->parse(d_imp->d_path.toUtf8());
+
+    Engine::ParseParams p;
+    p.root_source_dir = d_imp->d_path.toUtf8();
+    p.root_build_dir = in.buildDir.toUtf8();
+
+    if( in.buildVariant == "debug" )
+        p.build_mode = "debug";
+    else
+        p.build_mode = "optimized";
+
+    if( !( in.toolchain == "gcc" || in.toolchain == "clang" || in.toolchain == "msvc" ) )
+    {
+        err.d_msg = "toolchain not supported: " + in.toolchain;
+        d_imp->d_errs.d_errs.append(err);
+        return false;
+    }else
+        p.toolchain = in.toolchain.toUtf8();
+
+    d_imp->env = in.env;
+
+    QFileInfo info(in.compilerCommand);
+    p.toolchain_path = info.absolutePath().toUtf8();
+    p.toolchain_prefix = info.baseName().toUtf8();
+    if( p.toolchain_prefix.endsWith(".exe") )
+        p.toolchain_prefix.chop(4);
+    if( in.toolchain == "gcc" )
+        p.toolchain_prefix.chop(3);
+    else if( in.toolchain == "clang" )
+        p.toolchain_prefix.chop(5);
+    else if( in.toolchain == "msvc" )
+        p.toolchain_prefix.chop(2); // cl
+
+    switch(in.abi.architecture())
+    {
+    case ProjectExplorer::Abi::ArmArchitecture:
+        p.cpu = "arm";
+        break;
+    case ProjectExplorer::Abi::X86Architecture:
+        p.cpu = "x86";
+        break;
+    case ProjectExplorer::Abi::ItaniumArchitecture:
+        p.cpu = "ia64";
+        break;
+    case ProjectExplorer::Abi::MipsArchitecture:
+        p.cpu = "mips";
+        break;
+    case ProjectExplorer::Abi::PowerPCArchitecture:
+        p.cpu = "ppc";
+        break;
+    default:
+        err.d_msg = "architecture not supported: " + ProjectExplorer::Abi::Abi::toString(in.abi.architecture());
+        return false;
+    }
+
+    switch(in.abi.os())
+    {
+    case ProjectExplorer::Abi::BsdOS:
+        p.os = "freebsd";
+        break;
+    case ProjectExplorer::Abi::LinuxOS:
+        p.os = "linux";
+        break;
+    case ProjectExplorer::Abi::MacOS:
+        p.os = "macos";
+        break;
+    case ProjectExplorer::Abi::UnixOS:
+        p.os = "unix";
+        break;
+    case ProjectExplorer::Abi::WindowsOS:
+        p.os = "win32";
+        break;
+    default:
+        err.d_msg = "operating system not supported: " + ProjectExplorer::Abi::Abi::toString(in.abi.os());
+        return false;
+    }
+
+    switch(in.abi.wordWidth())
+    {
+    case 128:
+        p.wordsize = "128";
+        break;
+    case 64:
+        p.wordsize = "64";
+        break;
+    case 32:
+        p.wordsize = "32";
+        break;
+    case 16:
+        p.wordsize = "16";
+        break;
+    default:
+        err.d_msg = "word width not supported: " + ProjectExplorer::Abi::Abi::toString(in.abi.wordWidth());
+        return false;
+    }
+
+    return d_imp->d_eng->parse(p);
 }
 
 ErrorInfo Project::errors() const
@@ -490,3 +587,4 @@ QString ILogSink::logLevelTag(LoggerLevel level)
         str.append(QLatin1String(": "));
     return str;
 }
+

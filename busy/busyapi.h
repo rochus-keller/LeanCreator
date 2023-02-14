@@ -21,6 +21,7 @@
 #include <QProcessEnvironment>
 #include <QAbstractItemModel>
 #include <QSet>
+#include <projectexplorer/abi.h>
 
 namespace busy
 {
@@ -313,18 +314,14 @@ private:
 class SetupProjectParameters
 {
 public:
-    void setProjectFilePath(const QString &projectFilePath) {}
-    void setBuildRoot(const QString &buildRoot) {}
-    void setSearchPaths(const QStringList &searchPaths) {}
-    void setPluginPaths(const QStringList &pluginPaths) {}
-    void setLibexecPath(const QString &libexecPath) {}
-    void setSettingsDirectory(const QString &settingsBaseDir) {}
-    void setOverriddenValues(const QVariantMap &values) {}
-    void setIgnoreDifferentProjectFilePath(bool doIgnore) {}
-    void setDryRun(bool dryRun) {}
-    void setEnvironment(const QProcessEnvironment &env) {}
-    void setTopLevelProfile(const QString &profile) {}
-    void setBuildVariant(const QString &buildVariant) {}
+    QString projectFilePath;
+    QString buildDir;
+    QVariantMap userConfig;
+    QProcessEnvironment env;
+    QString buildVariant;
+    QString compilerCommand;
+    QString toolchain;
+    ProjectExplorer::Abi abi;
 };
 
 class Project

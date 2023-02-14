@@ -463,21 +463,23 @@ bool ProjectExplorerPlugin::initialize(const QStringList &arguments, QString *er
     dd->m_journalWatcher = new JournaldWatcher;
 #endif
 
+    // RK 2023-02-13: LeanCreator like BUSY only supports GCC, CLANG and MSVC so far; MingW is treated as GCC.
+
     // Add ToolChainFactories:
 #ifdef Q_OS_WIN
-    addAutoReleasedObject(new WinDebugInterface);
+    // addAutoReleasedObject(new WinDebugInterface);
 
     addAutoReleasedObject(new MsvcToolChainFactory);
-    addAutoReleasedObject(new WinCEToolChainFactory);
+    // addAutoReleasedObject(new WinCEToolChainFactory);
 #else
-    addAutoReleasedObject(new LinuxIccToolChainFactory);
+    // addAutoReleasedObject(new LinuxIccToolChainFactory);
 #endif
 #ifndef Q_OS_MAC
-    addAutoReleasedObject(new MingwToolChainFactory); // Mingw offers cross-compiling to windows
+    // addAutoReleasedObject(new MingwToolChainFactory); // Mingw offers cross-compiling to windows
 #endif
     addAutoReleasedObject(new GccToolChainFactory);
     addAutoReleasedObject(new ClangToolChainFactory);
-    addAutoReleasedObject(new CustomToolChainFactory);
+    // TODO addAutoReleasedObject(new CustomToolChainFactory);
 
 #ifndef QT_NO_DEVICESUPPORT
     addAutoReleasedObject(new DesktopDeviceFactory);

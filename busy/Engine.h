@@ -44,7 +44,21 @@ public:
 
     void registerLogger(BSLogger,void* data);
 
-    bool parse( const QByteArray& dir );
+    struct ParseParams
+    {
+        QByteArray root_source_dir;
+        QByteArray root_build_dir;
+        QByteArray build_mode; // optimized, nonoptimized, debug
+        QByteArray toolchain_path;
+        QByteArray toolchain_prefix;
+        QByteArray os;
+        QByteArray toolchain; // gcc, msvc, clang
+        QByteArray cpu;
+        QByteArray wordsize;
+        QList<QPair<QByteArray,QByteArray> > params;
+    };
+
+    bool parse( const ParseParams& params );
     int getRootModule() const;
     int findModule(const QString& path) const; // TODO: path can point to more than one module
     QList<int> findDeclByPos(const QString& path, int row, int col ) const;
