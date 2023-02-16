@@ -56,16 +56,17 @@ public:
         QByteArray cpu;
         QByteArray wordsize;
         QList<QPair<QByteArray,QByteArray> > params;
+        QByteArrayList targets;
     };
 
-    bool parse( const ParseParams& params );
+    bool parse( const ParseParams& params, bool checkTargets = true );
     int getRootModule() const;
     int findModule(const QString& path) const; // TODO: path can point to more than one module
     QList<int> findDeclByPos(const QString& path, int row, int col ) const;
     QList<Loc> findDeclInstsInFile(const QString& path, int decl) const;
     QList<AllLocsInFile> findAllLocsOf(int decl) const;
     QList<int> getSubModules(int) const;
-    QList<int> getAllProducts(int module, bool withSourceOnly = false, bool runnableOnly = false) const;
+    QList<int> getAllProducts(int module, bool withSourceOnly = false, bool runnableOnly = false, bool onlyActives = false) const;
     QList<int> getAllDecls(int module) const;
     QStringList getAllSources(int product) const;
     QStringList getIncludePaths(int product) const;
@@ -73,7 +74,8 @@ public:
     QStringList getCppFlags(int product) const;
     QStringList getCFlags(int product) const;
     bool isExecutable(int) const;
-    QByteArray getString(int def, const char* field, bool inst = false) const;
+    bool isActive(int) const;
+   QByteArray getString(int def, const char* field, bool inst = false) const;
     int getInteger(int def, const char* field) const;
     QString getPath(int def, const char* field) const;
     int getObject(int def, const char* field) const;

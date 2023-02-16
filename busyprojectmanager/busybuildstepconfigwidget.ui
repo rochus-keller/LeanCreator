@@ -86,63 +86,18 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="qmlDebuggingLabel">
-     <property name="text">
-      <string>Enable QML debugging:</string>
-     </property>
-    </widget>
-   </item>
    <item row="2" column="1">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QCheckBox" name="qmlDebuggingLibraryCheckBox">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="qmlDebuggingWarningIcon">
-       <property name="text">
-        <string/>
-       </property>
-       <property name="pixmap">
-        <pixmap resource="../coreplugin/core.qrc">:/core/images/warning.png</pixmap>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="qmlDebuggingWarningText">
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>5</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
+    <layout class="QHBoxLayout" name="horizontalLayout"/>
    </item>
    <item row="3" column="0">
-    <widget class="QLabel" name="propertyLabel">
+    <widget class="QLabel" name="targetsLabel">
      <property name="text">
-      <string>Properties:</string>
+      <string>Targets:</string>
      </property>
     </widget>
    </item>
    <item row="3" column="1">
-    <widget class="Utils::FancyLineEdit" name="propertyEdit">
+    <widget class="Utils::FancyLineEdit" name="targetsEdit">
      <property name="toolTip">
       <string>Properties to pass to the project.</string>
      </property>
@@ -151,14 +106,14 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
+   <item row="5" column="0">
     <widget class="QLabel" name="flagsLabel">
      <property name="text">
       <string>Flags:</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
+   <item row="5" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QCheckBox" name="dryRunCheckBox">
@@ -216,41 +171,40 @@
      </item>
     </layout>
    </item>
-   <item row="5" column="0">
-    <widget class="QLabel" name="commandLineKeyLabel">
+   <item row="4" column="0">
+    <widget class="QLabel" name="parametersKeyLabel">
      <property name="text">
-      <string>Equivalent command line:</string>
+      <string>Parameters:</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
      </property>
     </widget>
    </item>
-   <item row="5" column="1">
-    <widget class="QPlainTextEdit" name="commandLineTextEdit">
+   <item row="4" column="1">
+    <widget class="QPlainTextEdit" name="parametersTextEdit">
      <property name="undoRedoEnabled">
       <bool>false</bool>
      </property>
      <property name="readOnly">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="plainText">
       <string notr="true"/>
      </property>
      <property name="textInteractionFlags">
-      <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+      <set>Qt::TextEditorInteraction</set>
      </property>
     </widget>
    </item>
   </layout>
   <zorder>buildVariantLabel</zorder>
-  <zorder>qmlDebuggingLabel</zorder>
-  <zorder>propertyLabel</zorder>
-  <zorder>propertyEdit</zorder>
-  <zorder>commandLineKeyLabel</zorder>
+  <zorder>targetsLabel</zorder>
+  <zorder>targetsEdit</zorder>
   <zorder>flagsLabel</zorder>
   <zorder>jobsLabel</zorder>
-  <zorder>commandLineTextEdit</zorder>
+  <zorder>parametersTextEdit</zorder>
+  <zorder>parametersKeyLabel</zorder>
  </widget>
  <customwidgets>
   <customwidget>
@@ -260,7 +214,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../coreplugin/core.qrc"/>
+  <include location="../core/core.qrc"/>
  </resources>
  <connections/>
 </ui>

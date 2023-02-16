@@ -466,7 +466,7 @@ QList<Core::Id> BusyRunConfigurationFactory::availableCreationIds(Target *parent
     if (!project || !project->busyModule().isValid())
         return result;
 
-    foreach (const busy::Product &product, project->busyProject().allProducts(true)) {
+    foreach (const busy::Product &product, project->busyProject().allProducts(true, true)) {
         result << idFromProduct(project, product);
     }
 

@@ -29,6 +29,7 @@
 #include "busyprojectmanager.h"
 #include "busyprojectmanagerconstants.h"
 #include "busynodes.h"
+#include "busyparser.h"
 
 #include <core/documentmanager.h>
 #include <core/icontext.h>
@@ -98,7 +99,7 @@ BusyProject::BusyProject(BusyManager *manager, const QString &fileName) :
     m_project(fileName),
     m_fileName(fileName),
     m_rootProjectNode(0),
-    m_qbsUpdateFutureInterface(0),
+    m_busyUpdateFutureInterface(0),
     m_parsingScheduled(false),
     m_cancelStatus(CancelStatusNone),
     m_currentBc(0)
@@ -126,11 +127,11 @@ BusyProject::BusyProject(BusyManager *manager, const QString &fileName) :
 BusyProject::~BusyProject()
 {
     m_codeModelFuture.cancel();
-    if (m_qbsUpdateFutureInterface) {
-        m_qbsUpdateFutureInterface->reportCanceled();
-        m_qbsUpdateFutureInterface->reportFinished();
-        delete m_qbsUpdateFutureInterface;
-        m_qbsUpdateFutureInterface = 0;
+    if (m_busyUpdateFutureInterface) {
+        m_busyUpdateFutureInterface->reportCanceled();
+        m_busyUpdateFutureInterface->reportFinished();
+        delete m_busyUpdateFutureInterface;
+        m_busyUpdateFutureInterface = 0;
     }
 
     // Deleting the root node triggers a few things, make sure rootProjectNode
@@ -147,7 +148,7 @@ QString BusyProject::displayName() const
 
 IDocument *BusyProject::document() const
 {
-    foreach (IDocument *doc, m_qbsDocuments) {
+    foreach (IDocument *doc, m_busyDocuments) {
         if (doc->filePath().toString() == m_fileName)
             return doc;
     }
@@ -183,7 +184,7 @@ QStringList BusyProject::files(Project::FilesMode fileMode) const
         return QStringList();
     QSet<QString> result;
     collectFilesForProject(m_rootModule, result);
-    result.unite(m_rootModule.buildSystemFiles());
+    result.unite(m_project.buildSystemFiles());
     return result.toList();
 }
 
@@ -249,7 +250,7 @@ bool BusyProject::addFilesToProduct(BusyBaseProjectNode *node, const QStringList
     QTC_ASSERT(m_rootModule.isValid(), return false);
     QStringList allPaths = productData.allFilePaths();
     const QString productFilePath = productData.location().filePath();
-    ChangeExpector expector(productFilePath, m_qbsDocuments);
+    ChangeExpector expector(productFilePath, m_busyDocuments);
     ensureWriteableBusyFile(productFilePath);
     foreach (const QString &path, filePaths) {
         busy::ErrorInfo err = m_project.addFiles(productData, QStringList() << path);
@@ -276,7 +277,7 @@ bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStrin
     QTC_ASSERT(m_rootModule.isValid(), return false);
     QStringList allPaths = productData.allFilePaths();
     const QString productFilePath = productData.location().filePath();
-    ChangeExpector expector(productFilePath, m_qbsDocuments);
+    ChangeExpector expector(productFilePath, m_busyDocuments);
     ensureWriteableBusyFile(productFilePath);
     foreach (const QString &path, filePaths) {
         busy::ErrorInfo err
@@ -314,17 +315,6 @@ bool BusyProject::renameFileInProduct(BusyBaseProjectNode *node, const QString &
     }
     if (!newProductData.isValid())
         return false;
-#if 0
-    busy::GroupData newGroupData;
-    foreach (const busy::GroupData &g, newProductData.groups()) {
-        if (g.name() == groupData.name()) {
-            newGroupData = g;
-            break;
-        }
-    }
-    if (!newGroupData.isValid())
-        return false;
-#endif
 
     return addFilesToProduct(node, QStringList() << newPath, newProductData, &dummy);
 }
@@ -383,7 +373,7 @@ QString BusyProject::profileForTarget(const Target *t) const
 
 bool BusyProject::isParsing() const
 {
-    return m_qbsUpdateFutureInterface;
+    return m_busyUpdateFutureInterface;
 }
 
 bool BusyProject::hasParseResult() const
@@ -426,22 +416,22 @@ void BusyProject::handleBusyParsingDone(bool success)
 
         m_rootProjectNode->update();
 
-        updateDocuments(m_rootModule.isValid()
-                        ? m_rootModule.buildSystemFiles() : QSet<QString>() << m_fileName);
+        updateDocuments(m_project.isValid()
+                        ? m_project.buildSystemFiles() : QSet<QString>() << m_fileName);
         dataChanged = true;
     }
 
-    if (m_qbsUpdateFutureInterface) {
+    if (m_busyUpdateFutureInterface) {
         if( !success )
-            m_qbsUpdateFutureInterface->reportCanceled();
-        m_qbsUpdateFutureInterface->reportFinished();
-        delete m_qbsUpdateFutureInterface;
-        m_qbsUpdateFutureInterface = 0;
+            m_busyUpdateFutureInterface->reportCanceled();
+        m_busyUpdateFutureInterface->reportFinished();
+        delete m_busyUpdateFutureInterface;
+        m_busyUpdateFutureInterface = 0;
     }
 
     if (dataChanged) { // Do this now when isParsing() is false!
         updateCppCodeModel();
-        updateQmlJsCodeModel();
+        //updateQmlJsCodeModel();
         updateBuildTargetData();
 
         emit fileListChanged();
@@ -602,7 +592,12 @@ void BusyProject::parse(const QVariantMap &config, const Environment &env, const
     QString specialKey = QLatin1String(Constants::BUSY_CONFIG_PROFILE_KEY);
     specialKey = QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY);
     params.buildVariant = userConfig.take(specialKey).toString();
-    params.userConfig = userConfig;
+    BusyParamParser::Result res1 = BusyParamParser::parse(
+                userConfig.value(Constants::BUSY_CONFIG_PARAMS_KEY).toString());
+    params.params = res1.d_params;
+    BusyTargetParser::Result res2 = BusyTargetParser::parse(
+                userConfig.value(Constants::BUSY_CONFIG_TARGETS_KEY).toString());
+    params.targets = res2.d_targets;
     params.projectFilePath = projectFilePath().toString();
 
     ProjectExplorer::ToolChain *tc = ProjectExplorer::ToolChainKitInformation::toolChain(kit);
@@ -635,18 +630,18 @@ void BusyProject::parse(const QVariantMap &config, const Environment &env, const
 void BusyProject::prepareForParsing()
 {
     TaskHub::clearTasks(ProjectExplorer::Constants::TASK_CATEGORY_BUILDSYSTEM);
-    if (m_qbsUpdateFutureInterface) {
-        m_qbsUpdateFutureInterface->reportCanceled();
-        m_qbsUpdateFutureInterface->reportFinished();
+    if (m_busyUpdateFutureInterface) {
+        m_busyUpdateFutureInterface->reportCanceled();
+        m_busyUpdateFutureInterface->reportFinished();
     }
-    delete m_qbsUpdateFutureInterface;
-    m_qbsUpdateFutureInterface = 0;
+    delete m_busyUpdateFutureInterface;
+    m_busyUpdateFutureInterface = 0;
 
-    m_qbsUpdateFutureInterface = new QFutureInterface<bool>();
-    m_qbsUpdateFutureInterface->setProgressRange(0, 0);
-    ProgressManager::addTask(m_qbsUpdateFutureInterface->future(),
+    m_busyUpdateFutureInterface = new QFutureInterface<bool>();
+    m_busyUpdateFutureInterface->setProgressRange(0, 0);
+    ProgressManager::addTask(m_busyUpdateFutureInterface->future(),
         tr("Reading Project \"%1\"").arg(displayName()), "Busy.BusyEvaluate");
-    m_qbsUpdateFutureInterface->reportStarted();
+    m_busyUpdateFutureInterface->reportStarted();
 }
 
 void BusyProject::updateDocuments(const QSet<QString> &files)
@@ -655,7 +650,7 @@ void BusyProject::updateDocuments(const QSet<QString> &files)
     QSet<QString> newFiles = files;
     QTC_ASSERT(!newFiles.isEmpty(), newFiles << m_fileName);
     QSet<QString> oldFiles;
-    foreach (IDocument *doc, m_qbsDocuments)
+    foreach (IDocument *doc, m_busyDocuments)
         oldFiles.insert(doc->filePath().toString());
 
     QSet<QString> filesToAdd = newFiles;
@@ -663,10 +658,10 @@ void BusyProject::updateDocuments(const QSet<QString> &files)
     QSet<QString> filesToRemove = oldFiles;
     filesToRemove.subtract(newFiles);
 
-    QSet<IDocument *> currentDocuments = m_qbsDocuments;
+    QSet<IDocument *> currentDocuments = m_busyDocuments;
     foreach (IDocument *doc, currentDocuments) {
         if (filesToRemove.contains(doc->filePath().toString())) {
-            m_qbsDocuments.remove(doc);
+            m_busyDocuments.remove(doc);
             delete doc;
         }
     }
@@ -675,7 +670,7 @@ void BusyProject::updateDocuments(const QSet<QString> &files)
         toAdd.insert(new BusyProjectFile(this, f));
 
     DocumentManager::addDocuments(toAdd.toList());
-    m_qbsDocuments.unite(toAdd);
+    m_busyDocuments.unite(toAdd);
 }
 
 void BusyProject::updateCppCodeModel()
@@ -683,26 +678,12 @@ void BusyProject::updateCppCodeModel()
     if (!m_rootModule.isValid())
         return;
 
-#if 0
-    QtSupport::BaseQtVersion *qtVersion =
-            QtSupport::QtKitInformation::qtVersion(activeTarget()->kit());
-#endif
 
     CppTools::CppModelManager *modelmanager = CppTools::CppModelManager::instance();
     CppTools::ProjectInfo pinfo(this);
     CppTools::ProjectPartBuilder ppBuilder(pinfo);
 
-#if 0
-    if (qtVersion) {
-        if (qtVersion->qtVersion() < QtSupport::QtVersionNumber(5,0,0))
-            ppBuilder.setQtVersion(CppTools::ProjectPart::Qt4);
-        else
-            ppBuilder.setQtVersion(CppTools::ProjectPart::Qt5);
-    } else
-#endif
-    {
-        ppBuilder.setQtVersion(CppTools::ProjectPart::NoQt);
-    }
+    ppBuilder.setQtVersion(CppTools::ProjectPart::NoQt);
 
     QHash<QString, QString> uiFiles;
     foreach (const busy::Product &prd, m_project.allProducts()) {
@@ -750,7 +731,8 @@ void BusyProject::updateCppCodeModel()
                 .arg(prd.location().line())
                 .arg(prd.location().column()));
 
-        foreach (const QString &file, prd.allFilePaths()) {
+        const QStringList files = prd.allFilePaths();
+        foreach (const QString &file, files) {
             if (file.endsWith(QLatin1String(".ui"))) {
                 QStringList generated = m_rootProjectNode->busyProject()
                         .generatedFiles(prd, file, QStringList(QLatin1String("hpp")));
@@ -759,15 +741,12 @@ void BusyProject::updateCppCodeModel()
             }
         }
 
-        const QList<Id> languages =
-                ppBuilder.createProjectPartsForFiles(prd.allFilePaths());
+        const QList<Id> languages = ppBuilder.createProjectPartsForFiles(files);
         foreach (Id language, languages)
             setProjectLanguage(language, true);
     }
 
     pinfo.finish();
-
-    // QtSupport::UiCodeModelManager::update(this, uiFiles);
 
     // Update the code model
     m_codeModelFuture.cancel();
@@ -813,46 +792,24 @@ void BusyProject::updateCppCompilerCallData()
     QTC_CHECK(future.isFinished()); // No reparse of files expected
 }
 
-void BusyProject::updateQmlJsCodeModel()
-{
-#if 0
-    QmlJS::ModelManagerInterface *modelManager = QmlJS::ModelManagerInterface::instance();
-    if (!modelManager)
-        return;
-
-    QmlJS::ModelManagerInterface::ProjectInfo projectInfo =
-            modelManager->defaultProjectInfoForProject(this);
-    foreach (const qbs::ProductData &product, m_rootModuleData.allProducts()) {
-        static const QString propertyName = QLatin1String("qmlImportPaths");
-        foreach (const QString &path, product.properties().value(propertyName).toStringList()) {
-            projectInfo.importPaths.maybeInsert(Utils::FileName::fromString(path),
-                                                QmlJS::Dialect::Qml);
-        }
-    }
-
-    setProjectLanguage(ProjectExplorer::Constants::LANG_QMLJS, !projectInfo.sourceFiles.isEmpty());
-    modelManager->updateProjectInfo(projectInfo, this);
-#endif
-}
-
 void BusyProject::updateApplicationTargets()
 {
     BuildTargetInfoList applications;
-    foreach (const busy::Product &productData, m_project.allProducts(true)) {
-        const QString displayName = productDisplayName(m_project, productData);
-        if (productData.targetArtifacts().isEmpty()) { // No build yet.
+    foreach (const busy::Product &product, m_project.allProducts(true,true)) {
+        const QString displayName = productDisplayName(m_project, product);
+        if (product.targetArtifacts().isEmpty()) { // No build yet.
             applications.list << BuildTargetInfo(displayName,
                     FileName(),
-                    FileName::fromString(productData.location().filePath()));
+                    FileName::fromString(product.location().filePath()));
             continue;
         }
-        foreach (const busy::TargetArtifact &ta, productData.targetArtifacts()) {
+        foreach (const busy::TargetArtifact &ta, product.targetArtifacts()) {
             QTC_ASSERT(ta.isValid(), continue);
             if (!ta.isExecutable())
                 continue;
             applications.list << BuildTargetInfo(displayName,
                     FileName::fromString(ta.filePath()),
-                    FileName::fromString(productData.location().filePath()));
+                    FileName::fromString(product.location().filePath()));
         }
     }
     activeTarget()->setApplicationTargets(applications);

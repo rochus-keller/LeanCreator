@@ -123,7 +123,6 @@ private:
     void updateDocuments(const QSet<QString> &files);
     void updateCppCodeModel();
     void updateCppCompilerCallData();
-    void updateQmlJsCodeModel();
     void updateApplicationTargets();
     void updateDeploymentInfo();
     void updateBuildTargetData();
@@ -135,10 +134,10 @@ private:
     const QString m_fileName;
     busy::Project m_project;
     busy::Module m_rootModule;
-    QSet<Core::IDocument *> m_qbsDocuments;
+    QSet<Core::IDocument *> m_busyDocuments;
     BusyRootProjectNode *m_rootProjectNode;
 
-    QFutureInterface<bool> *m_qbsUpdateFutureInterface;
+    QFutureInterface<bool> *m_busyUpdateFutureInterface;
     bool m_parsingScheduled;
 
     enum CancelStatus {

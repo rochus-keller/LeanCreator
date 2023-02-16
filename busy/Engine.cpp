@@ -17,6 +17,7 @@
 #include "Engine.h"
 #include <QFile>
 #include <QtDebug>
+#include <stdarg.h>
 extern "C" {
 #include <lua.h>
 #include <lauxlib.h>
@@ -33,7 +34,46 @@ class Engine::Imp
 {
 public:
     lua_State *L;
+    BSLogger logger;
+    void* loggerData;
+
+    Imp():logger(0),loggerData(0){}
     bool ok() const { return L != 0; }
+
+    void error(const char* file, int row, int col, const char* format, ... )
+    {
+        if( logger == 0 )
+            return;
+        BSRowCol loc;
+        loc.row = row;
+        loc.col = col;
+        va_list args;
+        va_start(args, format);
+        logger(BS_Error, loggerData, file,loc, format, args );
+        va_end(args);
+    }
+    bool call(int nargs = 0, int nres = 0, const char* what = 0)
+    {
+        const int err = lua_pcall(L,nargs,nres,0);
+        switch( err )
+        {
+        case LUA_ERRRUN:
+            if( logger )
+                error( what, 0, 0, lua_tostring(L, -1 ));
+            else
+                qCritical() << lua_tostring(L, -1 );
+            lua_pop(L, 1 );  /* remove error message */
+            return false;
+        case LUA_ERRMEM:
+            qCritical() << "Lua memory exception";
+            return false;
+        case LUA_ERRERR:
+            // should not happen
+            qCritical() << "Lua unknown error";
+            return false;
+        }
+        return true;
+    }
 };
 
 static bool loadLib( lua_State *L, const QByteArray& source, const QByteArray& name)
@@ -114,10 +154,14 @@ Engine::~Engine()
 void Engine::registerLogger(BSLogger l, void* data)
 {
     if( d_imp->ok() )
+    {
+        d_imp->logger = l;
+        d_imp->loggerData = data;
         bs_preset_logger(d_imp->L,l,data);
+    }
 }
 
-bool Engine::parse(const ParseParams& params)
+bool Engine::parse(const ParseParams& params, bool checkTargets)
 {
 
     lua_pushstring(d_imp->L,params.build_mode.constData());
@@ -159,7 +203,9 @@ bool Engine::parse(const ParseParams& params)
     lua_setfield(d_imp->L,builtins,"host_toolchain");
     lua_setfield(d_imp->L,builtins,"target_toolchain");
 
-    lua_pushstring(d_imp->L,params.toolchain_path); // TODO normalize
+    if( bs_normalize_path2(params.toolchain_path) != BS_OK )
+        d_imp->error(params.root_source_dir,0,0,"error normalizing toolchain path %s", params.toolchain_path.constData() );
+    lua_pushstring(d_imp->L,bs_global_buffer());
     lua_pushvalue(d_imp->L,-1);
     lua_setfield(d_imp->L,builtins,"#toolchain_path");
     lua_setfield(d_imp->L,builtins,"target_toolchain_path");
@@ -177,8 +223,6 @@ bool Engine::parse(const ParseParams& params)
     lua_setfield(d_imp->L,builtins,"host_toolchain_ver");
     lua_setfield(d_imp->L,builtins,"target_cpu_ver");
     lua_setfield(d_imp->L,builtins,"target_toolchain_ver");
-
-    lua_pop(d_imp->L,1); // builtins
 
     lua_pushcfunction(d_imp->L, bs_compile);
     lua_pushstring(d_imp->L,params.root_source_dir.constData());
@@ -199,22 +243,42 @@ bool Engine::parse(const ParseParams& params)
             lua_rawset(d_imp->L,table);
         }
     }
-    const int err = lua_pcall(d_imp->L,3,0,0);
-    switch( err )
+    bool res = true;
+    if( d_imp->call(3,0,params.root_source_dir) )
     {
-    case LUA_ERRRUN:
-        qCritical() << lua_tostring(d_imp->L, -1 );
-        lua_pop(d_imp->L, 1 );  /* remove error message */
-        return false;
-    case LUA_ERRMEM:
-        qCritical() << "Lua memory exception";
-        return false;
-    case LUA_ERRERR:
-        // should not happen
-        qCritical() << "Lua unknown error";
-        return false;
-    }
-    return true;
+        if( checkTargets )
+        {
+            lua_pushcfunction(d_imp->L, bs_findProductsToProcess);
+            lua_getglobal(d_imp->L,"#root");
+            if( params.targets.isEmpty() )
+                lua_pushnil(d_imp->L);
+            else
+            {
+                lua_createtable(d_imp->L,0,params.targets.size());
+                const int table = lua_gettop(d_imp->L);
+                for( int i = 0; i < params.targets.size(); i++ )
+                {
+                    lua_pushstring(d_imp->L,params.targets[i].constData());
+                    lua_pushboolean(d_imp->L,1);
+                    lua_rawset(d_imp->L,table);
+                }
+            }
+            lua_getmetatable(d_imp->L,builtins);
+            if( d_imp->call(3,1,params.root_source_dir) )
+            {
+                const int array = lua_gettop(d_imp->L);
+                lua_pushcfunction(d_imp->L, bs_markAllActive);
+                lua_pushvalue(d_imp->L,array);
+                lua_createtable(d_imp->L,0,0);
+                res = d_imp->call(2,0,params.root_source_dir);
+                lua_pop(d_imp->L,1); // array
+            }else
+                res = false;
+        }
+    }else
+        res = false;
+    lua_pop(d_imp->L,1); // builtins
+    return res;
 }
 
 int Engine::getRootModule() const
@@ -409,7 +473,7 @@ QList<int> Engine::getSubModules(int id) const
     return res;
 }
 
-QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly) const
+QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly, bool onlyActives) const
 {
     if( runnableOnly )
         withSourceOnly = false;
@@ -430,15 +494,19 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly
         for( int i = 1; i <= n; i++ )
         {
             lua_rawgeti(d_imp->L,inst,i);
-            if( lua_istable(d_imp->L,-1) )
+            const int decl = lua_gettop(d_imp->L);
+            if( lua_istable(d_imp->L,decl) )
             {
-                lua_getfield(d_imp->L,-1,"#kind");
+                lua_getfield(d_imp->L,decl,"#kind");
                 const int k = lua_tointeger(d_imp->L,-1);
                 lua_pop(d_imp->L,1);
-                lua_getfield(d_imp->L,-1,"#ctr");
+                lua_getfield(d_imp->L,decl,"#ctr");
                 const int hasBody = !lua_isnil(d_imp->L,-1);
                 lua_pop(d_imp->L,1);
-                if( k == BS_VarDecl && hasBody )
+                lua_getfield(d_imp->L,decl,"#active");
+                const int isActive = !lua_isnil(d_imp->L,-1);
+                lua_pop(d_imp->L,1);
+                if( k == BS_VarDecl && hasBody && ( isActive || !onlyActives ) )
                 {
                     lua_getfield(d_imp->L,-1,"#type");
                     const bool isProduct = bs_isa(d_imp->L,productClass,-1);
@@ -669,6 +737,20 @@ bool Engine::isExecutable(int id) const
     }else
         return false;
 }
+
+bool Engine::isActive(int id) const
+{
+    if( !d_imp->ok() )
+        return false;
+    if( d_imp->ok() && pushInst(id) )
+    {
+        const int inst = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,inst,"#active");
+        const bool res = !lua_isnil(d_imp->L,-1);
+        lua_pop(d_imp->L,2);
+        return res;
+    }else
+        return false;}
 
 QByteArray Engine::getString(int def, const char* field, bool inst) const
 {

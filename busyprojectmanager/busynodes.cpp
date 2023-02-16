@@ -256,7 +256,7 @@ static QList<ProjectExplorer::ProjectAction> supportedNodeActions(ProjectExplore
     if (managesFiles)
         actions << ProjectExplorer::AddNewFile << ProjectExplorer::AddExistingFile;
     if (node->nodeType() == ProjectExplorer::FileNodeType
-            && !project->busyModule().buildSystemFiles().contains(node->path().toString())) {
+            && !project->busyProject().buildSystemFiles().contains(node->path().toString())) {
         actions << ProjectExplorer::RemoveFile << ProjectExplorer::Rename;
     }
     return actions;
@@ -862,7 +862,7 @@ BusyRootProjectNode::BusyRootProjectNode(BusyProject *project) :
 
 void BusyRootProjectNode::update()
 {
-    QStringList buildSystemFiles = unreferencedBuildSystemFiles(m_project->busyModule());
+    QStringList buildSystemFiles = unreferencedBuildSystemFiles(m_project->busyProject());
 
     QStringList projectBuildSystemFiles;
     Utils::FileName base = m_project->projectDirectory();
@@ -889,9 +889,9 @@ static QSet<QString> referencedBuildSystemFiles(const busy::Module &data)
     return result;
 }
 
-QStringList BusyRootProjectNode::unreferencedBuildSystemFiles(const busy::Module &p) const
+QStringList BusyRootProjectNode::unreferencedBuildSystemFiles(const busy::Project &p) const
 {
-    return p.buildSystemFiles().subtract(referencedBuildSystemFiles(p)).toList();
+    return p.buildSystemFiles().subtract(referencedBuildSystemFiles(p.topModule())).toList();
 }
 
 } // namespace Internal

@@ -303,7 +303,6 @@ public:
     QList<Module> subModules() const;
 
 
-    QSet<QString> buildSystemFiles() const;
     QString profile() const { return QString(); }
 
 private:
@@ -316,7 +315,8 @@ class SetupProjectParameters
 public:
     QString projectFilePath;
     QString buildDir;
-    QVariantMap userConfig;
+    QList<QPair<QByteArray,QByteArray> > params;
+    QByteArrayList targets;
     QProcessEnvironment env;
     QString buildVariant;
     QString compilerCommand;
@@ -341,8 +341,9 @@ public:
     ErrorInfo errors() const;
 
     Module topModule() const;
-    QList<Product> allProducts(bool onlyRunnables = false) const;
+    QList<Product> allProducts(bool onlyRunnables = false, bool onlyActives = false) const;
     QString profile() const { return QString(); }
+    QSet<QString> buildSystemFiles() const;
 
     QString targetExecutable(const Product &product,
                              const InstallOptions &installoptions) const { return QString(); }

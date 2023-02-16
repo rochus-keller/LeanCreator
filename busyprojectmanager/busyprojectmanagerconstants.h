@@ -62,6 +62,8 @@ static const char BUSY_VARIANT_RELEASE[] = "release";
 
 static const char BUSY_CONFIG_VARIANT_KEY[] = "busy.buildVariant";
 static const char BUSY_CONFIG_PROFILE_KEY[] = "busy.profile";
+static const char BUSY_CONFIG_TARGETS_KEY[] = "busy.targets";
+static const char BUSY_CONFIG_PARAMS_KEY[] = "busy.params";
 
 // Icons:
 static const char BUSY_GROUP_ICON[] = ":/busyprojectmanager/images/groups.png";

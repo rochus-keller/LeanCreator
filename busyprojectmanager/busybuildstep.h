@@ -68,8 +68,6 @@ public:
     int maxJobs() const;
     QString buildVariant() const;
 
-    bool isQmlDebuggingEnabled() const;
-
     bool fromMap(const QVariantMap &map);
     QVariantMap toMap() const;
 
@@ -136,8 +134,7 @@ public:
 
 private slots:
     void updateState();
-    void updateQmlDebuggingOption();
-    void updatePropertyEdit(const QVariantMap &data);
+    void updateTargetEdit(const QVariantMap &data);
 
     void changeBuildVariant(int);
     void changeDryRun(bool dr);
@@ -146,17 +143,12 @@ private slots:
     void changeJobCount(int count);
     void changeInstall(bool install);
     void changeCleanInstallRoot(bool clean);
-    void applyCachedProperties();
-
-    // QML debugging:
-    void linkQmlDebuggingLibraryChecked(bool checked);
+    void changedParams();
 
 private:
-    bool validateProperties(Utils::FancyLineEdit *edit, QString *errorMessage);
+    bool validateTargets(Utils::FancyLineEdit *edit, QString *errorMessage);
 
     Ui::BusyBuildStepConfigWidget *m_ui;
-
-    QList<QPair<QString, QString> > m_propertyCache;
     BusyBuildStep *m_step;
     QString m_summary;
     bool m_ignoreChange;

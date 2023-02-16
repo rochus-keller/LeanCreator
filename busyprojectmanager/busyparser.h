@@ -49,6 +49,38 @@ private:
     QDir m_workingDirectory;
 };
 
+class BusyParamParser
+{
+public:
+    struct Result
+    {
+        QList<QPair<QByteArray,QByteArray> > d_params;
+        QString d_err;
+        int d_row, d_col, d_len; // error token
+        Result():d_row(0),d_col(0),d_len(0) {}
+        bool hasErrors() const { return !d_err.isEmpty(); }
+    };
+
+    static Result parse(const QString& params);
+private:
+    class Imp;
+};
+
+class BusyTargetParser : public QObject
+{
+public:
+    struct Result
+    {
+        QByteArrayList d_targets;
+        QString d_err;
+        int d_row, d_col, d_len; // error token
+        Result():d_row(0),d_col(0),d_len(0) {}
+        bool hasErrors() const { return !d_err.isEmpty(); }
+    };
+
+    static Result parse(const QString& targets);
+};
+
 } // namespace Internal
 } // namespace BusyProjectManager
 

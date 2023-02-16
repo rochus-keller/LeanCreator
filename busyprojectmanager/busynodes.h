@@ -202,7 +202,7 @@ public:
     BusyProject *project() const { return m_project; }
 
 private:
-    QStringList unreferencedBuildSystemFiles(const busy::Module &p) const;
+    QStringList unreferencedBuildSystemFiles(const busy::Project& p) const;
 
     BusyProject * const m_project;
     ProjectExplorer::FolderNode *m_buildSystemFiles;

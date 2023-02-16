@@ -125,16 +125,6 @@ QList<Module> Module::subModules() const
     return res;
 }
 
-QSet<QString> Module::buildSystemFiles() const
-{
-    // TODO: not sure whether this is supposed to return all BUSY files of the project or just
-    // the one of the module; in any case the result is apparently not needed (besides the
-    // default in BusyProject::updateDocuments)
-    QSet<QString> res;
-    res << busyFile();
-    return res;
-}
-
 class Internal::ProjectImp : public QSharedData
 {
 public:
@@ -257,6 +247,8 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
     d_imp->d_log = logSink;
 
     Engine::ParseParams p;
+    p.params = in.params;
+    p.targets = in.targets;
     p.root_source_dir = d_imp->d_path.toUtf8();
     p.root_build_dir = in.buildDir.toUtf8();
 
@@ -459,7 +451,9 @@ QVariantMap Product::properties() const
 
 bool Product::isEnabled() const
 {
-    return true;
+    if( !isValid() )
+        return false;
+    return d_imp->d_eng->isActive(d_imp->d_id);
 }
 
 bool Product::isRunnable() const
@@ -488,20 +482,37 @@ PropertyMap Product::buildConfig() const
     return res;
 }
 
-static void walkAllProducts(Engine* eng, int module, QList<int>& res, bool onlyRunnables )
+static void walkAllModules( const Module& m, QSet<QString>& res )
+{
+    res << m.busyFile();
+    foreach( const Module& sub, m.subModules() )
+        walkAllModules(sub, res);
+}
+
+QSet<QString> Project::buildSystemFiles() const
+{
+    // TODO: not sure whether this is supposed to return all BUSY files of the project or just
+    // the one of the top module; in any case the result is apparently not needed (besides the
+    // default in BusyProject::updateDocuments)
+    QSet<QString> res;
+    walkAllModules( topModule(), res );
+    return res;
+}
+
+static void walkAllProducts(Engine* eng, int module, QList<int>& res, bool onlyRunnables, bool onlyActives )
 {
     QList<int> subs = eng->getSubModules(module);
     for(int i = 0; i < subs.size(); i++ )
-        walkAllProducts(eng,subs[i],res,onlyRunnables);
-    res += eng->getAllProducts(module,true, onlyRunnables);
+        walkAllProducts(eng,subs[i],res,onlyRunnables, onlyActives);
+    res += eng->getAllProducts(module,true, onlyRunnables, onlyActives);
 }
 
-QList<Product> Project::allProducts(bool onlyRunnables) const
+QList<Product> Project::allProducts(bool onlyRunnables, bool onlyActives) const
 {
     if( !isValid() )
         return QList<Product>();
     QList<int> ids;
-    walkAllProducts(d_imp->d_eng.data(),d_imp->d_eng->getRootModule(),ids, onlyRunnables);
+    walkAllProducts(d_imp->d_eng.data(),d_imp->d_eng->getRootModule(),ids, onlyRunnables, onlyActives);
     QList<Product> res;
     for( int i = 0; i < ids.size(); i++ )
         res << Product(d_imp->d_eng.data(),ids[i]);

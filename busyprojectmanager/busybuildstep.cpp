@@ -27,9 +27,11 @@
 #include "busyparser.h"
 #include "busyproject.h"
 #include "busyprojectmanagerconstants.h"
+#include "busyhighlighter.h"
 
 #include "ui_busybuildstepconfigwidget.h"
 
+#include <QSyntaxHighlighter>
 #include <core/icore.h>
 #include <projectexplorer/buildsteplist.h>
 #include <projectexplorer/kit.h>
@@ -329,11 +331,6 @@ QString BusyBuildStep::buildVariant() const
     return busyConfiguration().value(QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY)).toString();
 }
 
-bool BusyBuildStep::isQmlDebuggingEnabled() const
-{
-    return false;
-}
-
 void BusyBuildStep::setBuildVariant(const QString &variant)
 {
     if (m_qbsConfiguration.value(QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY)).toString() == variant)
@@ -471,11 +468,15 @@ BusyBuildStepConfigWidget::BusyBuildStepConfigWidget(BusyBuildStep *step) :
     m_ui = new Ui::BusyBuildStepConfigWidget;
     m_ui->setupUi(this);
 
-    m_ui->propertyEdit->setValidationFunction([this](Utils::FancyLineEdit *edit,
-                                                     QString *errorMessage) {
-        return validateProperties(edit, errorMessage);
-    });
+    m_ui->targetsEdit->setValidationFunction(
+                [this](Utils::FancyLineEdit *edit, QString *errorMessage) {
+                    return validateTargets(edit, errorMessage);
+                });
 
+    m_ui->parametersTextEdit->setWordWrapMode(QTextOption::WordWrap);
+    new Highlighter(m_ui->parametersTextEdit->document());
+
+    connect(m_ui->parametersTextEdit, SIGNAL(textChanged()), this, SLOT(changedParams()));
     connect(m_ui->buildVariantComboBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(changeBuildVariant(int)));
     connect(m_ui->dryRunCheckBox, SIGNAL(toggled(bool)), this, SLOT(changeDryRun(bool)));
@@ -487,12 +488,6 @@ BusyBuildStepConfigWidget::BusyBuildStepConfigWidget(BusyBuildStep *step) :
             &BusyBuildStepConfigWidget::changeInstall);
     connect(m_ui->cleanInstallRootCheckBox, &QCheckBox::toggled, this,
             &BusyBuildStepConfigWidget::changeCleanInstallRoot);
-    connect(m_ui->qmlDebuggingLibraryCheckBox, SIGNAL(toggled(bool)),
-            this, SLOT(linkQmlDebuggingLibraryChecked(bool)));
-#if 0
-    connect(QtSupport::QtVersionManager::instance(), SIGNAL(dumpUpdatedFor(Utils::FileName)),
-            this, SLOT(updateQmlDebuggingOption()));
-#endif
     updateState();
 }
 
@@ -520,25 +515,15 @@ void BusyBuildStepConfigWidget::updateState()
         m_ui->showCommandLinesCheckBox->setChecked(m_step->showCommandLines());
         m_ui->installCheckBox->setChecked(m_step->install());
         m_ui->cleanInstallRootCheckBox->setChecked(m_step->cleanInstallRoot());
-        updatePropertyEdit(m_step->busyConfiguration());
-        m_ui->qmlDebuggingLibraryCheckBox->setChecked(m_step->isQmlDebuggingEnabled());
+        updateTargetEdit(m_step->busyConfiguration());
     }
 
-    updateQmlDebuggingOption();
 
     const QString buildVariant = m_step->buildVariant();
     const int idx = (buildVariant == QLatin1String(Constants::BUSY_VARIANT_DEBUG)) ? 0 : 1;
     m_ui->buildVariantComboBox->setCurrentIndex(idx);
     QString command = BusyBuildConfiguration::equivalentCommandLine(m_step);
 
-    for (int i = 0; i < m_propertyCache.count(); ++i) {
-        command += QLatin1Char(' ') + m_propertyCache.at(i).first
-                + QLatin1Char(':') + m_propertyCache.at(i).second;
-    }
-
-    if (m_step->isQmlDebuggingEnabled())
-        command += QLatin1String(" Qt.declarative.qmlDebugging:true Qt.quick.qmlDebugging:true");
-    m_ui->commandLineTextEdit->setPlainText(command);
 
     QString summary = tr("<b>Busy:</b> %1").arg(command);
     if (m_summary != summary) {
@@ -547,40 +532,10 @@ void BusyBuildStepConfigWidget::updateState()
     }
 }
 
-void BusyBuildStepConfigWidget::updateQmlDebuggingOption()
+void BusyBuildStepConfigWidget::updateTargetEdit(const QVariantMap &data)
 {
-#if 0
-    QString warningText;
-    bool supported = QtSupport::BaseQtVersion::isQmlDebuggingSupported(m_step->target()->kit(),
-                                                                       &warningText);
-    m_ui->qmlDebuggingLibraryCheckBox->setEnabled(supported);
-
-    if (supported && m_step->isQmlDebuggingEnabled())
-        warningText = tr("Might make your application vulnerable. Only use in a safe environment.");
-
-    m_ui->qmlDebuggingWarningText->setText(warningText);
-    m_ui->qmlDebuggingWarningIcon->setVisible(!warningText.isEmpty());
-#endif
-}
-
-
-void BusyBuildStepConfigWidget::updatePropertyEdit(const QVariantMap &data)
-{
-    QVariantMap editable = data;
-
-    // remove data that is edited with special UIs:
-    editable.remove(QLatin1String(Constants::BUSY_CONFIG_PROFILE_KEY));
-    editable.remove(QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY));
-#if 0
-    editable.remove(QLatin1String(Constants::BUSY_CONFIG_DECLARATIVE_DEBUG_KEY));
-    editable.remove(QLatin1String(Constants::BUSY_CONFIG_QUICK_DEBUG_KEY));
-#endif
-
-    QStringList propertyList;
-    for (QVariantMap::const_iterator i = editable.constBegin(); i != editable.constEnd(); ++i)
-        propertyList.append(i.key() + QLatin1Char(':') + i.value().toString());
-
-    m_ui->propertyEdit->setText(Utils::QtcProcess::joinArgs(propertyList));
+    m_ui->targetsEdit->setText(data.value(Constants::BUSY_CONFIG_TARGETS_KEY).toString());
+    m_ui->parametersTextEdit->setPlainText(data[Constants::BUSY_CONFIG_PARAMS_KEY].toString());
 }
 
 void BusyBuildStepConfigWidget::changeBuildVariant(int idx)
@@ -637,83 +592,48 @@ void BusyBuildStepConfigWidget::changeCleanInstallRoot(bool clean)
     m_ignoreChange = false;
 }
 
-void BusyBuildStepConfigWidget::applyCachedProperties()
+void BusyBuildStepConfigWidget::changedParams()
 {
-    QVariantMap data;
-    QVariantMap tmp = m_step->busyConfiguration();
+    BusyParamParser::Result res = BusyParamParser::parse( m_ui->parametersTextEdit->toPlainText() );
+    if( !res.hasErrors() )
+    {
+        m_ui->parametersTextEdit->setToolTip(QString());
+        m_ui->parametersTextEdit->setExtraSelections(QList<QTextEdit::ExtraSelection>());
+    }else
+    {
+        QTextEdit::ExtraSelection e;
+        QTextCharFormat error;
+        error.setBackground(Qt::red);
 
-    // Insert values set up with special UIs:
-    data.insert(QLatin1String(Constants::BUSY_CONFIG_PROFILE_KEY),
-                tmp.value(QLatin1String(Constants::BUSY_CONFIG_PROFILE_KEY)));
-    data.insert(QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY),
-                tmp.value(QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY)));
-#if 0
-    if (tmp.contains(QLatin1String(Constants::BUSY_CONFIG_DECLARATIVE_DEBUG_KEY)))
-        data.insert(QLatin1String(Constants::BUSY_CONFIG_DECLARATIVE_DEBUG_KEY),
-                    tmp.value(QLatin1String(Constants::BUSY_CONFIG_DECLARATIVE_DEBUG_KEY)));
-    if (tmp.contains(QLatin1String(Constants::BUSY_CONFIG_QUICK_DEBUG_KEY)))
-        data.insert(QLatin1String(Constants::BUSY_CONFIG_QUICK_DEBUG_KEY),
-                    tmp.value(QLatin1String(Constants::BUSY_CONFIG_QUICK_DEBUG_KEY)));
-#endif
+        QTextCursor c( m_ui->parametersTextEdit->document()->findBlockByNumber( res.d_row - 1 ) );
+        c.setPosition( c.position() + res.d_col - 2 );
+        c.setPosition( c.position() + res.d_len + 1, QTextCursor::KeepAnchor);
 
-    for (int i = 0; i < m_propertyCache.count(); ++i)
-        data.insert(m_propertyCache.at(i).first, m_propertyCache.at(i).second);
-
-    m_ignoreChange = true;
-    m_step->setBusyConfiguration(data);
-    m_ignoreChange = false;
-}
-
-void BusyBuildStepConfigWidget::linkQmlDebuggingLibraryChecked(bool checked)
-{
-#if 0
+        e.cursor = c;
+        e.format = error;
+        m_ui->parametersTextEdit->setExtraSelections(QList<QTextEdit::ExtraSelection>() << e);
+        m_ui->parametersTextEdit->setToolTip(res.d_err);
+    }
     QVariantMap data = m_step->busyConfiguration();
-    if (checked) {
-        data.insert(QLatin1String(Constants::BUSY_CONFIG_DECLARATIVE_DEBUG_KEY), checked);
-        data.insert(QLatin1String(Constants::BUSY_CONFIG_QUICK_DEBUG_KEY), checked);
-    } else {
-        data.remove(QLatin1String(Constants::BUSY_CONFIG_DECLARATIVE_DEBUG_KEY));
-        data.remove(QLatin1String(Constants::BUSY_CONFIG_QUICK_DEBUG_KEY));
-    }
-
+    data[Constants::BUSY_CONFIG_PARAMS_KEY] = m_ui->parametersTextEdit->toPlainText();
     m_ignoreChange = true;
     m_step->setBusyConfiguration(data);
     m_ignoreChange = false;
-#endif
 }
 
-bool BusyBuildStepConfigWidget::validateProperties(Utils::FancyLineEdit *edit, QString *errorMessage)
+bool BusyBuildStepConfigWidget::validateTargets(Utils::FancyLineEdit *edit, QString *errorMessage)
 {
-    Utils::QtcProcess::SplitError err;
-    QStringList argList = Utils::QtcProcess::splitArgs(edit->text(), Utils::HostOsInfo::hostOs(),
-                                                       false, &err);
-    if (err != Utils::QtcProcess::SplitOk) {
-        if (errorMessage)
-            *errorMessage = tr("Could not split properties.");
-        return false;
-    }
+    BusyTargetParser::Result res = BusyTargetParser::parse(edit->text());
+    if( errorMessage && res.hasErrors() )
+        *errorMessage = res.d_err;
 
-    QList<QPair<QString, QString> > properties;
-    foreach (const QString &arg, argList) {
-        int pos = arg.indexOf(QLatin1Char(':'));
-        QString key;
-        QString value;
-        if (pos > 0) {
-            key = arg.left(pos);
-            value = arg.mid(pos + 1);
-            properties.append(qMakePair(key, value));
-        } else {
-            if (errorMessage)
-                *errorMessage = tr("No \":\" found in property definition.");
-            return false;
-        }
-    }
+    QVariantMap data = m_step->busyConfiguration();
+    data[Constants::BUSY_CONFIG_TARGETS_KEY] = edit->text();
+    m_ignoreChange = true;
+    m_step->setBusyConfiguration(data);
+    m_ignoreChange = false;
 
-    if (m_propertyCache != properties) {
-        m_propertyCache = properties;
-        applyCachedProperties();
-    }
-    return true;
+    return !res.hasErrors();
 }
 
 // --------------------------------------------------------------------
