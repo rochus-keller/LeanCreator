@@ -22,6 +22,7 @@
 #include <QAbstractItemModel>
 #include <QSet>
 #include <projectexplorer/abi.h>
+#include <QThread>
 
 namespace busy
 {
@@ -70,14 +71,36 @@ public:
     QList<ErrorItem> d_errs;
 };
 
-class AbstractJob : public QObject
+class ProcessResult
+{
+public:
+    bool success;
+    QString executableFilePath;
+    QStringList arguments;
+    QString workingDirectory;
+    QStringList stdOut;
+    QStringList stdErr;
+    ProcessResult():success(true){}
+};
+
+class AbstractJob : public QThread
 {
     Q_OBJECT
 public:
+    AbstractJob(QObject* owner):QThread(owner) {}
 
-    ErrorInfo error() const { return ErrorInfo(); }
+    ErrorInfo error() const { return err; }
+
+signals:
+    void taskStarted(const QString& description,int maxValue);
+    void taskProgress(int curValue);
+    void taskFinished(bool success);
+
 public slots:
-    void cancel() {}
+    virtual void cancel() {}
+
+protected:
+    ErrorInfo err;
 };
 
 enum CommandEchoMode {
@@ -224,17 +247,6 @@ public:
     QStringList pluginPaths(const QString &baseDir = QString()) const { return QStringList(); }
 };
 
-class ProcessResult
-{
-public:
-    bool success() const { return false; }
-    QString executableFilePath() const { return QString(); }
-    QStringList arguments() const { return QStringList(); }
-    QString workingDirectory() const { return QString(); }
-    QStringList stdOut() const { return QStringList(); }
-    QStringList stdErr() const { return QStringList(); }
-};
-
 class TargetArtifact
 {
 public:
@@ -345,18 +357,17 @@ public:
     QString profile() const { return QString(); }
     QSet<QString> buildSystemFiles() const;
 
-    QString targetExecutable(const Product &product,
-                             const InstallOptions &installoptions) const { return QString(); }
+    QString targetExecutable(const Product &product, const InstallOptions &installoptions) const;
     QProcessEnvironment getRunEnvironment(const Product &product,
             const InstallOptions &installOptions,
-            const QProcessEnvironment &environment, Settings *settings) const { return QProcessEnvironment(); }
+            const QProcessEnvironment &environment, Settings *settings) const;
 
     enum ProductSelection { ProductSelectionDefaultOnly, ProductSelectionWithNonDefault };
     BuildJob *buildAllProducts(const BuildOptions &options,
                                ProductSelection productSelection = ProductSelectionDefaultOnly,
-                               QObject *jobOwner = 0) const { return 0; }
+                               QObject *jobOwner = 0) const;
     BuildJob *buildSomeProducts(const QList<Product> &products, const BuildOptions &options,
-                                QObject *jobOwner = 0) const { return 0; }
+                                QObject *jobOwner = 0) const;
 
     CleanJob *cleanAllProducts(const CleanOptions &options, QObject *jobOwner = 0) const { return 0; }
 
@@ -382,7 +393,25 @@ private:
 
 class BuildJob : public AbstractJob
 {
+    Q_OBJECT
 public:
+    BuildJob(QObject* owner, const QByteArrayList&, const QProcessEnvironment& );
+    ~BuildJob();
+
+    void cancel();
+
+signals:
+    void reportCommandDescription(const QString& highlight, const QString& message);
+    void reportProcessResult(const busy::ProcessResult&);
+
+protected:
+    void run();
+
+private:
+    QByteArrayList d_todo;
+    QProcessEnvironment d_env;
+    int d_cur;
+    bool d_cancel;
 };
 
 class CleanJob : public AbstractJob
@@ -421,5 +450,7 @@ public:
 };
 
 }
+
+Q_DECLARE_METATYPE(busy::ProcessResult)
 
 #endif

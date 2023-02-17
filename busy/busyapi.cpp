@@ -133,6 +133,7 @@ public:
     ErrorInfo d_errs;
     ILogSink* d_log;
     QProcessEnvironment env;
+    QByteArrayList targets;
 
     ProjectImp():d_log(0){}
     ~ProjectImp()
@@ -266,6 +267,7 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         p.toolchain = in.toolchain.toUtf8();
 
     d_imp->env = in.env;
+    d_imp->targets = in.targets;
 
     QFileInfo info(in.compilerCommand);
     p.toolchain_path = info.absolutePath().toUtf8();
@@ -499,6 +501,37 @@ QSet<QString> Project::buildSystemFiles() const
     return res;
 }
 
+QString Project::targetExecutable(const Product& product, const InstallOptions& installoptions) const
+{
+    return QString(); // TODO
+}
+
+QProcessEnvironment Project::getRunEnvironment(const Product& product, const InstallOptions& installOptions, const QProcessEnvironment& environment, Settings* settings) const
+{
+    return environment;
+}
+
+BuildJob*Project::buildAllProducts(const BuildOptions& options, Project::ProductSelection productSelection,
+                                   QObject* jobOwner) const
+{
+    if( !isValid() )
+        return 0;
+    ErrorItem err;
+    d_imp->d_errs.d_errs.clear();
+
+    const QByteArrayList todo = d_imp->d_eng->generateBuildCommands(d_imp->targets);
+    if( todo.isEmpty() )
+        return 0;
+
+    return new BuildJob(jobOwner,todo,d_imp->env);
+}
+
+BuildJob*Project::buildSomeProducts(const QList<Product>& products, const BuildOptions& options,
+                                    QObject* jobOwner) const
+{
+    return buildAllProducts(options,ProductSelectionWithNonDefault, jobOwner); // TODO
+}
+
 static void walkAllProducts(Engine* eng, int module, QList<int>& res, bool onlyRunnables, bool onlyActives )
 {
     QList<int> subs = eng->getSubModules(module);
@@ -599,3 +632,140 @@ QString ILogSink::logLevelTag(LoggerLevel level)
     return str;
 }
 
+BuildJob::BuildJob(QObject* owner, const QByteArrayList& todo, const QProcessEnvironment& env)
+    :AbstractJob(owner),d_todo(todo),d_env(env),d_cur(0),d_cancel(false)
+{
+}
+
+BuildJob::~BuildJob()
+{
+}
+
+void BuildJob::cancel()
+{
+    d_cancel = true;
+}
+
+static QStringList splitCommand(const QByteArray& cmd)
+{
+    class Lex
+    {
+    public:
+        Lex(const QByteArray& str, int pos):d_str(str),d_pos(pos){}
+        char next()
+        {
+            if( d_pos < d_str.size() )
+                return d_str[d_pos++];
+            else
+                return 0;
+        }
+
+    private:
+        QByteArray d_str;
+        int d_pos;
+    };
+
+    QStringList res;
+
+    Lex lex(cmd,0);
+    char ch = lex.next();
+    while( ch )
+    {
+        while( ::isspace(ch) )
+            ch = lex.next();
+
+        QByteArray arg;
+        while( ch && !::isspace(ch) )
+        {
+            if( ch == '\\' )
+            {
+                ch = lex.next();
+                if( ch == '"' || ch == '\\' )
+                    arg += ch;
+                else
+                {
+                    arg += '\\';
+                    arg += ch;
+                }
+            }else if( ch == '"' )
+                ; // ignore
+            else
+                arg += ch;
+            ch = lex.next();
+        }
+        if( !arg.isEmpty() )
+            res << QString::fromUtf8(arg);
+    }
+    return res;
+}
+
+static QStringList convert(const QByteArray& str)
+{
+    QStringList res;
+    QByteArrayList l = str.split('\n');
+    foreach( const QByteArray& s, l )
+        res << QString::fromUtf8( s.trimmed() );
+    return res;
+}
+
+void BuildJob::run()
+{
+    emit taskStarted("BUSY build run", d_todo.size());
+    bool success = true;
+    for( int i = 0; i < d_todo.size(); i++ )
+    {
+        if( d_cancel )
+        {
+            emit taskFinished(false);
+            return;
+        }
+
+        emit taskProgress(i);
+
+        QStringList cmd = splitCommand(d_todo[i]);
+
+        emit reportCommandDescription(QString(), cmd.join(' ') );
+
+        ProcessResult res;
+        res.executableFilePath = !cmd.isEmpty() ? cmd.takeFirst() : QString();
+        res.arguments = cmd;
+
+        if( res.arguments.size() == 2 && res.executableFilePath == "copy" )
+        {
+            QFile::remove(res.arguments[1]);
+            res.success = QFile::copy(res.arguments[0],res.arguments[1]);
+        }else if( !res.executableFilePath.isEmpty() )
+        {
+            QProcess proc;
+            proc.setProcessEnvironment(d_env);
+            proc.setProgram(res.executableFilePath);
+            proc.setArguments(res.arguments);
+            proc.start();
+            if( proc.waitForStarted() )
+            {
+                if( !proc.waitForFinished() )
+                {
+                    res.success = false;
+                    res.stdErr << "process timeout";
+                }else
+                {
+                    res.success = proc.exitCode() == 0;
+                    res.stdErr = convert( proc.readAllStandardError() );
+                    res.stdOut = convert( proc.readAllStandardOutput() );
+                }
+            }else
+            {
+                res.success = false;
+                res.stdErr << "cannot start process" << proc.errorString();
+            }
+        }
+
+        if( !res.success )
+            success = false;
+
+        qRegisterMetaType<ProcessResult>();
+        emit reportProcessResult(res);
+
+    }
+    emit taskFinished(success);
+}

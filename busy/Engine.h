@@ -60,6 +60,7 @@ public:
     };
 
     bool parse( const ParseParams& params, bool checkTargets = true );
+    QByteArrayList generateBuildCommands(const QByteArrayList& targets = QByteArrayList());
     int getRootModule() const;
     int findModule(const QString& path) const; // TODO: path can point to more than one module
     QList<int> findDeclByPos(const QString& path, int row, int col ) const;

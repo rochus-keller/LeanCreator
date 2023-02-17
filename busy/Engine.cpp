@@ -281,6 +281,38 @@ bool Engine::parse(const ParseParams& params, bool checkTargets)
     return res;
 }
 
+extern "C" {
+    static int runcmd(const char* cmd, void* data)
+    {
+        QByteArrayList* list = (QByteArrayList*)data;
+        list->append(cmd);
+        return 0;
+    }
+}
+
+QByteArrayList Engine::generateBuildCommands(const QByteArrayList& targets)
+{
+    QByteArrayList list;
+    bs_preset_runcmd(d_imp->L,runcmd, &list);
+    lua_pushcfunction(d_imp->L, bs_execute);
+    lua_getglobal(d_imp->L,"#root");
+    if( targets.isEmpty() )
+        lua_pushnil(d_imp->L);
+    else
+    {
+        lua_createtable(d_imp->L,0,targets.size());
+        const int table = lua_gettop(d_imp->L);
+        for( int i = 0; i < targets.size(); i++ )
+        {
+            lua_pushstring(d_imp->L,targets[i].constData());
+            lua_pushstring(d_imp->L,"true");
+            lua_rawset(d_imp->L,table);
+        }
+    }
+    bool res = d_imp->call(2,0);
+    return list;
+}
+
 int Engine::getRootModule() const
 {
     if( d_imp->ok() )

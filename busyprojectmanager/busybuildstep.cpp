@@ -294,22 +294,22 @@ void BusyBuildStep::handleCommandDescriptionReport(const QString &highlight, con
 
 void BusyBuildStep::handleProcessResultReport(const busy::ProcessResult &result)
 {
-    bool hasOutput = !result.stdOut().isEmpty() || !result.stdErr().isEmpty();
+    bool hasOutput = !result.stdOut.isEmpty() || !result.stdErr.isEmpty();
 
-    if (result.success() && !hasOutput)
+    if (result.success && !hasOutput)
         return;
 
-    m_parser->setWorkingDirectory(result.workingDirectory());
+    m_parser->setWorkingDirectory(result.workingDirectory);
 
-    QString commandline = result.executableFilePath() + QLatin1Char(' ')
-            + Utils::QtcProcess::joinArgs(result.arguments());
+    QString commandline = result.executableFilePath + QLatin1Char(' ')
+            + Utils::QtcProcess::joinArgs(result.arguments);
     addOutput(commandline, NormalOutput);
 
-    foreach (const QString &line, result.stdErr()) {
+    foreach (const QString &line, result.stdErr) {
         m_parser->stdError(line);
         addOutput(line, ErrorOutput);
     }
-    foreach (const QString &line, result.stdOut()) {
+    foreach (const QString &line, result.stdOut) {
         m_parser->stdOutput(line);
         addOutput(line, NormalOutput);
     }
@@ -419,17 +419,19 @@ void BusyBuildStep::build()
         return;
     }
 
+
     m_progressBase = 0;
 
-    connect(m_job, SIGNAL(finished(bool,busy::AbstractJob*)), this, SLOT(buildingDone(bool)));
-    connect(m_job, SIGNAL(taskStarted(QString,int,busy::AbstractJob*)),
-            this, SLOT(handleTaskStarted(QString,int)));
-    connect(m_job, SIGNAL(taskProgress(int,busy::AbstractJob*)),
-            this, SLOT(handleProgress(int)));
+    connect(m_job, SIGNAL(taskStarted(QString,int)), this, SLOT(handleTaskStarted(QString,int)));
+    connect(m_job, SIGNAL(taskProgress(int)), this, SLOT(handleProgress(int)));
+    connect(m_job, SIGNAL(taskFinished(bool)), this, SLOT(buildingDone(bool)));
+
     connect(m_job, SIGNAL(reportCommandDescription(QString,QString)),
             this, SLOT(handleCommandDescriptionReport(QString,QString)));
     connect(m_job, SIGNAL(reportProcessResult(busy::ProcessResult)),
             this, SLOT(handleProcessResultReport(busy::ProcessResult)));
+
+    m_job->start();
 
 }
 

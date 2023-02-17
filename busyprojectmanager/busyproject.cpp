@@ -330,8 +330,10 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
     QTC_ASSERT(busyProject().isValid(), return 0);
     QTC_ASSERT(!isParsing(), return 0);
 
+    busy::BuildOptions opts2 = opts;
+
     if (productNames.isEmpty())
-        return busyProject().buildAllProducts(opts);
+        return busyProject().buildAllProducts(opts2);
 
     QList<busy::Product> products;
     foreach (const QString &productName, productNames) {
@@ -349,7 +351,7 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
         }
     }
 
-    return busyProject().buildSomeProducts(products, opts);
+    return busyProject().buildSomeProducts(products, opts2);
 }
 
 busy::CleanJob *BusyProject::clean(const busy::CleanOptions &opts)

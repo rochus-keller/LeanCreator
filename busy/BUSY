@@ -22,6 +22,7 @@ let run_rcc : Rcc {
 
 let run_moc : Moc {
 	.sources += [
+		./busyapi.h
 	]
 }
 
@@ -33,5 +34,6 @@ let lib * : Library {
 	]
 	.deps += [ run_rcc run_moc busy.lib busy.run_rcc ]
 	.include_dirs += build_dir()
+	.defines += "BS_ALT_RUNCMD"
 	.configs += [ ^qt.qt_client_config lib_conf conf ]
 }
