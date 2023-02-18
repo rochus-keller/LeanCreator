@@ -39,5 +39,16 @@
         <file>images/debugger_restart.png</file>
         <file>images/debugger_restart_small.png</file>
         <file>Debugger.mimetypes.xml</file>
+        <file>python/stdtypes.py</file>
+        <file>python/qttypes.py</file>
+        <file>python/personaltypes.py</file>
+        <file>python/pdbbridge.py</file>
+        <file>python/misctypes.py</file>
+        <file>python/lldbbridge.py</file>
+        <file>python/gdbbridge.py</file>
+        <file>python/dumper.py</file>
+        <file>python/creatortypes.py</file>
+        <file>python/boosttypes.py</file>
+        <file>python/filelist.txt</file>
     </qresource>
 </RCC>

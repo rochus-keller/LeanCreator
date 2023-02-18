@@ -566,15 +566,16 @@ void BusyProject::generateErrors(const busy::ErrorInfo &e)
 QString BusyProject::productDisplayName(const busy::Project &project,
                                        const busy::Product &product)
 {
-    QString displayName = product.name(true);
-    if (product.profile() != project.profile())
-        displayName.append(QLatin1String(" [")).append(product.profile()).append(QLatin1Char(']'));
+    const QString displayName = product.name(true);
     return displayName;
 }
 
 QString BusyProject::uniqueProductName(const busy::Product &product)
 {
-    return product.name() + QLatin1Char('.') + product.profile();
+    QString name = product.qualident();
+    if( name.isEmpty() )
+        name = product.name();
+    return name;
 }
 
 void BusyProject::parse(const QVariantMap &config, const Environment &env, const QString &dir)
@@ -764,9 +765,9 @@ void BusyProject::updateCppCompilerCallData()
 
     CppTools::ProjectInfo::CompilerCallData data;
     foreach (const busy::Product &product, m_project.allProducts()) {
+
         if (!product.isEnabled())
             continue;
-
 
         foreach (const QString &file, product.allFilePaths()) {
             if (!CppTools::ProjectFile::isSource(CppTools::ProjectFile::classify(file)))
@@ -799,18 +800,19 @@ void BusyProject::updateApplicationTargets()
     BuildTargetInfoList applications;
     foreach (const busy::Product &product, m_project.allProducts(true,true)) {
         const QString displayName = productDisplayName(m_project, product);
-        if (product.targetArtifacts().isEmpty()) { // No build yet.
+        QList<busy::TargetArtifact> ta = product.targetArtifacts();
+        if (ta.isEmpty()) { // No build yet.
             applications.list << BuildTargetInfo(displayName,
                     FileName(),
                     FileName::fromString(product.location().filePath()));
             continue;
         }
-        foreach (const busy::TargetArtifact &ta, product.targetArtifacts()) {
+        foreach (const busy::TargetArtifact &ta, ta) {
             QTC_ASSERT(ta.isValid(), continue);
-            if (!ta.isExecutable())
+            if (!ta.isExecutable)
                 continue;
             applications.list << BuildTargetInfo(displayName,
-                    FileName::fromString(ta.filePath()),
+                    FileName::fromString(ta.filePath),
                     FileName::fromString(product.location().filePath()));
         }
     }

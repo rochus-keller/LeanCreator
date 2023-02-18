@@ -317,6 +317,8 @@ int Engine::getRootModule() const
 {
     if( d_imp->ok() )
     {
+        const int top = lua_gettop(d_imp->L);
+
         lua_getglobal(d_imp->L,"#root");
         if( lua_istable(d_imp->L,-1) )
         {
@@ -326,6 +328,8 @@ int Engine::getRootModule() const
             return ref;
         }else
             lua_pop(d_imp->L,1);
+
+        Q_ASSERT( top == lua_gettop(d_imp->L) );
     }
     return 0;
 }
@@ -391,9 +395,11 @@ QList<int> Engine::findDeclByPos(const QString& path, int row, int col) const
 
 QList<Engine::AllLocsInFile> Engine::findAllLocsOf(int id) const
 {
-    const int top = lua_gettop(d_imp->L);
     QList<Engine::AllLocsInFile> res;
-    if( d_imp->ok() && pushInst(id) )
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    if( pushInst(id) )
     {
         const int decl = lua_gettop(d_imp->L);
         lua_getfield(d_imp->L,decl,"#name");
@@ -433,9 +439,11 @@ QList<Engine::AllLocsInFile> Engine::findAllLocsOf(int id) const
 
 QList<Engine::Loc> Engine::findDeclInstsInFile(const QString& path, int id) const
 {
-    const int top = lua_gettop(d_imp->L);
     QList<Engine::Loc> res;
-    if( d_imp->ok() && pushInst(id) )
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    if( pushInst(id) )
     {
         const int decl = lua_gettop(d_imp->L);
         lua_getfield(d_imp->L,decl,"#name");
@@ -474,11 +482,11 @@ QList<Engine::Loc> Engine::findDeclInstsInFile(const QString& path, int id) cons
 
 QList<int> Engine::getSubModules(int id) const
 {
-    const int top = lua_gettop(d_imp->L);
     QList<int> res;
     if( !d_imp->ok() )
         return res;
-    if( d_imp->ok() && pushInst(id) )
+    const int top = lua_gettop(d_imp->L);
+    if( pushInst(id) )
     {
         const int n = lua_objlen(d_imp->L,-1);
         for( int i = 1; i <= n; i++ )
@@ -509,9 +517,11 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly
 {
     if( runnableOnly )
         withSourceOnly = false;
-    const int top = lua_gettop(d_imp->L);
     QList<int> res;
-    if( d_imp->ok() && pushInst(id) )
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    if( pushInst(id) )
     {
         const int inst = lua_gettop(d_imp->L);
         lua_getglobal(d_imp->L,"#builtins");
@@ -541,6 +551,7 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly
                 if( k == BS_VarDecl && hasBody && ( isActive || !onlyActives ) )
                 {
                     lua_getfield(d_imp->L,-1,"#type");
+                    Q_ASSERT( !lua_isnil(d_imp->L,-1) );
                     const bool isProduct = bs_isa(d_imp->L,productClass,-1);
                     bool hasSource = false;
                     if( withSourceOnly )
@@ -743,7 +754,7 @@ bool Engine::isExecutable(int id) const
 {
     if( !d_imp->ok() )
         return false;
-    if( d_imp->ok() && pushInst(id) )
+    if( pushInst(id) )
     {
         const int inst = lua_gettop(d_imp->L);
         lua_getglobal(d_imp->L,"#builtins");
@@ -774,7 +785,7 @@ bool Engine::isActive(int id) const
 {
     if( !d_imp->ok() )
         return false;
-    if( d_imp->ok() && pushInst(id) )
+    if( pushInst(id) )
     {
         const int inst = lua_gettop(d_imp->L);
         lua_getfield(d_imp->L,inst,"#active");
@@ -782,7 +793,8 @@ bool Engine::isActive(int id) const
         lua_pop(d_imp->L,2);
         return res;
     }else
-        return false;}
+        return false;
+}
 
 QByteArray Engine::getString(int def, const char* field, bool inst) const
 {
@@ -802,6 +814,22 @@ QByteArray Engine::getString(int def, const char* field, bool inst) const
         return res;
     }
     return QByteArray();
+}
+
+QByteArray Engine::getDeclPath(int decl) const
+{
+    QByteArray res;
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    if( pushInst(decl) )
+    {
+        bs_declpath(d_imp->L,-1,".");
+        res = lua_tostring(d_imp->L,-1);
+        lua_pop(d_imp->L,2); // inst, declpath
+    }
+    Q_ASSERT( top == lua_gettop(d_imp->L) );
+    return res;
 }
 
 int Engine::getInteger(int def, const char* field) const
@@ -830,9 +858,11 @@ QString Engine::getPath(int def, const char* field) const
 
 int Engine::getObject(int def, const char* field) const
 {
-    const int top = lua_gettop(d_imp->L);
     int res = 0;
-    if( d_imp->ok() && pushInst(def) )
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    if( pushInst(def) )
     {
         lua_getfield(d_imp->L,-1,field);
         if( lua_istable(d_imp->L,-1) )
@@ -846,11 +876,27 @@ int Engine::getObject(int def, const char* field) const
     return res;
 }
 
+int Engine::getGlobals() const
+{
+    int res = 0;
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    lua_getglobal(d_imp->L,"#builtins");
+    lua_getfield(d_imp->L,-1,"#inst");
+    res = assureRef(-1);
+    lua_pop(d_imp->L,2);
+    Q_ASSERT( top == lua_gettop(d_imp->L));
+    return res;
+}
+
 int Engine::getOwningModule(int def) const
 {
-    const int top = lua_gettop(d_imp->L);
     int res = 0;
-    if( d_imp->ok() && pushInst(def) )
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    if( pushInst(def) )
     {
         lua_getfield(d_imp->L,-1,"#owner");
         const int table = lua_gettop(d_imp->L);
@@ -894,6 +940,14 @@ int Engine::getOwner(int def) const
         lua_pop(d_imp->L,2);
     }
     return res;
+}
+
+void Engine::dump(int def, const char* title) const
+{
+    if( d_imp->ok() && pushInst(def) )
+    {
+        bs_dump2(d_imp->L,title,-1);
+    }
 }
 
 bool Engine::pushInst(int ref) const

@@ -76,12 +76,15 @@ public:
     QStringList getCFlags(int product) const;
     bool isExecutable(int) const;
     bool isActive(int) const;
-   QByteArray getString(int def, const char* field, bool inst = false) const;
+    QByteArray getString(int def, const char* field, bool inst = false) const;
+    QByteArray getDeclPath(int decl) const;
     int getInteger(int def, const char* field) const;
     QString getPath(int def, const char* field) const;
     int getObject(int def, const char* field) const;
+    int getGlobals() const;
     int getOwningModule(int def) const;
     int getOwner(int def) const;
+    void dump(int def, const char* title = "") const;
 protected:
     bool pushInst(int ref) const;
     int assureRef(int table) const;

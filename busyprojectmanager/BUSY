@@ -18,7 +18,6 @@ let run_rcc : Rcc {
 
 let run_moc : Moc {
 	.sources += [
-		./custombusypropertiesdialog.h
 		./defaultpropertyprovider.h
 		./propertyprovider.h
 		./busybuildconfiguration.h
@@ -34,7 +33,6 @@ let run_moc : Moc {
 		./busyprojectmanager.h
 		./busyprojectmanagerplugin.h
 		./busyrunconfiguration.h
-		./busyprofilessettingspage.cpp
 		./busyeditor.h
 		./busyeditoroutline.h
 	]
@@ -42,17 +40,14 @@ let run_moc : Moc {
 
 let run_uic : Uic {
 	.sources += [
-		./custombusypropertiesdialog.ui
 		./busybuildstepconfigwidget.ui
 		./busycleanstepconfigwidget.ui
 		./busyinstallstepconfigwidget.ui
-		./busyprofilessettingswidget.ui
    	]
 }
 
 let lib * : Library {
 	.sources += [
-		./custombusypropertiesdialog.cpp 
 		./defaultpropertyprovider.cpp 
 		./busybuildconfiguration.cpp 
 		./busybuildconfigurationwidget.cpp 
@@ -63,7 +58,6 @@ let lib * : Library {
 		./busylogsink.cpp 
 		./busynodes.cpp 
 		./busyparser.cpp 
-		./busyprofilessettingspage.cpp 
 		./busyproject.cpp 
 		./busyprojectfile.cpp 
 		./busyprojectmanager.cpp 

@@ -205,7 +205,9 @@ private:
     QStringList unreferencedBuildSystemFiles(const busy::Project& p) const;
 
     BusyProject * const m_project;
+#if 0
     ProjectExplorer::FolderNode *m_buildSystemFiles;
+#endif
 };
 
 

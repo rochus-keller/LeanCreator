@@ -193,7 +193,7 @@ public:
         if( _this->d_log && ll != BS_Warning )
             _this->d_log->printMessage(level,msg, tag);
 
-        qDebug() << (level == LoggerInfo ? "INF" : tag ) << msg; // TEST
+        // qDebug() << (level == LoggerInfo ? "INF" : tag ) << msg; // TEST
     }
 };
 
@@ -421,9 +421,11 @@ QString Product::name(bool altName) const
     return QString::fromUtf8( d_imp->d_eng->getString(d_imp->d_id,"#name") );
 }
 
-QString Product::profile() const
+QString Product::qualident() const
 {
-    return QString();
+    if( !isValid() )
+        return QString();
+    return QString::fromUtf8( d_imp->d_eng->getDeclPath(d_imp->d_id));
 }
 
 CodeLocation Product::location() const
@@ -443,7 +445,11 @@ CodeLocation Product::location() const
 
 QList<TargetArtifact> Product::targetArtifacts() const
 {
-    return QList<TargetArtifact>();
+    QList<TargetArtifact> res;
+    QString binary = executable(false);
+    if( !binary.isEmpty() )
+        res << TargetArtifact(binary);
+    return res;
 }
 
 QVariantMap Product::properties() const
@@ -484,6 +490,26 @@ PropertyMap Product::buildConfig() const
     return res;
 }
 
+QString Product::executable(bool synthIfEmpty) const
+{
+    if( !isValid() )
+        return QString();
+    int id = d_imp->d_eng->getObject(d_imp->d_id,"#inst");
+    QString res;
+    if( id )
+        res = d_imp->d_eng->getPath(id,"#product"); // this only works after build
+    if( res.isEmpty() && synthIfEmpty )
+    {
+        const QString n = name(true);
+        id = d_imp->d_eng->getGlobals();
+        const QString path = d_imp->d_eng->getPath(id,"root_build_dir");
+        id = d_imp->d_eng->getOwner(d_imp->d_id);
+        const QString rel = d_imp->d_eng->getPath(id,"#rdir");
+        res = QString("%1/%2/%3").arg(path).arg(rel).arg(n);
+    }
+    return res;
+}
+
 static void walkAllModules( const Module& m, QSet<QString>& res )
 {
     res << m.busyFile();
@@ -493,9 +519,6 @@ static void walkAllModules( const Module& m, QSet<QString>& res )
 
 QSet<QString> Project::buildSystemFiles() const
 {
-    // TODO: not sure whether this is supposed to return all BUSY files of the project or just
-    // the one of the top module; in any case the result is apparently not needed (besides the
-    // default in BusyProject::updateDocuments)
     QSet<QString> res;
     walkAllModules( topModule(), res );
     return res;
@@ -503,7 +526,7 @@ QSet<QString> Project::buildSystemFiles() const
 
 QString Project::targetExecutable(const Product& product, const InstallOptions& installoptions) const
 {
-    return QString(); // TODO
+    return product.executable();
 }
 
 QProcessEnvironment Project::getRunEnvironment(const Product& product, const InstallOptions& installOptions, const QProcessEnvironment& environment, Settings* settings) const
@@ -516,13 +539,12 @@ BuildJob*Project::buildAllProducts(const BuildOptions& options, Project::Product
 {
     if( !isValid() )
         return 0;
-    ErrorItem err;
+
     d_imp->d_errs.d_errs.clear();
 
     const QByteArrayList todo = d_imp->d_eng->generateBuildCommands(d_imp->targets);
-    if( todo.isEmpty() )
-        return 0;
 
+    // we need a build jot even if todo is empty! otherwise this is seen as an error
     return new BuildJob(jobOwner,todo,d_imp->env);
 }
 

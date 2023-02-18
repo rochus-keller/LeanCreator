@@ -33,6 +33,7 @@
 #include <debugger/debuggerinternalconstants.h>
 #include <debugger/debuggerruncontrol.h>
 #include <debugger/disassemblerlines.h>
+#include <debugger/debuggeritemmanager.h>
 
 #include <debugger/debuggeractions.h>
 #include <debugger/debuggercore.h>
@@ -4116,8 +4117,8 @@ void GdbEngine::startGdb(const QStringList &args)
     // We need to guarantee a roundtrip before the adapter proceeds.
     // Make sure this stays the last command in startGdb().
     // Don't use ConsoleCommand, otherwise Mac won't markup the output.
-    const QByteArray dumperSourcePath =
-        ICore::resourcePath().toLocal8Bit() + "/debugger/";
+    const QByteArray dumperSourcePath = DebuggerItemManager::pythonPath() + "/";
+        //ICore::resourcePath().toLocal8Bit() + "/debugger/";
 
     if (terminal()->isUsable())
         runCommand({"set inferior-tty " + terminal()->slaveDevice(), NoFlags});

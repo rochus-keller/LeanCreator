@@ -37,6 +37,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QProcess>
+#include <QTemporaryDir>
 
 using namespace Core;
 using namespace ProjectExplorer;
@@ -53,6 +54,7 @@ const char DEBUGGER_FILENAME[] = "/leancreator/debuggers.xml";
 namespace {
 QList<DebuggerItem> m_debuggers;
 PersistentSettingsWriter *m_writer = 0;
+DebuggerItemManager* m_this = 0;
 }
 
 // --------------------------------------------------------------------------
@@ -113,16 +115,20 @@ static void readDebuggers(const FileName &fileName, bool isSystem)
     }
 }
 
-DebuggerItemManager::DebuggerItemManager()
+DebuggerItemManager::DebuggerItemManager():d_python(0)
 {
     m_writer = new PersistentSettingsWriter(userSettingsFileName(), QLatin1String("QtCreatorDebuggers"));
     connect(ICore::instance(), &ICore::saveSettingsRequested,
             this, &DebuggerItemManager::saveDebuggers);
+    m_this = this;
 }
 
 DebuggerItemManager::~DebuggerItemManager()
 {
     delete m_writer;
+    m_this = 0;
+    if( d_python )
+        delete d_python;
 }
 
 QList<DebuggerItem> DebuggerItemManager::debuggers()
@@ -373,6 +379,30 @@ void DebuggerItemManager::saveDebuggers()
     m_writer->save(data, ICore::mainWindow());
 
     // Do not save default debuggers as they are set by the SDK.
+}
+
+QByteArray DebuggerItemManager::pythonPath()
+{
+    if( m_this->d_python == 0 )
+    {
+        m_this->d_python = new QTemporaryDir();
+        QFile list(":/debugger/python/filelist.txt");
+        list.open(QIODevice::ReadOnly);
+        QByteArrayList items = list.readAll().split('\n');
+        QDir tmp(m_this->d_python->path());
+        foreach(const QByteArray& item, items)
+        {
+            const QString path = item.trimmed();
+            if( path.isEmpty() )
+                continue;
+            QFile in(path);
+            in.open(QIODevice::ReadOnly);
+            QFile out(tmp.absoluteFilePath(path.mid(18)));
+            out.open(QIODevice::WriteOnly);
+            out.write(in.readAll());
+        }
+    }
+    return m_this->d_python->path().toUtf8();
 }
 
 QVariant DebuggerItemManager::registerDebugger(const DebuggerItem &item)

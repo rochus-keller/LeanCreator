@@ -145,50 +145,6 @@ void BusyManager::addProfile(const QString &name, const QVariantMap &data)
         profile.setValue(it.key(), it.value());
 }
 
-void BusyManager::addQtProfileFromKit(const QString &profileName, const ProjectExplorer::Kit *k)
-{
-#if 0
-    const QtSupport::BaseQtVersion * const qt = QtSupport::QtKitInformation::qtVersion(k);
-    if (!qt)
-        return;
-
-    qbs::QtEnvironment qtEnv;
-    const QList<ProjectExplorer::Abi> abi = qt->qtAbis();
-    if (!abi.empty()) {
-        qtEnv.architecture = ProjectExplorer::Abi::toString(abi.first().architecture());
-        if (abi.first().wordWidth() == 64)
-            qtEnv.architecture.append(QLatin1String("_64"));
-    }
-    qtEnv.binaryPath = qt->binPath().toString();
-    qtEnv.documentationPath = qt->docsPath().toString();
-    qtEnv.includePath = qt->headerPath().toString();
-    qtEnv.libraryPath = qt->libraryPath().toString();
-    qtEnv.pluginPath = qt->pluginPath().toString();
-    qtEnv.mkspecBasePath = qt->mkspecsPath().toString();
-    qtEnv.mkspecName = qt->mkspec().toString();
-    qtEnv.mkspecPath = qt->mkspecPath().toString();
-    qtEnv.qtNameSpace = qt->qtNamespace();
-    qtEnv.qtLibInfix = qt->qtLibInfix();
-    qtEnv.qtVersion = qt->qtVersionString();
-    qtEnv.qtMajorVersion = qt->qtVersion().majorVersion;
-    qtEnv.qtMinorVersion = qt->qtVersion().minorVersion;
-    qtEnv.qtPatchVersion = qt->qtVersion().patchVersion;
-    qtEnv.frameworkBuild = qt->isFrameworkBuild();
-    qtEnv.configItems = qt->configValues();
-    qtEnv.qtConfigItems = qt->qtConfigValues();
-    foreach (const QString &buildVariant,
-            QStringList() << QLatin1String("debug") << QLatin1String("release")) {
-        if (qtEnv.qtConfigItems.contains(buildVariant))
-            qtEnv.buildVariant << buildVariant;
-    }
-    const qbs::ErrorInfo errorInfo = qbs::setupQtProfile(profileName, settings(), qtEnv);
-    if (errorInfo.hasError()) {
-        Core::MessageManager::write(tr("Failed to set up kit for Busy: %1")
-                .arg(errorInfo.toString()), Core::MessageManager::ModeSwitch);
-    }
-#endif
-}
-
 void BusyManager::addProfileFromKit(const ProjectExplorer::Kit *k)
 {
     const QString name = QString::fromLatin1("qtc_%1_%2").arg(k->fileSystemFriendlyName().left(8),
@@ -196,7 +152,7 @@ void BusyManager::addProfileFromKit(const ProjectExplorer::Kit *k)
                                                          QCryptographicHash::Sha1).toHex().left(8)));
     busy::Profile(name, settings()).removeProfile();
     setProfileForKit(name, k);
-    addQtProfileFromKit(name, k);
+    //addQtProfileFromKit(name, k);
 
     // set up properties:
     QVariantMap data = m_defaultPropertyProvider->properties(k, QVariantMap());

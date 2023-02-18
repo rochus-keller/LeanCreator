@@ -19,7 +19,7 @@ Successfully tested so far on Linux x86.
 - [x] rebranding
 - [x] deep BUSY integration (instead of qmake, see NOTE)
 - [ ] GCC, Clang and MSVC support (see NOTE)
-- [ ] GDB and CDB support
+- [ ] GDB and CDB support (see NOTE)
 - [ ] Lua automation (instead of JS)
 - [ ] Designer integration
 
@@ -28,6 +28,7 @@ NOTE:
 - Parsing, analyzing and crossreferencing BUSY projects works.
 - BUSY targets and parameter configurable in build step.
 - Build with GCC on Linux successfully tested.
+- GDB engine on Linux successfully tested.
 - Work in progress 
 
 ### No support planned

@@ -272,11 +272,12 @@ private:
 QString BusyBuildConfiguration::equivalentCommandLine(const BuildStep *buildStep)
 {
     QString commandLine;
-    const QString qbsInstallDir = QString::fromLocal8Bit(qgetenv("BUSY_INSTALL_DIR"));
-    const QString qbsFilePath = Utils::HostOsInfo::withExecutableSuffix(!qbsInstallDir.isEmpty()
-            ? qbsInstallDir + QLatin1String("/bin/qbs")
-            : QCoreApplication::applicationDirPath() + QLatin1String("/qbs"));
+
+    const QString qbsFilePath = Utils::HostOsInfo::withExecutableSuffix("lua");
     Utils::QtcProcess::addArg(&commandLine, QDir::toNativeSeparators(qbsFilePath));
+    Utils::QtcProcess::addArg(&commandLine, "build.lua");
+    commandLine += " ...";
+#if 0
     const StepProxy stepProxy(buildStep);
     Utils::QtcProcess::addArg(&commandLine, stepProxy.command());
     const BusyBuildConfiguration * const buildConfig = qobject_cast<BusyBuildConfiguration *>(
@@ -313,13 +314,7 @@ QString BusyBuildConfiguration::equivalentCommandLine(const BuildStep *buildStep
         Utils::QtcProcess::addArgs(&commandLine, QStringList() << QLatin1String("--install-root")
                                    << installRoot);
     }
-
-    if (buildConfig) {
-        Utils::QtcProcess::addArg(&commandLine, buildConfig->busyConfiguration()
-                .value(QLatin1String(Constants::BUSY_CONFIG_VARIANT_KEY)).toString());
-    }
-    Utils::QtcProcess::addArg(&commandLine, QLatin1String("profile:")
-                              + BusyManager::instance()->profileForKit(buildStep->target()->kit()));
+#endif
 
     return commandLine;
 }
@@ -401,7 +396,9 @@ static Utils::FileName defaultBuildDirectory(const QString &projectFilePath, con
                                              const QString &bcName,
                                              BuildConfiguration::BuildType buildType)
 {
-    const QString projectName = QFileInfo(projectFilePath).completeBaseName();
+    QString projectName = QFileInfo(projectFilePath).absoluteDir().dirName();
+    if( projectName.isEmpty() )
+        projectName = "LeanCreatorBuild";
     ProjectMacroExpander expander(projectName, k, bcName, buildType);
     QString projectDir = Project::projectDirectory(Utils::FileName::fromString(projectFilePath)).toString();
     QString buildPath = expander.expand(Core::DocumentManager::buildDirectory());

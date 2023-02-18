@@ -139,8 +139,6 @@ public:
     void setRemoveExistingInstallation(bool removeExisting) {}
 };
 
-inline QString canonicalArchitecture(const QString &architecture) { return QString(); }
-
 class CleanOptions
 {
 public:
@@ -239,21 +237,16 @@ public:
     QString baseDirectoy() const { return QString(); }
 };
 
-class Preferences
-{
-public:
-    explicit Preferences(Settings *settings, const QString &profileName = QString()) {}
-    QStringList searchPaths(const QString &baseDir = QString()) const { return QStringList(); }
-    QStringList pluginPaths(const QString &baseDir = QString()) const { return QStringList(); }
-};
-
 class TargetArtifact
 {
 public:
-    bool isValid() const { return false; }
+    TargetArtifact(const QString& path = QString(), bool exe = true):
+        filePath(path),isExecutable(exe) {}
 
-    QString filePath() const { return QString(); }
-    bool isExecutable() const { return false; }
+    bool isValid() const { return !filePath.isEmpty(); }
+
+    QString filePath;
+    bool isExecutable;
 };
 
 class Product
@@ -269,7 +262,7 @@ public:
     bool isValid() const;
 
     QString name(bool altName = false) const;
-    QString profile() const;
+    QString qualident() const;
     CodeLocation location() const;
     QList<TargetArtifact> targetArtifacts() const;
     QVariantMap properties() const;
@@ -277,6 +270,7 @@ public:
     bool isRunnable() const;
     QStringList allFilePaths() const;
     PropertyMap buildConfig() const;
+    QString executable(bool synthIfEmpty = true) const;
 private:
     friend class Internal::ProductImp;
     QExplicitlySharedDataPointer<Internal::ProductImp> d_imp;
@@ -313,9 +307,6 @@ public:
     QString buildDirectory() const;
     QList<Product> products() const;
     QList<Module> subModules() const;
-
-
-    QString profile() const { return QString(); }
 
 private:
     friend class Internal::ModuleImp;
@@ -354,7 +345,6 @@ public:
 
     Module topModule() const;
     QList<Product> allProducts(bool onlyRunnables = false, bool onlyActives = false) const;
-    QString profile() const { return QString(); }
     QSet<QString> buildSystemFiles() const;
 
     QString targetExecutable(const Product &product, const InstallOptions &installoptions) const;
@@ -430,23 +420,6 @@ public:
     explicit Profile(const QString &name, Settings *settings) {}
     void setValue(const QString &key, const QVariant &value) {}
     void removeProfile() {}
-};
-
-class SettingsModel : public QAbstractItemModel
-{
-public:
-    SettingsModel(const QString &settingsDir, QObject *parent = 0) {}
-
-    void setEditable(bool isEditable) {}
-    void setAdditionalProperties(const QVariantMap &properties) {}
-    void reload() {}
-    int keyColumn() const { return 0; }
-
-    int rowCount(const QModelIndex &parent = QModelIndex()) const { return 0; }
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const { return QVariant(); }
-    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const { return QModelIndex(); }
-    QModelIndex parent(const QModelIndex &child) const { return QModelIndex(); }
-    int columnCount(const QModelIndex &parent = QModelIndex()) const { return 0; }
 };
 
 }

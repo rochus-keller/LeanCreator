@@ -32,7 +32,6 @@
 
 namespace busy {
 class Settings;
-class Preferences;
 }
 
 #include <QString>
@@ -73,7 +72,6 @@ public:
 
 private:
     void addProfile(const QString &name, const QVariantMap &data);
-    void addQtProfileFromKit(const QString &profileName, const ProjectExplorer::Kit *k);
     void addProfileFromKit(const ProjectExplorer::Kit *k);
 
     void handleKitUpdate(ProjectExplorer::Kit *kit);

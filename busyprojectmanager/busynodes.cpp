@@ -674,9 +674,16 @@ void BusyProductNode::setBusyProductData(const busy::Project& project, const bus
     bool productIsEnabled = prd.isEnabled();
     bool updateExisting = productWasEnabled != productIsEnabled;
 
-    setDisplayName(BusyProject::productDisplayName(project, prd));
-    setPath(Utils::FileName::fromString(prd.location().filePath()));
-    const QString &productPath = QFileInfo(prd.location().filePath()).absolutePath();
+    QString name = prd.name();
+#if 0
+    const QString alt = prd.name(true);
+    if( name != alt )
+        name = QString("%1 (%2)").arg(name).arg(alt);
+#endif
+    setDisplayName(name);
+    busy::CodeLocation loc = prd.location();
+    setPath(Utils::FileName::fromString(loc.filePath()));
+    const QString productPath = QFileInfo(loc.filePath()).absolutePath();
 
     // Find the BusyFileNode we added earlier:
     BusyFileNode *idx = 0;
@@ -686,8 +693,7 @@ void BusyProductNode::setBusyProductData(const busy::Project& project, const bus
             break;
     }
     QTC_ASSERT(idx, return);
-    idx->setPathAndLine(Utils::FileName::fromString(prd.location().filePath()),
-                        prd.location().line());
+    idx->setPathAndLine(Utils::FileName::fromString(loc.filePath()), loc.line());
 
     QList<ProjectExplorer::ProjectNode *> toAdd;
     QList<ProjectExplorer::ProjectNode *> toRemove = subProjectNodes();
@@ -852,16 +858,21 @@ BusyProjectNode *BusyProjectNode::findProjectNode(const QString &name)
 
 BusyRootProjectNode::BusyRootProjectNode(BusyProject *project) :
     BusyProjectNode(project->projectFilePath()),
-    m_project(project),
+    m_project(project)
+  #if 0
+  ,
     m_buildSystemFiles(new ProjectExplorer::FolderNode(project->projectDirectory(),
                                                        ProjectExplorer::FolderNodeType,
-                                                       QCoreApplication::translate("BusyRootProjectNode", "Busy files")))
+                                                       QCoreApplication::translate(
+                                                           "BusyRootProjectNode", "Busy files")))
+  #endif
 {
-    addFolderNodes(QList<FolderNode *>() << m_buildSystemFiles);
+    // addFolderNodes(QList<FolderNode *>() << m_buildSystemFiles);
 }
 
 void BusyRootProjectNode::update()
 {
+#if 0
     QStringList buildSystemFiles = unreferencedBuildSystemFiles(m_project->busyProject());
 
     QStringList projectBuildSystemFiles;
@@ -870,9 +881,8 @@ void BusyRootProjectNode::update()
         if (Utils::FileName::fromString(f).isChildOf(base))
                 projectBuildSystemFiles.append(f);
     }
-    BusyGroupNode::setupFiles(m_buildSystemFiles, busy::Product(), projectBuildSystemFiles,
-                             base.toString(), false);
-
+    BusyGroupNode::setupFiles(m_buildSystemFiles, busy::Product(), projectBuildSystemFiles, base.toString(), false);
+#endif
     update(m_project->busyProject(), m_project->busyModule());
 }
 

@@ -490,6 +490,17 @@ BusyBuildStepConfigWidget::BusyBuildStepConfigWidget(BusyBuildStep *step) :
             &BusyBuildStepConfigWidget::changeInstall);
     connect(m_ui->cleanInstallRootCheckBox, &QCheckBox::toggled, this,
             &BusyBuildStepConfigWidget::changeCleanInstallRoot);
+
+    // TODO: adapt or remove
+    m_ui->dryRunCheckBox->hide();
+    m_ui->flagsLabel->hide();
+    m_ui->keepGoingCheckBox->hide();
+    m_ui->showCommandLinesCheckBox->hide();
+    m_ui->installCheckBox->hide();
+    m_ui->cleanInstallRootCheckBox->hide();
+    m_ui->jobsLabel->hide();
+    m_ui->jobSpinBox->hide();
+
     updateState();
 }
 
@@ -527,7 +538,7 @@ void BusyBuildStepConfigWidget::updateState()
     QString command = BusyBuildConfiguration::equivalentCommandLine(m_step);
 
 
-    QString summary = tr("<b>Busy:</b> %1").arg(command);
+    QString summary = tr("<b>BUSY:</b> %1").arg(command);
     if (m_summary != summary) {
         m_summary = summary;
         emit updateSummary();

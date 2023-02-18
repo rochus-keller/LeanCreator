@@ -29,7 +29,7 @@
 #include "busydeployconfigurationfactory.h"
 #include "busyinstallstep.h"
 #include "busynodes.h"
-#include "busyprofilessettingspage.h"
+//#include "busyprofilessettingspage.h"
 #include "busyproject.h"
 #include "busyprojectmanager.h"
 #include "busyprojectmanagerconstants.h"
@@ -110,7 +110,7 @@ bool BusyProjectManagerPlugin::initialize(const QStringList &arguments, QString 
     addAutoReleasedObject(new BusyInstallStepFactory);
     addAutoReleasedObject(new BusyDeployConfigurationFactory);
     addAutoReleasedObject(new BusyRunConfigurationFactory);
-    addAutoReleasedObject(new BusyProfilesSettingsPage);
+    // addAutoReleasedObject(new BusyProfilesSettingsPage);
 
     //menus
     // Build Menu:

@@ -291,7 +291,7 @@ void BusyCleanStepConfigWidget::updateState()
     QString command = BusyBuildConfiguration::equivalentCommandLine(m_step);
     m_ui->commandLineTextEdit->setPlainText(command);
 
-    QString summary = tr("<b>Busy:</b> %1").arg(command);
+    QString summary = tr("<b>BUSY:</b> %1").arg(command);
     if (m_summary !=  summary) {
         m_summary = summary;
         emit updateSummary();

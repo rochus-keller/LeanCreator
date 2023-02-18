@@ -1,0 +1,10 @@
+:/debugger/python/boosttypes.py
+:/debugger/python/dumper.py
+:/debugger/python/lldbbridge.py
+:/debugger/python/pdbbridge.py
+:/debugger/python/qttypes.py
+:/debugger/python/creatortypes.py
+:/debugger/python/gdbbridge.py
+:/debugger/python/misctypes.py
+:/debugger/python/personaltypes.py
+:/debugger/python/stdtypes.py

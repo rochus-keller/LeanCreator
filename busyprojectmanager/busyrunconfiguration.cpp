@@ -143,10 +143,10 @@ QString BusyRunConfiguration::disabledReason() const
 {
     BusyProject *project = static_cast<BusyProject *>(target()->project());
     if (project->isParsing())
-        return tr("The .qbs files are currently being parsed.");
+        return tr("The BUSY files are currently being parsed.");
 
     if (!project->hasParseResult())
-        return tr("Parsing of .qbs files has failed.");
+        return tr("Parsing of BUSY files has failed.");
     return QString();
 }
 

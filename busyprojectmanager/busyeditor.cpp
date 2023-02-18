@@ -35,6 +35,7 @@
 #include <QFileInfo>
 #include <QMenu>
 #include <QtDebug>
+#include <QDir>
 
 using namespace BusyProjectManager;
 
@@ -79,8 +80,13 @@ EditorDocument::EditorDocument()
 
 Core::IDocument::OpenResult EditorDocument::open(QString* errorString, const QString& fileName, const QString& realFileName)
 {
-    // TODO: we need the model for the virtual path; the physical path is not always what is relevant
-    setPreferredDisplayName(QFileInfo(fileName).canonicalPath().split('/').last()+"/BUSY");
+    QFileInfo info(fileName);
+    QString module = info.absoluteDir().dirName();
+    if( module.isEmpty() )
+        module = "/";
+    const QString file = info.fileName();
+
+    setPreferredDisplayName(QString("%1/%2").arg(module).arg(file));
 
     return TextDocument::open(errorString, fileName, realFileName );
 }
