@@ -29,7 +29,7 @@
 #include <projectexplorer/buildstep.h>
 #include <projectexplorer/task.h>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 namespace BusyProjectManager {
 namespace Internal {

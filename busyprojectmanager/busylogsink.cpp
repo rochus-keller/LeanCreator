@@ -23,7 +23,7 @@
 
 #include "busylogsink.h"
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 #include <core/messagemanager.h>
 #include <projectexplorer/projectexplorer.h>

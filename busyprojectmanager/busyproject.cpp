@@ -61,7 +61,7 @@
 #include <utils/hostosinfo.h>
 #include <utils/qtcassert.h>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 #include <QCoreApplication>
 #include <QDir>

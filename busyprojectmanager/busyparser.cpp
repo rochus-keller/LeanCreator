@@ -22,7 +22,7 @@
 ****************************************************************************/
 
 #include "busyparser.h"
-#include <busy/busyLexer.h>
+#include <busytools/busyLexer.h>
 
 #include <projectexplorer/task.h>
 

@@ -26,7 +26,7 @@
 
 #include <projectexplorer/projectnodes.h>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 #include <QIcon>
 

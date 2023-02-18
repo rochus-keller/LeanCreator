@@ -33,7 +33,7 @@
 #include <utils/hostosinfo.h>
 #include <utils/qtcassert.h>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 #if 0
 #include <ios/iosconstants.h>

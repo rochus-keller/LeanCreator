@@ -19,7 +19,7 @@
 #include "busyhighlighter.h"
 #include "busyindenter.h"
 #include "busyeditoroutline.h"
-#include <busy/Engine.h>
+#include <busytools/Engine.h>
 
 #include <texteditor/texteditoractionhandler.h>
 #include <texteditor/texteditorsettings.h>

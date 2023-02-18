@@ -15,7 +15,7 @@
 */
 
 #include "busyhighlighter.h"
-#include <busy/busyLexer.h>
+#include <busytools/busyLexer.h>
 #include <texteditor/textdocumentlayout.h>
 #include <QtDebug>
 using namespace TextEditor;

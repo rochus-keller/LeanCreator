@@ -26,7 +26,7 @@
 
 #include <projectexplorer/task.h>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 #include <QMutex>
 #include <QObject>

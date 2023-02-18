@@ -1,6 +1,6 @@
 #include "busyeditoroutline.h"
 #include "busyproject.h"
-#include "busy/Engine.h"
+#include "busytools/Engine.h"
 #include <projectexplorer/session.h>
 extern "C" {
 #include <bsparser.h>

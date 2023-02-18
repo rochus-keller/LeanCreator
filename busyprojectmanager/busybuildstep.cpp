@@ -42,7 +42,7 @@
 #include <utils/qtcassert.h>
 #include <utils/qtcprocess.h>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 static const char BUSY_CONFIG[] = "Busy.Configuration";
 static const char BUSY_DRY_RUN[] = "Busy.DryRun";

@@ -70,5 +70,5 @@ let lib * : Library {
 	]
 	.deps += [ run_rcc run_moc run_uic ]
 	.include_dirs += build_dir()
-	.configs += [ ^qt.qt_client_config lib_conf ^busy.conf ]
+	.configs += [ ^qt.qt_client_config lib_conf ^busytools.conf ]
 }

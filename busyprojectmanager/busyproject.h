@@ -34,7 +34,7 @@
 
 #include <utils/environment.h>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 #include <QFuture>
 #include <QTimer>

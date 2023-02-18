@@ -17,7 +17,7 @@
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 */
 
-#include <busy/busyToken.h>
+#include <busytools/busyToken.h>
 #include <QList>
 
 struct BSLexer;

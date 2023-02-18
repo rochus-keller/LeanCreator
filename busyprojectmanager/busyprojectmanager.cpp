@@ -45,7 +45,7 @@
 #include <QCryptographicHash>
 #include <QVariantMap>
 
-#include <busy/busyapi.h>
+#include <busytools/busyapi.h>
 
 const QChar sep = QLatin1Char('.');
 

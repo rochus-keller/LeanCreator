@@ -34,7 +34,7 @@ submod cppeditor -
 submod classview -
 submod debugger -
 submod bineditor -
-submod busy -
+submod busytools -
 submod busyprojectmanager -
 submod app
 
