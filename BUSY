@@ -1,7 +1,7 @@
 # Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 # licensed under GPL/LGPL
 
-if busy_version < "2023-01-15" {
+if busy_version < "2023-01-18" {
 	error("this version of BUSY is not compatible with this build")
 }
 
@@ -17,6 +17,7 @@ let cpp11conf - : Config {
 	if (target_toolchain == `gcc) || (target_toolchain == `clang) {
 		.cflags_cc += "-std=c++11" # required because of utils/algorithm.h
 	}
+	.defines += "LEANCREATOR_ALL_STATIC"
 }
 
 # the absolute minimum application consists of utils, extensionsystem, core and app

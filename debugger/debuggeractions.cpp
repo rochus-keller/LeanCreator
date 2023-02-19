@@ -562,7 +562,7 @@ DebuggerSettings::DebuggerSettings()
     item->setDefaultValue(false);
     insertItem(EnableReverseDebugging, item);
 
-#ifdef Q_OS_WIN
+#ifdef Q_OS_WIN_TODO
     item = new RegisterPostMortemAction(this);
     item->setSettingsKey(debugModeGroup, QLatin1String("RegisterForPostMortem"));
     item->setText(tr("Register For Post-Mortem Debugging"));

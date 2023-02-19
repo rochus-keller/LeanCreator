@@ -33,10 +33,14 @@
 
 #include <QtGlobal>
 
+#ifdef LEANCREATOR_ALL_STATIC
+#  define DEBUGGER_EXPORT
+#else
 #if defined(DEBUGGER_LIBRARY)
 #  define DEBUGGER_EXPORT Q_DECL_EXPORT
 #else
 #  define DEBUGGER_EXPORT Q_DECL_IMPORT
+#endif
 #endif
 
 #endif // DEBUGGERGLOBAL_H

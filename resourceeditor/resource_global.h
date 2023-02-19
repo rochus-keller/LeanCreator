@@ -32,10 +32,14 @@
 
 #include <qglobal.h>
 
+#ifdef LEANCREATOR_ALL_STATIC
+#  define RESOURCE_EXPORT
+#else
 #if defined(RESOURCE_LIBRARY)
 #  define RESOURCE_EXPORT Q_DECL_EXPORT
 #else
 #  define RESOURCE_EXPORT Q_DECL_IMPORT
+#endif
 #endif
 
 #endif // RESOUCE_GLOBAL_H

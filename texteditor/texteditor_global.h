@@ -33,10 +33,14 @@
 
 #include <qglobal.h>
 
+#ifdef LEANCREATOR_ALL_STATIC
+#  define TEXTEDITOR_EXPORT
+#else
 #if defined(TEXTEDITOR_LIBRARY)
 #  define TEXTEDITOR_EXPORT Q_DECL_EXPORT
 #else
 #  define TEXTEDITOR_EXPORT Q_DECL_IMPORT
+#endif
 #endif
 
 #endif // TEXTEDITOR_GLOBAL_H

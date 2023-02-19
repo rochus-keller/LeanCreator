@@ -33,10 +33,14 @@
 
 #include <qglobal.h>
 
+#ifdef QTCREATOR_ALL_STATIC
+#  define AGGREGATION_EXPORT
+#else
 #if defined(AGGREGATION_LIBRARY)
 #  define AGGREGATION_EXPORT Q_DECL_EXPORT
 #else
 #  define AGGREGATION_EXPORT Q_DECL_IMPORT
+#endif
 #endif
 
 #endif // AGGREGATION_GLOBAL_H

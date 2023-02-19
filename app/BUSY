@@ -17,7 +17,7 @@ let run_rcc : Rcc {
 }
 
 let exe * : Executable {
-	.name = "leancreator"
+	.name = "LeanCreator"
 	.sources += [
 		./main.cpp
 		./crashhandlersetup.cpp
@@ -35,6 +35,9 @@ let exe * : Executable {
 				^classview.lib ^debugger.lib ^bineditor.lib ^busytools.lib ^busyprojectmanager.lib 
 				run_moc run_rcc 
 	]
+	if target_os == `win32 {
+		.deps += ^qt.libqtwinmain
+	}
 	.configs += [ ^qt.qt_client_config ^cpp11conf ]
 	.include_dirs += ..
 	.defines += "IDE_LIBRARY_BASENAME=\"NOT_USED\""

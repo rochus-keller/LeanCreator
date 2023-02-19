@@ -299,7 +299,7 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         p.cpu = "ppc";
         break;
     default:
-        err.d_msg = "architecture not supported: " + ProjectExplorer::Abi::Abi::toString(in.abi.architecture());
+        err.d_msg = "architecture not supported: " + ProjectExplorer::Abi::toString(in.abi.architecture());
         return false;
     }
 
@@ -321,7 +321,7 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         p.os = "win32";
         break;
     default:
-        err.d_msg = "operating system not supported: " + ProjectExplorer::Abi::Abi::toString(in.abi.os());
+        err.d_msg = "operating system not supported: " + ProjectExplorer::Abi::toString(in.abi.os());
         return false;
     }
 
@@ -340,7 +340,7 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         p.wordsize = "16";
         break;
     default:
-        err.d_msg = "word width not supported: " + ProjectExplorer::Abi::Abi::toString(in.abi.wordWidth());
+        err.d_msg = "word width not supported: " + ProjectExplorer::Abi::toString(in.abi.wordWidth());
         return false;
     }
 

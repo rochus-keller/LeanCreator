@@ -2,34 +2,32 @@
 
 ## Welcome to LeanCreator - a lean version of Qt Creator
 
-NOTE that this project is in an early stage and there is no MVP yet.
+LeanCreator is a stripped-down version of Qt Creator, which includes the essential features for C++ (and in future possibly Oberon+ and Verilog) development, and is easy to build from source on all platforms supported by LeanQt.
 
-LeanCreator is supposed to be a stripped-down version of Qt Creator, which includes the essential features for C++ (and possibly Oberon+ and Verilog) development and is easy to build from source on all platforms supported by LeanQt.
+LeanCreator uses [LeanQt](https://github.com/rochus-keller/LeanQt) instead of the original Qt toolkit, and is built with and uses the [BUSY build system](https://github.com/rochus-keller/BUSY) instead of qmake.
 
-LeanCreator uses LeanQt instead of the original Qt toolkit and is built using BUSY instead of qmake.
+LeanCreator is based on the code of [Qt Creator 3.6.1](https://download.qt.io/archive/qtcreator/3.6/3.6.1/qt-creator-opensource-src-3.6.1.tar.gz), mostly because I already know the internals due to [VerilogCreator](https://github.com/rochus-keller/VerilogCreator/) and it's [QtcVerilog](https://github.com/rochus-keller/QtcVerilog/) IDE, and because I'm still using Qt Creator 3.4 most of the time which is efficient and does everything I need.
 
-LeanCreator is based on the code of [Qt Creator 3.6.1](https://download.qt.io/archive/qtcreator/3.6/3.6.1/qt-creator-opensource-src-3.6.1.tar.gz), mostly because I already know the internals due to [VerilogCreator](https://github.com/rochus-keller/VerilogCreator/) and it's [QtcVerilog](https://github.com/rochus-keller/QtcVerilog/) IDE, and because I'm still using Qt Creator 3.4 most of the time which is great and does everything I need.
+In combination with LeanQt this is a big codebase and as such also a good test case for the BUSY build system; the [cloc tool](http://cloc.sourceforge.net) reports 351 kSLOC for LeanCreator and 993 kSLOC for LeanQt (1.34 mmSLOC in total).
 
 ### Planned or work-in-progress features
 
-Successfully tested so far on Linux x86.
+The current version was successfully compiled and tested on Linux x86 & x86_64 and macOS x86_64. The tests included navigating the LeanQt source tree with different parameter settings, and running some of the terminal examples in the debugger with breakpoints and value inspections. Windows is work in progress.
 
 - [x] Basic, stand-alone application with statically linked plugins
 - [x] C++ support
 - [x] rebranding
-- [x] deep BUSY integration (instead of qmake, see NOTE)
-- [ ] GCC, Clang and MSVC support (see NOTE)
-- [ ] GDB and CDB support (see NOTE)
+- [x] deep BUSY integration (instead of qmake)
+- [x] GCC, Clang and MSVC support 
+- [x] GDB, LLDB and CDB support 
+- [ ] Extend BUSY file navigation
+- [ ] Display BUSY file calculated values, gray-out inactives
+- [ ] Wizzards for project and file creation
+- [ ] BUSY builds with header dependency tracking
+- [ ] Ninja builds
 - [ ] Lua automation (instead of JS)
 - [ ] Designer integration
 
-NOTE:
-
-- Parsing, analyzing and crossreferencing BUSY projects works.
-- BUSY targets and parameter configurable in build step.
-- Build with GCC on Linux successfully tested.
-- GDB engine on Linux successfully tested.
-- Work in progress 
 
 ### No support planned
 
@@ -43,14 +41,29 @@ NOTE:
 - version control plugins
 - emacs or vim simulation
 
+#### Precompiled versions
+
+The following precompiled versions are available at this time:
+
+- [Linux x86_64](http://software.rochus-keller.ch/leancreator_linux_x64.tar.gz)
+- [Mac x86_64](http://software.rochus-keller.ch/leancreator_macos_x64.zip)
+
+Just download, unzip and run; no installation required; it's just a single executable.
+
+On Mac the terminal opens when leancreator is run, and the menus are only active if the application was in the background one time; to avoid this the application can be included in an application bundle.
+
+A Windows executable is work in progress.
+
 ### How to build LeanCreator
+
+To build LeanCreator using LeanQt and the BUSY build system (with no other dependencies than a C++11 compiler), do the following:
 
 1. Create a new directory; we call it the root directory here
 1. Download https://github.com/rochus-keller/LeanQt/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "LeanQt".
 1. Download https://github.com/rochus-keller/LeanCreator/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "LeanCreator".
-1. Download https://github.com/rochus-keller/BUSY/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "build".
+1. Download https://github.com/rochus-keller/BUSY/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "BUSY".
 1. Open a command line in the build directory and type `cc *.c -O2 -lm -O2 -o lua` or `cl /O2 /MD /Fe:lua.exe *.c` depending on whether you are on a Unix or Windows machine; wait a few seconds until the Lua executable is built.
-1. Now type `./lua build.lua ../LeanCreator` (or `lua build.lua ../LeanCreator` on Windows); wait a few minutes until the leancreator executable is built; you find it in the output/app subdirectory.
+1. Now type `./lua build.lua ../LeanCreator` (or `lua build.lua ../LeanCreator` on Windows); wait until the leancreator executable is built (about an hour); you find it in the output/app subdirectory.
 
 ### Additional Credits
 

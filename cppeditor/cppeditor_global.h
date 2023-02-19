@@ -33,10 +33,14 @@
 
 #include <qglobal.h>
 
+#ifdef LEANCREATOR_ALL_STATIC
+#  define CPPEDITOR_EXPORT
+#else
 #if defined(CPPEDITOR_LIBRARY)
 #  define CPPEDITOR_EXPORT Q_DECL_EXPORT
 #else
 #  define CPPEDITOR_EXPORT Q_DECL_IMPORT
+#endif
 #endif
 
 #endif // CPPEDITOR_GLOBAL_H

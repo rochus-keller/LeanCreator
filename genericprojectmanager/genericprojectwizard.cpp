@@ -203,6 +203,8 @@ bool GenericProjectWizard::postGenerateFiles(const QWizard *w, const Core::Gener
     Q_UNUSED(w);
 #ifndef QT_NO_CUSTOMWIZZARD
     return ProjectExplorer::CustomProjectWizard::postGenerateOpen(l, errorMessage);
+#else
+	return false;
 #endif
 }
 

@@ -39,7 +39,7 @@
 #include <QLabel>
 #include <qpa/qplatformnativeinterface.h>
 
-#include <coreplugin/icore.h>
+#include <core/icore.h>
 #include <utils/stylehelper.h>
 
 #include "progressmanager_p.h"

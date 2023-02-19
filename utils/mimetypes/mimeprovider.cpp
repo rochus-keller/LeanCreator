@@ -45,6 +45,8 @@
 #include <QDateTime>
 #include <QtEndian>
 
+enum { qmime_secondsBetweenChecks = 5 };
+
 using namespace Utils;
 using namespace Utils::Internal;
 
@@ -69,7 +71,6 @@ MimeProviderBase::MimeProviderBase(MimeDatabasePrivate *db)
 {
 }
 
-int qmime_secondsBetweenChecks = 5;
 
 bool MimeProviderBase::shouldCheck()
 {

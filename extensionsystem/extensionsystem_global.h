@@ -34,10 +34,14 @@
 #include <QLoggingCategory>
 #include <qglobal.h>
 
+#ifdef LEANCREATOR_ALL_STATIC
+#  define EXTENSIONSYSTEM_EXPORT
+#else
 #if defined(EXTENSIONSYSTEM_LIBRARY)
 #  define EXTENSIONSYSTEM_EXPORT Q_DECL_EXPORT
 #else
 #  define EXTENSIONSYSTEM_EXPORT Q_DECL_IMPORT
+#endif
 #endif
 
 Q_DECLARE_LOGGING_CATEGORY(pluginLog)

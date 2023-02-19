@@ -366,6 +366,12 @@ int main(int argc, char **argv)
 
     app.setAttribute(Qt::AA_UseHighDpiPixmaps);
 
+#ifdef Q_OS_LINUX
+    QFont af = app.font();
+    af.setFamily("Ubuntu");
+    app.setFont(af);
+#endif
+
     // Manually determine -settingspath command line option
     // We can't use the regular way of the plugin manager, because that needs to parse plugin meta data
     // but the settings path can influence which plugins are enabled

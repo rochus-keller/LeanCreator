@@ -33,10 +33,14 @@
 
 #include <qglobal.h>
 
+#ifdef LEANCREATOR_ALL_STATIC
+#  define CORE_EXPORT
+#else
 #if defined(CORE_LIBRARY)
 #  define CORE_EXPORT Q_DECL_EXPORT
 #else
 #  define CORE_EXPORT Q_DECL_IMPORT
+#endif
 #endif
 
 #endif // CORE_GLOBAL_H

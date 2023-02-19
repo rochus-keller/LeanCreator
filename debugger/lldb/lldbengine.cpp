@@ -32,6 +32,7 @@
 #include <debugger/debuggerstartparameters.h>
 #include <debugger/debuggerstringutils.h>
 #include <debugger/debuggertooltipmanager.h>
+#include <debugger/debuggeritemmanager.h>
 
 #include <debugger/breakhandler.h>
 #include <debugger/disassemblerlines.h>
@@ -274,8 +275,8 @@ void LldbEngine::startLldbStage2()
     showMessage(_("ADAPTER STARTED"));
     showStatusMessage(tr("Setting up inferior..."));
 
-    const QByteArray dumperSourcePath =
-        ICore::resourcePath().toLocal8Bit() + "/debugger/";
+    const QByteArray dumperSourcePath = DebuggerItemManager::pythonPath() + "/";
+        // ICore::resourcePath().toLocal8Bit() + "/debugger/";
 
     m_lldbProc.write("script sys.path.insert(1, '" + dumperSourcePath + "')\n");
     m_lldbProc.write("script from lldbbridge import *\n");
