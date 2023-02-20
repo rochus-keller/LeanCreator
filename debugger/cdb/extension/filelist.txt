@@ -1,0 +1,2 @@
+:/debugger/cdb/extension/qtcreatorcdbext32.dll
+:/debugger/cdb/extension/qtcreatorcdbext64.dll

@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/debugger">
+        <file>cdb/extension/qtcreatorcdbext64.dll</file>
+        <file>cdb/extension/qtcreatorcdbext32.dll</file>
+        <file>cdb/extension/filelist.txt</file>
+    </qresource>
+</RCC>

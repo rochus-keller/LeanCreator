@@ -115,7 +115,7 @@ static void readDebuggers(const FileName &fileName, bool isSystem)
     }
 }
 
-DebuggerItemManager::DebuggerItemManager():d_python(0)
+DebuggerItemManager::DebuggerItemManager():d_externalsDir(0)
 {
     m_writer = new PersistentSettingsWriter(userSettingsFileName(), QLatin1String("QtCreatorDebuggers"));
     connect(ICore::instance(), &ICore::saveSettingsRequested,
@@ -127,8 +127,8 @@ DebuggerItemManager::~DebuggerItemManager()
 {
     delete m_writer;
     m_this = 0;
-    if( d_python )
-        delete d_python;
+    if( d_externalsDir )
+        delete d_externalsDir;
 }
 
 QList<DebuggerItem> DebuggerItemManager::debuggers()
@@ -381,28 +381,36 @@ void DebuggerItemManager::saveDebuggers()
     // Do not save default debuggers as they are set by the SDK.
 }
 
-QByteArray DebuggerItemManager::pythonPath()
+static void unpackResources(const QString& outDir, const char* resourcePath)
 {
-    if( m_this->d_python == 0 )
+    QFile list(resourcePath);
+    list.open(QIODevice::ReadOnly);
+    QByteArrayList items = list.readAll().split('\n');
+    QDir tmp(outDir);
+    foreach(const QByteArray& item, items)
     {
-        m_this->d_python = new QTemporaryDir();
-        QFile list(":/debugger/python/filelist.txt");
-        list.open(QIODevice::ReadOnly);
-        QByteArrayList items = list.readAll().split('\n');
-        QDir tmp(m_this->d_python->path());
-        foreach(const QByteArray& item, items)
-        {
-            const QString path = item.trimmed();
-            if( path.isEmpty() )
-                continue;
-            QFile in(path);
-            in.open(QIODevice::ReadOnly);
-            QFile out(tmp.absoluteFilePath(path.mid(18)));
-            out.open(QIODevice::WriteOnly);
-            out.write(in.readAll());
-        }
+        const QString path = item.trimmed();
+        if( path.isEmpty() )
+            continue;
+        QFile in(path);
+        in.open(QIODevice::ReadOnly);
+        QFile out(tmp.absoluteFilePath(QFileInfo(path).fileName()));
+        out.open(QIODevice::WriteOnly);
+        out.write(in.readAll());
     }
-    return m_this->d_python->path().toUtf8();
+}
+
+QByteArray DebuggerItemManager::externalsPath()
+{
+    if( m_this->d_externalsDir == 0 )
+    {
+        m_this->d_externalsDir = new QTemporaryDir();
+        unpackResources(m_this->d_externalsDir->path(), ":/debugger/python/filelist.txt");
+#ifdef _WIN32
+        unpackResources(m_this->d_externalsDir->path(), ":/debugger/cdb/extension/filelist.txt");
+#endif
+    }
+    return m_this->d_externalsDir->path().toUtf8();
 }
 
 QVariant DebuggerItemManager::registerDebugger(const DebuggerItem &item)

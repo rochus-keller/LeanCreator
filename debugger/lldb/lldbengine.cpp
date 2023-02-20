@@ -275,7 +275,7 @@ void LldbEngine::startLldbStage2()
     showMessage(_("ADAPTER STARTED"));
     showStatusMessage(tr("Setting up inferior..."));
 
-    const QByteArray dumperSourcePath = DebuggerItemManager::pythonPath() + "/";
+    const QByteArray dumperSourcePath = DebuggerItemManager::externalsPath() + "/";
         // ICore::resourcePath().toLocal8Bit() + "/debugger/";
 
     m_lldbProc.write("script sys.path.insert(1, '" + dumperSourcePath + "')\n");

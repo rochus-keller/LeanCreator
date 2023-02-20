@@ -46,6 +46,7 @@
 #include <debugger/sourceutils.h>
 #include <debugger/shared/cdbsymbolpathlisteditor.h>
 #include <debugger/shared/hostutils.h>
+#include <debugger/debuggeritemmanager.h>
 
 #include <core/icore.h>
 #include <core/messagebox.h>
@@ -358,7 +359,7 @@ bool CdbEngine::canHandleToolTip(const DebuggerToolTipContext &context) const
 QString CdbEngine::extensionLibraryName(bool is64Bit)
 {
     // Determine extension lib name and path to use
-    return QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(
+    return QDir(DebuggerItemManager::externalsPath()).absoluteFilePath(
                 QString("%1%2.dll").arg(QT_CREATOR_CDB_EXT).arg(is64Bit ?  "64" : "32"));
 }
 
@@ -561,7 +562,8 @@ bool CdbEngine::launchCDB(const DebuggerRunParameters &sp, QString *errorMessage
         arguments << QLatin1String("-x");
 
     QStringList symbolPaths = stringListSetting(CdbSymbolPaths);
-    symbolPaths.append(sp.workingDirectory); // TODO: check that also the root build dir is added
+    // this is not necessary since CDB automatically searches in the exe dir:
+    // symbolPaths.append(sp.workingDirectory);
     if (!symbolPaths.isEmpty())
         arguments << QLatin1String("-y") << symbolPaths.join(QLatin1Char(';'));
     const QStringList sourcePaths = stringListSetting(CdbSourcePaths);

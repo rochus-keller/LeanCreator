@@ -343,6 +343,9 @@ int main(int argc, char **argv)
     Q_INIT_RESOURCE(cppeditor);
     Q_INIT_RESOURCE(cpptools);
     Q_INIT_RESOURCE(debugger);
+#ifdef _WIN32
+    Q_INIT_RESOURCE(debugger_win);
+#endif
     Q_INIT_RESOURCE(fancyactionbar);
     Q_INIT_RESOURCE(find);
     Q_INIT_RESOURCE(fonts);

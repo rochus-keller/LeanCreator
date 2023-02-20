@@ -9,7 +9,7 @@ param HAVE_NOOPT = false
 param HAVE_SHARED_QT = false
 
 submod qt - = ../LeanQt (HAVE_ITEMVIEWS, HAVE_PROCESS, HAVE_NETACCESS, HAVE_LOCALSOCK, HAVE_SHARED = HAVE_SHARED_QT, 
-						 HAVE_SHAREDMEM, HAVE_XMLSTREAM, HAVE_CONCURRENT, HAVE_PLUGINS, HAVE_RE, HAVE_JSON, HAVE_XML)
+						 HAVE_SHAREDMEM, HAVE_XMLSTREAM, HAVE_CONCURRENT, HAVE_PLUGINS, HAVE_RE, HAVE_JSON, HAVE_XML, HAVE_ZLIB)
 
 # NOTE: reusing existing QMimeDatabase instead of Utils::MimeDatabase leads to all kinds of crashes and memory corruptions.
 

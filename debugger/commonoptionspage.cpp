@@ -213,14 +213,14 @@ CommonOptionsPageWidget::CommonOptionsPageWidget
     m_group->insert(action(BreakOnThrow), 0);
     m_group->insert(action(BreakOnCatch), 0);
     if (Utils::HostOsInfo::isWindowsHost()) {
-#if 0
-        // TODO: to fix with postmortem, see debuggeractions.cpp:565
         Utils::SavedAction *registerAction = action(RegisterForPostMortem);
-        m_group->insert(registerAction,
-                checkBoxRegisterForPostMortem);
-        connect(registerAction, &QAction::toggled,
-                checkBoxRegisterForPostMortem, &QAbstractButton::setChecked);
-#endif
+        if( registerAction )
+        {
+            m_group->insert(registerAction,
+                    checkBoxRegisterForPostMortem);
+            connect(registerAction, &QAction::toggled,
+                    checkBoxRegisterForPostMortem, &QAbstractButton::setChecked);
+        }
     } else {
         checkBoxRegisterForPostMortem->setVisible(false);
     }

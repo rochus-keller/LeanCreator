@@ -294,25 +294,31 @@ void BusyBuildStep::handleCommandDescriptionReport(const QString &highlight, con
 
 void BusyBuildStep::handleProcessResultReport(const busy::ProcessResult &result)
 {
-    bool hasOutput = !result.stdOut.isEmpty() || !result.stdErr.isEmpty();
+    bool hasOutput = /*!result.stdOut.isEmpty() ||*/ !result.stdErr.isEmpty();
 
     if (result.success && !hasOutput)
         return;
 
     m_parser->setWorkingDirectory(result.workingDirectory);
 
+#if 0
+    // this is unnecessary since already handleCommandDescriptionReport has done that
     QString commandline = result.executableFilePath + QLatin1Char(' ')
             + Utils::QtcProcess::joinArgs(result.arguments);
     addOutput(commandline, NormalOutput);
+#endif
 
     foreach (const QString &line, result.stdErr) {
         m_parser->stdError(line);
         addOutput(line, ErrorOutput);
     }
+#if 0
+    // this doesn't seem to bring any benefit; instead with MSVC it prints the base name which is confising
     foreach (const QString &line, result.stdOut) {
         m_parser->stdOutput(line);
         addOutput(line, NormalOutput);
     }
+#endif
     m_parser->flush();
 }
 

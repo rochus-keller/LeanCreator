@@ -65,13 +65,13 @@ public:
     static void updateOrAddDebugger(const DebuggerItem &item);
     static void saveDebuggers();
 
-    static QByteArray pythonPath();
+    static QByteArray externalsPath();
 
 private:
     static void autoDetectGdbOrLldbDebuggers();
     static void autoDetectCdbDebuggers();
     static void readLegacyDebuggers(const Utils::FileName &file);
-    QTemporaryDir* d_python;
+    QTemporaryDir* d_externalsDir;
 };
 
 } // namespace Debugger

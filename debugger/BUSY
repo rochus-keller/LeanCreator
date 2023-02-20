@@ -12,9 +12,10 @@ let lib_conf : Config {
 # NOTE: gave up QT_NO_DEVICESUPPORT since it is virtually everywhere in Debugger and can handle no device.
 
 let run_rcc : Rcc {
-	.sources += [ 
-		./debugger.qrc
-	]
+	.sources += ./debugger.qrc
+	if target_os == `win32 {
+		.sources += ./debugger_win.qrc
+	}
 	.deps += ^qt.copy_rcc
 }
 
