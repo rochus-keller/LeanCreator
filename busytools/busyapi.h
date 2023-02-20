@@ -385,7 +385,7 @@ class BuildJob : public AbstractJob
 {
     Q_OBJECT
 public:
-    BuildJob(QObject* owner, const QByteArrayList&, const QProcessEnvironment& );
+    BuildJob(QObject* owner, const QByteArrayList&, const QProcessEnvironment&, const QString& workdir );
     ~BuildJob();
 
     void cancel();
@@ -399,6 +399,7 @@ protected:
 
 private:
     QByteArrayList d_todo;
+    QString d_workdir;
     QProcessEnvironment d_env;
     int d_cur;
     bool d_cancel;

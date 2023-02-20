@@ -12,7 +12,9 @@ In combination with LeanQt this is a big codebase and as such also a good test c
 
 ### Planned or work-in-progress features
 
-The current version was successfully compiled and tested on Linux x86 & x86_64 and macOS x86_64. The tests included navigating the LeanQt source tree with different parameter settings, and running some of the terminal examples in the debugger with breakpoints and value inspections. Windows is work in progress.
+The current version was successfully compiled and tested on Linux x86 & x86_64, macOS x86_64 & M1, and Windows x86. The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
+Note that the debugger on M1 doesn't work yet since the protocol of newer LLDB versions seems to be incompatible with the present version of LeanCreator.
+Also note that the debugger on Windows works in principle, but the creation, naming and location of the symbol file needs further consideration.
 
 - [x] Basic, stand-alone application with statically linked plugins
 - [x] C++ support
@@ -45,14 +47,16 @@ The current version was successfully compiled and tested on Linux x86 & x86_64 a
 
 The following precompiled versions are available at this time:
 
+- [Windows x86](http://software.rochus-keller.ch/leancreator_windows_x86.zip)
 - [Linux x86_64](http://software.rochus-keller.ch/leancreator_linux_x64.tar.gz)
 - [Mac x86_64](http://software.rochus-keller.ch/leancreator_macos_x64.zip)
+- [Mac M1](http://software.rochus-keller.ch/leancreator_macos_m1.zip)
 
 Just download, unzip and run; no installation required; it's just a single executable.
 
-On Mac the terminal opens when leancreator is run, and the menus are only active if the application was in the background one time; to avoid this the application can be included in an application bundle.
+On Windows there are currently two additional DLLs which have to be copied to the same directory like the executable in case the CDB debugger is required; this will be fixed.
 
-A Windows executable is work in progress.
+On Mac the terminal opens when leancreator is run, and the menus are only active if the application was in the background one time; to avoid this the application can be included in an application bundle.
 
 ### How to build LeanCreator
 

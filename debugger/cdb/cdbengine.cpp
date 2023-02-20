@@ -229,7 +229,6 @@ CdbEngine::CdbEngine(const DebuggerRunParameters &sp) :
     m_specialStopMode(NoSpecialStop),
     m_nextCommandToken(0),
     m_currentBuiltinResponseToken(-1),
-    m_extensionCommandPrefixBA("!" QT_CREATOR_CDB_EXT "."),
     m_operateByInstructionPending(true),
     m_operateByInstruction(true), // Default CDB setting
     m_verboseLogPending(true),
@@ -359,11 +358,8 @@ bool CdbEngine::canHandleToolTip(const DebuggerToolTipContext &context) const
 QString CdbEngine::extensionLibraryName(bool is64Bit)
 {
     // Determine extension lib name and path to use
-    QString rc;
-    QTextStream(&rc) << QFileInfo(QCoreApplication::applicationDirPath()).path()
-                     << "/lib/" << (is64Bit ? QT_CREATOR_CDB_EXT "64" : QT_CREATOR_CDB_EXT "32")
-                     << '/' << QT_CREATOR_CDB_EXT << ".dll";
-    return rc;
+    return QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(
+                QString("%1%2.dll").arg(QT_CREATOR_CDB_EXT).arg(is64Bit ?  "64" : "32"));
 }
 
 // Determine environment for CDB.exe, start out with run config and
@@ -536,6 +532,7 @@ bool CdbEngine::launchCDB(const DebuggerRunParameters &sp, QString *errorMessage
     bool cdbIs64Bit = Utils::is64BitWindowsBinary(executable);
     if (!cdbIs64Bit)
         m_wow64State = noWow64Stack;
+    m_extensionCommandPrefixBA = QString("!%1%2.").arg(QT_CREATOR_CDB_EXT).arg( cdbIs64Bit ? "64" : "32" ).toUtf8();
     const QFileInfo extensionFi(CdbEngine::extensionLibraryName(cdbIs64Bit));
     if (!extensionFi.isFile()) {
         *errorMessage = QString::fromLatin1("Internal error: The extension %1 cannot be found.\n"
@@ -563,10 +560,11 @@ bool CdbEngine::launchCDB(const DebuggerRunParameters &sp, QString *errorMessage
     if (boolSetting(IgnoreFirstChanceAccessViolation))
         arguments << QLatin1String("-x");
 
-    const QStringList &symbolPaths = stringListSetting(CdbSymbolPaths);
+    QStringList symbolPaths = stringListSetting(CdbSymbolPaths);
+    symbolPaths.append(sp.workingDirectory); // TODO: check that also the root build dir is added
     if (!symbolPaths.isEmpty())
         arguments << QLatin1String("-y") << symbolPaths.join(QLatin1Char(';'));
-    const QStringList &sourcePaths = stringListSetting(CdbSourcePaths);
+    const QStringList sourcePaths = stringListSetting(CdbSourcePaths);
     if (!sourcePaths.isEmpty())
         arguments << QLatin1String("-srcpath") << sourcePaths.join(QLatin1Char(';'));
 

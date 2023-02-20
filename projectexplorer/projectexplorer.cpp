@@ -467,7 +467,7 @@ bool ProjectExplorerPlugin::initialize(const QStringList &arguments, QString *er
 
     // Add ToolChainFactories:
 #ifdef Q_OS_WIN
-    // addAutoReleasedObject(new WinDebugInterface);
+    addAutoReleasedObject(new WinDebugInterface);
 
     addAutoReleasedObject(new MsvcToolChainFactory);
     // addAutoReleasedObject(new WinCEToolChainFactory);
@@ -475,7 +475,7 @@ bool ProjectExplorerPlugin::initialize(const QStringList &arguments, QString *er
     // addAutoReleasedObject(new LinuxIccToolChainFactory);
 #endif
 #ifndef Q_OS_MAC
-    // addAutoReleasedObject(new MingwToolChainFactory); // Mingw offers cross-compiling to windows
+    addAutoReleasedObject(new MingwToolChainFactory); // Mingw offers cross-compiling to windows
 #endif
     addAutoReleasedObject(new GccToolChainFactory);
     addAutoReleasedObject(new ClangToolChainFactory);

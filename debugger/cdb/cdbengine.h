@@ -239,7 +239,7 @@ private:
     QByteArray m_currentBuiltinResponse;
     int m_currentBuiltinResponseToken;
     QMap<QString, NormalizedSourceFileName> m_normalizedFileCache;
-    const QByteArray m_extensionCommandPrefixBA; //!< Library name used as prefix
+    QByteArray m_extensionCommandPrefixBA; //!< Library name used as prefix
     bool m_operateByInstructionPending; //!< Creator operate by instruction action changed.
     bool m_operateByInstruction;
     bool m_verboseLogPending; //!< Creator verbose log action changed.

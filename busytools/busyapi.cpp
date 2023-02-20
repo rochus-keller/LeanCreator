@@ -243,6 +243,7 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
 {
     if( !isValid() )
         return false;
+
     ErrorItem err;
     d_imp->d_errs.d_errs.clear();
     d_imp->d_log = logSink;
@@ -543,9 +544,11 @@ BuildJob*Project::buildAllProducts(const BuildOptions& options, Project::Product
     d_imp->d_errs.d_errs.clear();
 
     const QByteArrayList todo = d_imp->d_eng->generateBuildCommands(d_imp->targets);
+    const int globals = d_imp->d_eng->getGlobals();
+    const QString workdir = d_imp->d_eng->getPath(globals,"root_build_dir");
 
     // we need a build jot even if todo is empty! otherwise this is seen as an error
-    return new BuildJob(jobOwner,todo,d_imp->env);
+    return new BuildJob(jobOwner,todo,d_imp->env, workdir);
 }
 
 BuildJob*Project::buildSomeProducts(const QList<Product>& products, const BuildOptions& options,
@@ -654,8 +657,8 @@ QString ILogSink::logLevelTag(LoggerLevel level)
     return str;
 }
 
-BuildJob::BuildJob(QObject* owner, const QByteArrayList& todo, const QProcessEnvironment& env)
-    :AbstractJob(owner),d_todo(todo),d_env(env),d_cur(0),d_cancel(false)
+BuildJob::BuildJob(QObject* owner, const QByteArrayList& todo, const QProcessEnvironment& env, const QString& workdir)
+    :AbstractJob(owner),d_todo(todo),d_env(env),d_cur(0),d_cancel(false),d_workdir(workdir)
 {
 }
 
@@ -691,13 +694,14 @@ static QStringList splitCommand(const QByteArray& cmd)
 
     Lex lex(cmd,0);
     char ch = lex.next();
+    bool inString = false;
     while( ch )
     {
-        while( ::isspace(ch) )
+        while( !inString && ::isspace(ch) )
             ch = lex.next();
 
         QByteArray arg;
-        while( ch && !::isspace(ch) )
+        while( ch && (inString || !::isspace(ch)) )
         {
             if( ch == '\\' )
             {
@@ -710,7 +714,7 @@ static QStringList splitCommand(const QByteArray& cmd)
                     arg += ch;
                 }
             }else if( ch == '"' )
-                ; // ignore
+                inString = !inString;
             else
                 arg += ch;
             ch = lex.next();
@@ -751,6 +755,7 @@ void BuildJob::run()
         ProcessResult res;
         res.executableFilePath = !cmd.isEmpty() ? cmd.takeFirst() : QString();
         res.arguments = cmd;
+        res.workingDirectory = d_workdir;
 
         if( res.arguments.size() == 2 && res.executableFilePath == "copy" )
         {
@@ -762,6 +767,7 @@ void BuildJob::run()
             proc.setProcessEnvironment(d_env);
             proc.setProgram(res.executableFilePath);
             proc.setArguments(res.arguments);
+            proc.setWorkingDirectory(d_workdir); // this is where the debug.pdb is written
             proc.start();
             if( proc.waitForStarted() )
             {
