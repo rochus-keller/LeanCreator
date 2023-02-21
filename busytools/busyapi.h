@@ -187,8 +187,8 @@ public:
     ILogSink();
     virtual ~ILogSink();
 
-    void setLogLevel(LoggerLevel level){ d_level = level; }
-    bool willPrint(LoggerLevel level) const { return level <= d_level; }
+    void setLogLevel(LoggerLevel level);
+    bool willPrint(LoggerLevel level) const;
     void printWarning(const ErrorInfo &warning);
     void printMessage(LoggerLevel level, const QString &message, const QString &tag = QString(),bool force = false);
 

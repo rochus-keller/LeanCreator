@@ -64,6 +64,7 @@ public:
     int getRootModule() const;
     int findModule(const QString& path) const; // TODO: path can point to more than one module
     QList<int> findDeclByPos(const QString& path, int row, int col ) const;
+    QString findPathByPos(const QString& path, int row, int col) const;
     QList<Loc> findDeclInstsInFile(const QString& path, int decl) const;
     QList<AllLocsInFile> findAllLocsOf(int decl) const;
     QList<int> getSubModules(int) const;

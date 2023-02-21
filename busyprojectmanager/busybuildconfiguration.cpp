@@ -387,7 +387,7 @@ QList<BuildInfo *> BusyBuildConfigurationFactory::availableBuilds(const Target *
 int BusyBuildConfigurationFactory::priority(const Kit *k, const QString &projectPath) const
 {
     Utils::MimeDatabase mdb;
-    if (k && mdb.mimeTypeForFile(projectPath).matchesName(QLatin1String(Constants::MIME_TYPE)))
+    if (k && mdb.mimeTypeForFile(projectPath).matchesName(QLatin1String(Constants::PROJECT_MIME_TYPE)))
         return 0;
     return -1;
 }

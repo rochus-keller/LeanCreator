@@ -21,14 +21,14 @@ Note that the debugger on M1 doesn't properly work yet since the protocol of new
 - [x] deep BUSY integration (instead of qmake)
 - [x] GCC, Clang and MSVC support 
 - [x] GDB, LLDB and CDB support 
-- [ ] Extend BUSY file navigation
-- [ ] Display BUSY file calculated values, gray-out inactives
-- [ ] Wizzards for project and file creation
+- [x] Extend BUSY file navigation
 - [ ] BUSY builds with header dependency tracking
+- [ ] Wizzards for project and code file creation
 - [ ] Ninja builds
 
 ### Long term plan
 
+- [ ] Display BUSY file calculated values, gray-out inactives
 - [ ] Lua automation (instead of JS)
 - [ ] Designer integration
 

@@ -393,6 +393,36 @@ QList<int> Engine::findDeclByPos(const QString& path, int row, int col) const
     return res;
 }
 
+QString Engine::findPathByPos(const QString& path, int row, int col) const
+{
+    QString res;
+    if( !d_imp->ok() )
+        return res;
+    const int top = lua_gettop(d_imp->L);
+    lua_getglobal(d_imp->L,"#xref");
+    if( lua_istable(d_imp->L,-1) )
+    {
+        // filepath -> list_of_idents{ rowcol -> path }
+        lua_pushstring(d_imp->L,path.toUtf8().constData());
+        lua_rawget(d_imp->L,-2);
+        if( lua_istable(d_imp->L,-1) )
+        {
+            const int list_of_idents = lua_gettop(d_imp->L);
+            lua_pushinteger(d_imp->L, bs_torowcol(row,col) );
+            lua_rawget(d_imp->L,list_of_idents);
+            if( lua_isstring(d_imp->L,-1) )
+            {
+                res = QString::fromUtf8(bs_denormalize_path(lua_tostring(d_imp->L,-1)));
+            }
+            lua_pop(d_imp->L,1);
+        }
+        lua_pop(d_imp->L,1);
+    }
+    lua_pop(d_imp->L,1);
+    Q_ASSERT( top == lua_gettop(d_imp->L) );
+    return res;
+}
+
 QList<Engine::AllLocsInFile> Engine::findAllLocsOf(int id) const
 {
     QList<Engine::AllLocsInFile> res;

@@ -20,6 +20,9 @@
 #include "busyindenter.h"
 #include "busyeditoroutline.h"
 #include <busytools/Engine.h>
+extern "C" {
+#include <bsparser.h>
+}
 
 #include <texteditor/texteditoractionhandler.h>
 #include <texteditor/texteditorsettings.h>
@@ -49,7 +52,8 @@ Editor::Editor()
 EditorFactory::EditorFactory()
 {
     setId(Constants::BUSY_EDITOR_ID);
-    addMimeType(Constants::MIME_TYPE);
+    addMimeType(Constants::PROJECT_MIME_TYPE);
+    addMimeType(Constants::INCLUDE_MIME_TYPE);
 
     setDocumentCreator([]() { return new EditorDocument; });
     setIndenterCreator([]() { return new Indenter; });
@@ -283,6 +287,86 @@ void EditorWidget::onFindUsages()
 
 }
 
+static int findStart( const QString& str, int pos )
+{
+    enum { Idle, Slash, DotSlash, SlashSlash, DotDotSlash } status = Idle;
+    while( pos >= 0 && pos < str.size() )
+    {
+        const char ch = str[pos].toLatin1();
+        switch(status)
+        {
+        case Idle:
+            if( ch == '/' )
+                status = Slash;
+            else if( ch == '\'' )
+                return pos;
+            break;
+        case Slash:
+            if( ch == '/' )
+                status = SlashSlash;
+            else if( ch == '.' )
+                status = DotSlash;
+            else
+                status = Idle;
+            break;
+        case SlashSlash:
+        case DotDotSlash:
+            if( ch == '\'')
+                return pos;
+            else
+                return pos + 1;
+            break;
+        case DotSlash:
+            if( ch == '.' )
+                status = DotDotSlash;
+            else if( ch == '\'' )
+                return pos;
+            else
+                return pos + 1;
+            break;
+        }
+        pos--;
+    }
+    return -1;
+}
+
+static int findLen( const QString& str, int start )
+{
+    int i = start + 1;
+    if( str[start] == '\'' )
+    {
+        while( i < str.length() )
+        {
+            if( str[i] == '\'' )
+                break;
+            i++;
+        }
+    }else
+    {
+        while( i < str.length() )
+        {
+            if( str[i].isSpace() )
+                break;
+            i++;
+        }
+    }
+    return i - start;
+}
+
+static bool findPath( QTextCursor& cur )
+{
+    const QString line = cur.block().text();
+    const int start = findStart( line, cur.positionInBlock() );
+    if( start >= 0 )
+    {
+        const int len = findLen( line, start);
+        cur.setPosition(cur.block().position() + start + len);
+        cur.setPosition(cur.block().position() + start, QTextCursor::KeepAnchor);
+        return true;
+    }
+    return false;
+}
+
 TextEditor::TextEditorWidget::Link EditorWidget::findLinkAt(const QTextCursor& in, bool resolveTarget, bool inNextSplit)
 {
     Q_UNUSED(resolveTarget);
@@ -306,14 +390,49 @@ TextEditor::TextEditorWidget::Link EditorWidget::findLinkAt(const QTextCursor& i
         if( path.isEmpty() )
             return Link();
         if( r == 0 )
-            r = c = 1;
-        Link l( path, r, c);
-        l.linkTextStart = cur.position();
-        l.linkTextEnd = cur.position() + name.size();
-        return l;
+        {
+            r = 1;
+            c = 0;
+        }
+        if( path == d_mdl->getFileName() && line == r && col == c + 1 )
+        {
+            // we point to the declaration itself
+            if( d_mdl->getEngine()->getInteger(found.first(),"#kind") == BS_ModuleDef )
+            {
+                // this is a submod, go to the module files
+                Link l( d_mdl->getEngine()->getPath(found.first(),"#file"), 1, 0);
+                l.linkTextStart = cur.position();
+                l.linkTextEnd = cur.position() + name.size();
+                return l;
+            }
+        }else
+        {
+            // this is an ordinary symbol
+            Link l( path, r, c);
+            l.linkTextStart = cur.position();
+            l.linkTextEnd = cur.position() + name.size();
+            return l;
+        }
     // TODO selector for found.size() > 1
     }else
-        return Link();
+    {
+        QTextCursor cur = in;
+        if( findPath(cur) )
+        {
+            const int line = cur.blockNumber() + 1;
+            const QString sel = cur.selectedText();
+            const int col = cur.columnNumber() + 1;
+            const QString path = d_mdl->getEngine()->findPathByPos(d_mdl->getFileName(),line,col);
+            if( !path.isEmpty() && !QFileInfo(path).isDir() )
+            {
+                Link l( path, 1, 0);
+                l.linkTextStart = cur.position();
+                l.linkTextEnd = cur.position() + sel.length();
+                return l;
+            }
+        }
+    }
+    return Link();
 }
 
 void EditorWidget::contextMenuEvent(QContextMenuEvent* e)

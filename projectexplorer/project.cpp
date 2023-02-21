@@ -128,7 +128,11 @@ Core::Id Project::id() const
 
 Utils::FileName Project::projectFilePath() const
 {
-    return document()->filePath();
+    Core::IDocument* doc = document();
+    if( doc )
+        return doc->filePath();
+    else
+        return Utils::FileName();
 }
 
 bool Project::hasActiveBuildSettings() const

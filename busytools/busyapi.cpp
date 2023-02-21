@@ -147,6 +147,8 @@ public:
         switch( ll )
         {
         case BS_Info:
+            return LoggerTrace;
+        case BS_Message:
             return LoggerInfo;
         case BS_Debug:
             return LoggerDebug;
@@ -205,7 +207,7 @@ Project::Project()
 Project::Project(const QString& path)
 {
     d_imp = new Internal::ProjectImp();
-    if( path.endsWith("BUSY") )
+    if( path.endsWith("BUSY") || path.endsWith("BUSY.busy") )
         d_imp->d_path = QFileInfo(path).absolutePath();
     else
         d_imp->d_path = path;
@@ -608,6 +610,16 @@ ILogSink::ILogSink():d_level(LoggerInfo)
 ILogSink::~ILogSink()
 {
 
+}
+
+void ILogSink::setLogLevel(LoggerLevel level)
+{
+    d_level = level;
+}
+
+bool ILogSink::willPrint(LoggerLevel level) const
+{
+    return level <= d_level;
 }
 
 void ILogSink::printWarning(const ErrorInfo& warning)

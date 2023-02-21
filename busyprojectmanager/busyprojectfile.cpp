@@ -33,7 +33,7 @@ BusyProjectFile::BusyProjectFile(BusyProject *parent, QString fileName) : Core::
     m_project(parent)
 {
     setId("Busy.ProjectFile");
-    setMimeType(QLatin1String(Constants::MIME_TYPE));
+    setMimeType(QLatin1String(Constants::PROJECT_MIME_TYPE));
     setFilePath(Utils::FileName::fromString(fileName));
 }
 

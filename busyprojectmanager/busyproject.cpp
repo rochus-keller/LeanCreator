@@ -95,7 +95,6 @@ static const char CONFIG_PRECOMPILEDHEADER[] = "precompiledHeader";
 
 BusyProject::BusyProject(BusyManager *manager, const QString &fileName) :
     m_manager(manager),
-    m_projectName(QFileInfo(fileName).absoluteDir().dirName()),
     m_project(fileName),
     m_fileName(fileName),
     m_rootProjectNode(0),
@@ -104,6 +103,11 @@ BusyProject::BusyProject(BusyManager *manager, const QString &fileName) :
     m_cancelStatus(CancelStatusNone),
     m_currentBc(0)
 {
+    if( fileName.endsWith("BUSY") || fileName.endsWith("BUSY.busy") )
+        m_projectName = QFileInfo(fileName).absoluteDir().dirName();
+    else
+        m_projectName = QFileInfo(fileName).baseName();
+
     m_parsingDelay.setInterval(1000); // delay parsing by 1s.
 
     setId(Constants::PROJECT_ID);
@@ -329,6 +333,16 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
 {
     QTC_ASSERT(busyProject().isValid(), return 0);
     QTC_ASSERT(!isParsing(), return 0);
+
+#if 0
+    // TODO: here we will find out which included file is younger than the including file and
+    // then touch the latter so it is considered for recompilation.
+    // touch can be done by e.g. appending a space to the file, or utime (both windows and unix)
+    // or backport QFileDevice::setFileTime from Qt > 5.10
+    CppTools::CppModelManager *modelmanager = CppTools::CppModelManager::instance();
+    CPlusPlus::Snapshot snap = modelmanager->snapshot();
+    snap.updateDependencyTable();
+#endif
 
     busy::BuildOptions opts2 = opts;
 

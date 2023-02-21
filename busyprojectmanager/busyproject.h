@@ -130,7 +130,7 @@ private:
     static bool ensureWriteableBusyFile(const QString &file);
 
     BusyManager *const m_manager;
-    const QString m_projectName;
+    QString m_projectName;
     const QString m_fileName;
     busy::Project m_project;
     busy::Module m_rootModule;

@@ -33,7 +33,8 @@ namespace Constants {
 const char PROJECT_ID[] = "Busy.BusyProject";
 
 // MIME types:
-const char MIME_TYPE[] = "text/x-busy-project";
+const char PROJECT_MIME_TYPE[] = "text/x-busy-project";
+const char INCLUDE_MIME_TYPE[] = "text/x-busy-file";
 const char LANG[] = "BUSY";
 
 // Actions:

@@ -7,5 +7,9 @@
     <glob pattern="BUSY"/>
     <glob pattern="BUSY.busy"/>
  </mime-type>
-
+  <mime-type type="text/x-busy-file">
+    <sub-class-of type="text/plain"/>
+    <comment>BUSY include file</comment>
+    <glob pattern="*.busy"/>
+ </mime-type>
 </mime-info>

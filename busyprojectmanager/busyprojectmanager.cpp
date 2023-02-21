@@ -76,7 +76,7 @@ BusyManager::BusyManager() :
             &BusyManager::handleKitRemoval);
 
     m_logSink = new BusyLogSink(this);
-    int level = busy::LoggerWarning;
+    int level = busy::LoggerInfo;
     const QString levelEnv = QString::fromLocal8Bit(qgetenv("BUSY_LOG_LEVEL"));
     if (!levelEnv.isEmpty()) {
         bool ok = false;
@@ -101,7 +101,7 @@ BusyManager::~BusyManager()
 
 QString BusyManager::mimeType() const
 {
-    return QLatin1String(BusyProjectManager::Constants::MIME_TYPE);
+    return QLatin1String(BusyProjectManager::Constants::PROJECT_MIME_TYPE);
 }
 
 ProjectExplorer::Project *BusyManager::openProject(const QString &fileName, QString *errorString)
