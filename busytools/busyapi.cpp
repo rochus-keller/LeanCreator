@@ -132,8 +132,8 @@ public:
     Engine::Ptr d_eng;
     ErrorInfo d_errs;
     ILogSink* d_log;
+    Engine::ParseParams params;
     QProcessEnvironment env;
-    QByteArrayList targets;
 
     ProjectImp():d_log(0){}
     ~ProjectImp()
@@ -250,16 +250,15 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
     d_imp->d_errs.d_errs.clear();
     d_imp->d_log = logSink;
 
-    Engine::ParseParams p;
-    p.params = in.params;
-    p.targets = in.targets;
-    p.root_source_dir = d_imp->d_path.toUtf8();
-    p.root_build_dir = in.buildDir.toUtf8();
+    d_imp->params.params = in.params;
+    d_imp->params.targets = in.targets;
+    d_imp->params.root_source_dir = d_imp->d_path.toUtf8();
+    d_imp->params.root_build_dir = in.buildDir.toUtf8();
 
     if( in.buildVariant == "debug" )
-        p.build_mode = "debug";
+        d_imp->params.build_mode = "debug";
     else
-        p.build_mode = "optimized";
+        d_imp->params.build_mode = "optimized";
 
     if( !( in.toolchain == "gcc" || in.toolchain == "clang" || in.toolchain == "msvc" ) )
     {
@@ -267,39 +266,36 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         d_imp->d_errs.d_errs.append(err);
         return false;
     }else
-        p.toolchain = in.toolchain.toUtf8();
-
-    d_imp->env = in.env;
-    d_imp->targets = in.targets;
+        d_imp->params.toolchain = in.toolchain.toUtf8();
 
     QFileInfo info(in.compilerCommand);
-    p.toolchain_path = info.absolutePath().toUtf8();
-    p.toolchain_prefix = info.baseName().toUtf8();
-    if( p.toolchain_prefix.endsWith(".exe") )
-        p.toolchain_prefix.chop(4);
+    d_imp->params.toolchain_path = info.absolutePath().toUtf8();
+    d_imp->params.toolchain_prefix = info.baseName().toUtf8();
+    if( d_imp->params.toolchain_prefix.endsWith(".exe") )
+        d_imp->params.toolchain_prefix.chop(4);
     if( in.toolchain == "gcc" )
-        p.toolchain_prefix.chop(3);
+        d_imp->params.toolchain_prefix.chop(3);
     else if( in.toolchain == "clang" )
-        p.toolchain_prefix.chop(5);
+        d_imp->params.toolchain_prefix.chop(5);
     else if( in.toolchain == "msvc" )
-        p.toolchain_prefix.chop(2); // cl
+        d_imp->params.toolchain_prefix.chop(2); // cl
 
     switch(in.abi.architecture())
     {
     case ProjectExplorer::Abi::ArmArchitecture:
-        p.cpu = "arm";
+        d_imp->params.cpu = "arm";
         break;
     case ProjectExplorer::Abi::X86Architecture:
-        p.cpu = "x86";
+        d_imp->params.cpu = "x86";
         break;
     case ProjectExplorer::Abi::ItaniumArchitecture:
-        p.cpu = "ia64";
+        d_imp->params.cpu = "ia64";
         break;
     case ProjectExplorer::Abi::MipsArchitecture:
-        p.cpu = "mips";
+        d_imp->params.cpu = "mips";
         break;
     case ProjectExplorer::Abi::PowerPCArchitecture:
-        p.cpu = "ppc";
+        d_imp->params.cpu = "ppc";
         break;
     default:
         err.d_msg = "architecture not supported: " + ProjectExplorer::Abi::toString(in.abi.architecture());
@@ -309,19 +305,19 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
     switch(in.abi.os())
     {
     case ProjectExplorer::Abi::BsdOS:
-        p.os = "freebsd";
+        d_imp->params.os = "freebsd";
         break;
     case ProjectExplorer::Abi::LinuxOS:
-        p.os = "linux";
+        d_imp->params.os = "linux";
         break;
     case ProjectExplorer::Abi::MacOS:
-        p.os = "macos";
+        d_imp->params.os = "macos";
         break;
     case ProjectExplorer::Abi::UnixOS:
-        p.os = "unix";
+        d_imp->params.os = "unix";
         break;
     case ProjectExplorer::Abi::WindowsOS:
-        p.os = "win32";
+        d_imp->params.os = "win32";
         break;
     default:
         err.d_msg = "operating system not supported: " + ProjectExplorer::Abi::toString(in.abi.os());
@@ -331,23 +327,25 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
     switch(in.abi.wordWidth())
     {
     case 128:
-        p.wordsize = "128";
+        d_imp->params.wordsize = "128";
         break;
     case 64:
-        p.wordsize = "64";
+        d_imp->params.wordsize = "64";
         break;
     case 32:
-        p.wordsize = "32";
+        d_imp->params.wordsize = "32";
         break;
     case 16:
-        p.wordsize = "16";
+        d_imp->params.wordsize = "16";
         break;
     default:
         err.d_msg = "word width not supported: " + ProjectExplorer::Abi::toString(in.abi.wordWidth());
         return false;
     }
 
-    return d_imp->d_eng->parse(p);
+    d_imp->env = in.env;
+
+    return d_imp->d_eng->parse(d_imp->params);
 }
 
 ErrorInfo Project::errors() const
@@ -527,6 +525,19 @@ QSet<QString> Project::buildSystemFiles() const
     return res;
 }
 
+QSet<QString> Project::allSources(bool onlyActives) const
+{
+    QList<Product> prods = allProducts(false,onlyActives);
+    QSet<QString> res;
+    foreach( const Product& p, prods )
+    {
+        QStringList files = p.allFilePaths();
+        foreach( const QString& f, files)
+            res << f;
+    }
+    return res;
+}
+
 QString Project::targetExecutable(const Product& product, const InstallOptions& installoptions) const
 {
     return product.executable();
@@ -537,6 +548,12 @@ QProcessEnvironment Project::getRunEnvironment(const Product& product, const Ins
     return environment;
 }
 
+extern "C" {
+static void dummyLogger(BSLogLevel, void* data, const char* file, BSRowCol loc, const char* format, va_list)
+{
+}
+}
+
 BuildJob*Project::buildAllProducts(const BuildOptions& options, Project::ProductSelection productSelection,
                                    QObject* jobOwner) const
 {
@@ -545,12 +562,16 @@ BuildJob*Project::buildAllProducts(const BuildOptions& options, Project::Product
 
     d_imp->d_errs.d_errs.clear();
 
-    const QByteArrayList todo = d_imp->d_eng->generateBuildCommands(d_imp->targets);
-    const int globals = d_imp->d_eng->getGlobals();
-    const QString workdir = d_imp->d_eng->getPath(globals,"root_build_dir");
-
-    // we need a build jot even if todo is empty! otherwise this is seen as an error
-    return new BuildJob(jobOwner,todo,d_imp->env, workdir);
+    Engine::Ptr eng( new Engine() );
+    eng->registerLogger(dummyLogger,0); // this is a redundant run, output already known
+    if( eng->parse(d_imp->params) )
+    {
+        // TODO: this is an expensive way to find count approximation
+        // (the exact number is only known after true run)
+        const int count = d_imp->d_eng->generateBuildCommands().size();
+        return new BuildJob(jobOwner,eng.data(),d_imp->env, d_imp->params.targets, count);
+    }else
+        return 0;
 }
 
 BuildJob*Project::buildSomeProducts(const QList<Product>& products, const BuildOptions& options,
@@ -669,19 +690,18 @@ QString ILogSink::logLevelTag(LoggerLevel level)
     return str;
 }
 
-BuildJob::BuildJob(QObject* owner, const QByteArrayList& todo, const QProcessEnvironment& env, const QString& workdir)
-    :AbstractJob(owner),d_todo(todo),d_env(env),d_cur(0),d_cancel(false),d_workdir(workdir)
+class BuildJob::Imp
 {
-}
-
-BuildJob::~BuildJob()
-{
-}
-
-void BuildJob::cancel()
-{
-    d_cancel = true;
-}
+public:
+    BuildJob* that;
+    QProcessEnvironment env;
+    Engine::Ptr eng;
+    QString workdir;
+    QByteArrayList targets;
+    quint16 cur;
+    quint16 max;
+    bool cancel;
+};
 
 static QStringList splitCommand(const QByteArray& cmd)
 {
@@ -746,66 +766,90 @@ static QStringList convert(const QByteArray& str)
     return res;
 }
 
-void BuildJob::run()
+extern "C" {
+static int runner(const char* rawcmd, void* data)
 {
-    emit taskStarted("BUSY build run", d_todo.size());
-    bool success = true;
-    for( int i = 0; i < d_todo.size(); i++ )
+    BuildJob::Imp* imp = (BuildJob::Imp*)data;
+
+    if( imp->cancel )
+        return -1;
+
+    emit imp->that->taskProgress(imp->cur++ % imp->max);
+        // TODO: even though we count mod the progress bar stays at 100%
+
+    QStringList cmd = splitCommand(rawcmd);
+
+    emit imp->that->reportCommandDescription(QString(), cmd.join(' ') );
+
+    ProcessResult res;
+    res.executableFilePath = !cmd.isEmpty() ? cmd.takeFirst() : QString();
+    res.arguments = cmd;
+    res.workingDirectory = imp->workdir;
+
+    if( res.arguments.size() == 2 && res.executableFilePath == "copy" )
     {
-        if( d_cancel )
+        QFile::remove(res.arguments[1]);
+        res.success = QFile::copy(res.arguments[0],res.arguments[1]);
+    }else if( !res.executableFilePath.isEmpty() )
+    {
+        QProcess proc;
+        proc.setProcessEnvironment(imp->env);
+        proc.setProgram(res.executableFilePath);
+        proc.setArguments(res.arguments);
+        proc.setWorkingDirectory(imp->workdir); // this is where the debug.pdb is written
+        proc.start();
+        if( proc.waitForStarted() )
         {
-            emit taskFinished(false);
-            return;
-        }
-
-        emit taskProgress(i);
-
-        QStringList cmd = splitCommand(d_todo[i]);
-
-        emit reportCommandDescription(QString(), cmd.join(' ') );
-
-        ProcessResult res;
-        res.executableFilePath = !cmd.isEmpty() ? cmd.takeFirst() : QString();
-        res.arguments = cmd;
-        res.workingDirectory = d_workdir;
-
-        if( res.arguments.size() == 2 && res.executableFilePath == "copy" )
-        {
-            QFile::remove(res.arguments[1]);
-            res.success = QFile::copy(res.arguments[0],res.arguments[1]);
-        }else if( !res.executableFilePath.isEmpty() )
-        {
-            QProcess proc;
-            proc.setProcessEnvironment(d_env);
-            proc.setProgram(res.executableFilePath);
-            proc.setArguments(res.arguments);
-            proc.setWorkingDirectory(d_workdir); // this is where the debug.pdb is written
-            proc.start();
-            if( proc.waitForStarted() )
-            {
-                if( !proc.waitForFinished() )
-                {
-                    res.success = false;
-                    res.stdErr << "process timeout";
-                }else
-                {
-                    res.success = proc.exitCode() == 0;
-                    res.stdErr = convert( proc.readAllStandardError() );
-                    res.stdOut = convert( proc.readAllStandardOutput() );
-                }
-            }else
+            if( !proc.waitForFinished() )
             {
                 res.success = false;
-                res.stdErr << "cannot start process" << proc.errorString();
+                res.stdErr << "process timeout";
+            }else
+            {
+                res.success = proc.exitCode() == 0;
+                res.stdErr = convert( proc.readAllStandardError() );
+                res.stdOut = convert( proc.readAllStandardOutput() );
             }
+        }else
+        {
+            res.success = false;
+            res.stdErr << "cannot start process" << proc.errorString();
         }
-
-        if( !res.success )
-            success = false;
-
-        qRegisterMetaType<ProcessResult>();
-        emit reportProcessResult(res);
-
     }
+
+    qRegisterMetaType<ProcessResult>();
+    emit imp->that->reportProcessResult(res);
+    return 0;
+}
+}
+
+BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env, const QByteArrayList& targets, int count)
+    :AbstractJob(owner)
+{
+    d_imp = new Imp();
+    d_imp->that = this;
+    d_imp->env = env;
+    d_imp->eng = eng;
+    d_imp->targets = targets;
+    const int globals = eng->getGlobals();
+    d_imp->workdir = eng->getPath(globals,"root_build_dir");
+    d_imp->cur = 0;
+    d_imp->max = count;
+}
+
+BuildJob::~BuildJob()
+{
+    delete d_imp;
+}
+
+void BuildJob::cancel()
+{
+    d_imp->cancel = true;
+}
+
+void BuildJob::run()
+{
+    emit taskStarted("BUSY build run", d_imp->max);
+    const bool success = d_imp->eng->build(d_imp->targets, runner, d_imp);
     emit taskFinished(success);
 }

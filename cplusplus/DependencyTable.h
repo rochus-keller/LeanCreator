@@ -48,11 +48,18 @@ class Snapshot;
 class CPLUSPLUS_EXPORT DependencyTable
 {
 private:
+    struct File {
+        Utils::FileName name;
+        uint modified;
+        File(const Utils::FileName& _name = Utils::FileName(), uint _mod = 0):name(_name),modified(_mod){}
+    };
+
     friend class Snapshot;
     void build(const Snapshot &snapshot);
     Utils::FileNameList filesDependingOn(const Utils::FileName &fileName) const;
+    Utils::FileNameList allFilesDependingOnModifieds() const;
 
-    QVector<Utils::FileName> files;
+    QVector<File> files;
     QHash<Utils::FileName, int> fileIndex;
     QHash<int, QList<int> > includes;
     QVector<QBitArray> includeMap;

@@ -74,19 +74,14 @@ VersionDialog::VersionDialog(QWidget *parent)
         "%4"
         "%5"
         "<br/>"
-        "<p>See <a href=\"https://github.com/rochus-keller/LeanCreator\">the Github page</a> for more information.</p>"
-        "Copyright 2008-%6 %7. All rights reserved.<br/>"
-        "<br/>"
-        "The program is provided AS IS with NO WARRANTY OF ANY KIND, "
-        "INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A "
-        "PARTICULAR PURPOSE.<br/>")
+        "<p>See <a href=\"https://github.com/rochus-keller/LeanCreator\">the Github page</a> "
+                "for more information.</p>"
+        "<p>LeanCreator is available under GNU GPL/LGPL version 2.1 or version 3.</p>" )
         .arg(ICore::versionString(),
              ICore::buildCompatibilityString(),
              buildDateInfo,
              ideRev,
-             additionalInfo.isEmpty() ? QString() : br + additionalInfo + br,
-             QLatin1String(Constants::IDE_YEAR),
-             QLatin1String(Constants::IDE_AUTHOR));
+             additionalInfo.isEmpty() ? QString() : br + additionalInfo + br);
 
     QLabel *copyRightLabel = new QLabel(description);
     copyRightLabel->setWordWrap(true);

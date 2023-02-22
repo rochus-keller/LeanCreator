@@ -346,6 +346,7 @@ public:
     Module topModule() const;
     QList<Product> allProducts(bool onlyRunnables = false, bool onlyActives = false) const;
     QSet<QString> buildSystemFiles() const;
+    QSet<QString> allSources(bool onlyActives = false) const;
 
     QString targetExecutable(const Product &product, const InstallOptions &installoptions) const;
     QProcessEnvironment getRunEnvironment(const Product &product,
@@ -385,7 +386,9 @@ class BuildJob : public AbstractJob
 {
     Q_OBJECT
 public:
-    BuildJob(QObject* owner, const QByteArrayList&, const QProcessEnvironment&, const QString& workdir );
+    class Imp;
+
+    BuildJob(QObject* owner, Engine*, const QProcessEnvironment&, const QByteArrayList& targets, int count);
     ~BuildJob();
 
     void cancel();
@@ -398,11 +401,7 @@ protected:
     void run();
 
 private:
-    QByteArrayList d_todo;
-    QString d_workdir;
-    QProcessEnvironment d_env;
-    int d_cur;
-    bool d_cancel;
+    Imp* d_imp;
 };
 
 class CleanJob : public AbstractJob

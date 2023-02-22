@@ -21,6 +21,9 @@
 #include <QString>
 #include <bslogger.h>
 
+extern "C" {
+typedef int (*BSRunCmd)(const char* cmd, void* data);
+}
 namespace busy
 {
 class Engine : public QSharedData
@@ -60,6 +63,7 @@ public:
     };
 
     bool parse( const ParseParams& params, bool checkTargets = true );
+    bool build( const QByteArrayList& targets, BSRunCmd, void* data );
     QByteArrayList generateBuildCommands(const QByteArrayList& targets = QByteArrayList());
     int getRootModule() const;
     int findModule(const QString& path) const; // TODO: path can point to more than one module

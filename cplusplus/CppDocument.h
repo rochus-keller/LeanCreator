@@ -444,6 +444,7 @@ public:
     Utils::FileNameList filesDependingOn(const Utils::FileName &fileName) const;
     Utils::FileNameList filesDependingOn(const QString &fileName) const
     { return filesDependingOn(Utils::FileName::fromString(fileName)); }
+    Utils::FileNameList allFilesDependingOnModifieds() const;
     void updateDependencyTable() const;
 
     bool operator==(const Snapshot &other) const;

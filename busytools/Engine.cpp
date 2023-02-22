@@ -980,6 +980,27 @@ void Engine::dump(int def, const char* title) const
     }
 }
 
+bool Engine::build(const QByteArrayList& targets, BSRunCmd runcmd, void* data)
+{
+    bs_preset_runcmd(d_imp->L,runcmd, data);
+    lua_pushcfunction(d_imp->L, bs_execute);
+    lua_getglobal(d_imp->L,"#root");
+    if( targets.isEmpty() )
+        lua_pushnil(d_imp->L);
+    else
+    {
+        lua_createtable(d_imp->L,0,targets.size());
+        const int table = lua_gettop(d_imp->L);
+        for( int i = 0; i < targets.size(); i++ )
+        {
+            lua_pushstring(d_imp->L,targets[i].constData());
+            lua_pushstring(d_imp->L,"true");
+            lua_rawset(d_imp->L,table);
+        }
+    }
+    return d_imp->call(2,0);
+}
+
 bool Engine::pushInst(int ref) const
 {
     int n = 1;

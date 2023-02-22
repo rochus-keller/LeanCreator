@@ -46,10 +46,29 @@ Utils::FileNameList DependencyTable::filesDependingOn(const Utils::FileName &fil
         const QBitArray &bits = includeMap.at(i);
 
         if (bits.testBit(index))
-            deps.append(files.at(i));
+            deps.append(files.at(i).name);
     }
 
     return deps;
+}
+
+Utils::FileNameList DependencyTable::allFilesDependingOnModifieds() const
+{
+    QSet<int> tmp;
+    for( int j = 0; j < files.size(); j++ )
+    {
+        // i includes/depends on j
+        for( int i = 0; i < files.size(); ++i ) {
+            const QBitArray &bits = includeMap.at(i);
+
+            if( bits.testBit(j) && files[j].modified > files[i].modified )
+                tmp.insert(i);
+        }
+    }
+    Utils::FileNameList res;
+    for( QSet<int>::const_iterator i = tmp.begin(); i != tmp.end(); ++i )
+        res.append(files[*i].name);
+    return res;
 }
 
 void DependencyTable::build(const Snapshot &snapshot)
@@ -66,13 +85,13 @@ void DependencyTable::build(const Snapshot &snapshot)
     int i = 0;
     for (Snapshot::const_iterator it = snapshot.begin(); it != snapshot.end();
             ++it, ++i) {
-        files[i] = it.key();
+        files[i] = File(it.key(),QFileInfo(it.key().toString()).lastModified().toTime_t());
         fileIndex[it.key()] = i;
     }
 
     for (int i = 0; i < files.size(); ++i) {
-        const Utils::FileName &fileName = files.at(i);
-        if (Document::Ptr doc = snapshot.document(fileName)) {
+        const File &file = files.at(i);
+        if (Document::Ptr doc = snapshot.document(file.name)) {
             QBitArray bitmap(files.size());
             QList<int> directIncludes;
             const QStringList documentIncludes = doc->includedFiles();

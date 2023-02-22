@@ -22,6 +22,9 @@
 ****************************************************************************/
 
 #include "busyproject.h"
+extern "C" {
+#include <bshost.h>
+}
 
 #include "busybuildconfiguration.h"
 #include "busylogsink.h"
@@ -335,15 +338,20 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
     QTC_ASSERT(!isParsing(), return 0);
 
 #if 0
-    // TODO: here we will find out which included file is younger than the including file and
-    // then touch the latter so it is considered for recompilation.
-    // touch can be done by e.g. appending a space to the file, or utime (both windows and unix)
-    // or backport QFileDevice::setFileTime from Qt > 5.10
+    // TODO: options: check for modified includes, use Ninja
     CppTools::CppModelManager *modelmanager = CppTools::CppModelManager::instance();
     CPlusPlus::Snapshot snap = modelmanager->snapshot();
-    snap.updateDependencyTable();
+    const Utils::FileNameList toTouch = snap.allFilesDependingOnModifieds();
+    const QSet<QString> sources = m_project.allSources(true);
+    QFile f("out.txt");
+    f.open(QIODevice::WriteOnly);
+    QTextStream out(&f);
+    foreach( const Utils::FileName& f, toTouch )
+        if( sources.contains(f.toString()) )
+            out << f.toString() << endl;
+    // here comes much more than expected.
+    //    bs_touch2(f.toString().toUtf8().constData()); // TODO: don't directly touch if open
 #endif
-
     busy::BuildOptions opts2 = opts;
 
     if (productNames.isEmpty())

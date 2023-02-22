@@ -827,6 +827,12 @@ Utils::FileNameList Snapshot::filesDependingOn(const Utils::FileName &fileName) 
     return m_deps.filesDependingOn(fileName);
 }
 
+Utils::FileNameList Snapshot::allFilesDependingOnModifieds() const
+{
+    updateDependencyTable();
+    return m_deps.allFilesDependingOnModifieds();
+}
+
 void Snapshot::updateDependencyTable() const
 {
     if (m_deps.files.isEmpty())
