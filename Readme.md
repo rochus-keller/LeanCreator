@@ -60,6 +60,7 @@ The following precompiled versions are available at this time:
 
 - [Windows x86](http://software.rochus-keller.ch/leancreator_windows_x86.zip)
 - [Windows x86_64](http://software.rochus-keller.ch/leancreator_windows_x64.zip)
+- [Linux x86](http://software.rochus-keller.ch/leancreator_linux_x86.tar.gz)
 - [Linux x86_64](http://software.rochus-keller.ch/leancreator_linux_x64.tar.gz)
 - [Mac x86_64](http://software.rochus-keller.ch/leancreator_macos_x64.zip)
 - [Mac M1](http://software.rochus-keller.ch/leancreator_macos_m1.zip)
