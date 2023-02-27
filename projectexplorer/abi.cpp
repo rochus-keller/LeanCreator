@@ -169,7 +169,20 @@ static QList<Abi> parseCoffHeader(const QByteArray &data)
             flavor = Abi::WindowsMsvc2013Flavor;
             break;
         case 14:
-            flavor = Abi::WindowsMsvc2015Flavor;
+            if (minorLinker >= quint8(30))
+                flavor = Abi::WindowsMsvc2022Flavor;
+            else if (minorLinker >= quint8(20))
+                flavor = Abi::WindowsMsvc2019Flavor;
+            else if (minorLinker >= quint8(10))
+                flavor = Abi::WindowsMsvc2017Flavor;
+            else
+                flavor = Abi::WindowsMsvc2015Flavor;
+            break;
+        case 15:
+            flavor = Abi::WindowsMsvc2019Flavor;
+            break;
+        case 16:
+            flavor = Abi::WindowsMsvc2022Flavor;
             break;
         default: // Keep unknown flavor
             if (minorLinker != 0)

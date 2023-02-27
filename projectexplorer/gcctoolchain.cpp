@@ -777,6 +777,9 @@ ToolChain *GccToolChainFactory::create()
 QList<ToolChain *> GccToolChainFactory::autoDetect(const QList<ToolChain *> &alreadyKnown)
 {
     QList<ToolChain *> tcs;
+#ifdef _WIN32
+    return tcs;
+#endif
     if (HostOsInfo::isMacHost()) {
         // Old mac compilers needed to support macx-gccXY mkspecs:
         tcs.append(autoDetectToolchains(QLatin1String("g++-4.0"), Abi::hostAbi(),
@@ -1121,6 +1124,9 @@ ClangToolChainFactory::ClangToolChainFactory()
 
 QList<ToolChain *> ClangToolChainFactory::autoDetect(const QList<ToolChain *> &alreadyKnown)
 {
+#ifdef _WIN32
+    return QList<ToolChain *>();
+#endif
     return autoDetectToolchains(QLatin1String("clang++"), Abi::hostAbi(),
                                 Constants::CLANG_TOOLCHAIN_TYPEID, alreadyKnown);
 }
@@ -1200,6 +1206,9 @@ MingwToolChainFactory::MingwToolChainFactory()
 
 QList<ToolChain *> MingwToolChainFactory::autoDetect(const QList<ToolChain *> &alreadyKnown)
 {
+#ifdef _WIN32
+    return QList<ToolChain *>();
+#endif
     Abi ha = Abi::hostAbi();
     ha = Abi(ha.architecture(), Abi::WindowsOS, Abi::WindowsMSysFlavor, Abi::PEFormat, ha.wordWidth());
     return autoDetectToolchains(QLatin1String("g++"), ha,

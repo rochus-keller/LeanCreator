@@ -173,9 +173,9 @@ void DebuggerItemManager::autoDetectCdbDebuggers()
     }
 
 
-    constexpr char RootVal[]   = "KitsRoot";
-    constexpr char RootVal81[] = "KitsRoot81";
-    constexpr char RootVal10[] = "KitsRoot10";
+    const char RootVal[]   = "KitsRoot";
+    const char RootVal81[] = "KitsRoot81";
+    const char RootVal10[] = "KitsRoot10";
     const QSettings installedRoots(
                 "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots",
                 QSettings::NativeFormat);
@@ -216,6 +216,9 @@ void DebuggerItemManager::autoDetectCdbDebuggers()
 
 void DebuggerItemManager::autoDetectGdbOrLldbDebuggers()
 {
+#ifdef _WIN32
+    return;
+#endif
     QStringList filters;
     filters.append(QLatin1String("gdb-i686-pc-mingw32"));
     filters.append(QLatin1String("gdb-i686-pc-mingw32.exe"));

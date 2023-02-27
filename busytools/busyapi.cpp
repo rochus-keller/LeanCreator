@@ -701,6 +701,7 @@ public:
     quint16 cur;
     quint16 max;
     bool cancel;
+    Imp():cancel(false),cur(0),max(0),that(0){}
 };
 
 static QStringList splitCommand(const QByteArray& cmd)
