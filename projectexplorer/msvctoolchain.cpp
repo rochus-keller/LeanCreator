@@ -1,23 +1,16 @@
 /****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
-** Contact: http://www.qt.io/licensing
+** Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
 ** This file is part of LeanCreator.
 **
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company.  For licensing terms and
-** conditions see http://www.qt.io/terms-conditions.  For further information
-** use the contact form at http://www.qt.io/contact-us.
-**
+** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
+** This file may be used under the terms of the GNU Lesser
 ** General Public License version 2.1 or version 3 as published by the Free
 ** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file.  Please review the
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
 ** following information to ensure the GNU Lesser General Public License
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
@@ -38,11 +31,16 @@
 #include <utils/winutils.h>
 #include <utils/qtcassert.h>
 #include <utils/hostosinfo.h>
+#include <utils/qtcprocess.h>
+#include <utils/synchronousprocess.h>
 
 #include <QDir>
 #include <QFileInfo>
 #include <QProcess>
 #include <QSettings>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 #include <QLabel>
 #include <QFormLayout>
@@ -56,78 +54,172 @@ enum { debug = 0 };
 
 namespace ProjectExplorer {
 namespace Internal {
-
+using namespace Utils;
 // --------------------------------------------------------------------------
 // Helpers:
 // --------------------------------------------------------------------------
 
+struct VisualStudioInstallation
+{
+    QString vsName;
+    int majorVersion;
+    QString path;       // Main installation path
+    QString vcVarsPath; // Path under which the various vc..bat are to be found
+    QString vcVarsAll;
+
+    VisualStudioInstallation():majorVersion(0){}
+};
+
+struct MsvcPlatform
+{
+    MsvcToolChain::Platform platform;
+    const char *name;
+    const char *prefix; // VS up until 14.0 (MSVC2015)
+    const char *bat;
+};
+
+const MsvcPlatform platforms[]
+    = {{MsvcToolChain::x86, "x86", "/bin", "vcvars32.bat"},
+       {MsvcToolChain::amd64, "amd64", "/bin/amd64", "vcvars64.bat"},
+       {MsvcToolChain::x86_amd64, "x86_amd64", "/bin/x86_amd64", "vcvarsx86_amd64.bat"},
+       {MsvcToolChain::ia64, "ia64", "/bin/ia64", "vcvars64.bat"},
+       {MsvcToolChain::x86_ia64, "x86_ia64", "/bin/x86_ia64", "vcvarsx86_ia64.bat"},
+       {MsvcToolChain::arm, "arm", "/bin/arm", "vcvarsarm.bat"},
+       {MsvcToolChain::x86_arm, "x86_arm", "/bin/x86_arm", "vcvarsx86_arm.bat"},
+       {MsvcToolChain::amd64_arm, "amd64_arm", "/bin/amd64_arm", "vcvarsamd64_arm.bat"},
+       {MsvcToolChain::amd64_x86, "amd64_x86", "/bin/amd64_x86", "vcvarsamd64_x86.bat"},
+       {MsvcToolChain::x86_arm64, "x86_arm64", "/bin/x86_arm64", "vcvarsx86_arm64.bat"},
+       {MsvcToolChain::amd64_arm64, "amd64_arm64", "/bin/amd64_arm64", "vcvarsamd64_arm64.bat"},
+       {MsvcToolChain::arm64, "arm64", "/bin/arm64", "vcvarsarm64.bat"},
+       {MsvcToolChain::arm64_x86, "arm64_x86", "/bin/arm64_x86", "vcvarsarm64_x86.bat"},
+       {MsvcToolChain::arm64_amd64, "arm64_amd64", "/bin/arm64_amd64", "vcvarsarm64_amd64.bat"}};
+
+static const MsvcPlatform *platformEntryFromName(const QString &name)
+{
+    for (const MsvcPlatform &p : platforms) {
+        if (name == QLatin1String(p.name))
+            return &p;
+    }
+    return nullptr;
+}
+
+static const MsvcPlatform *platformEntry(MsvcToolChain::Platform t)
+{
+    for (const MsvcPlatform &p : platforms) {
+        if (p.platform == t)
+            return &p;
+    }
+    return nullptr;
+}
+
 static QString platformName(MsvcToolChain::Platform t)
 {
-    switch (t) {
-    case MsvcToolChain::x86:
-        return QLatin1String("x86");
-    case MsvcToolChain::amd64:
-        return QLatin1String("amd64");
-    case MsvcToolChain::x86_amd64:
-        return QLatin1String("x86_amd64");
-    case MsvcToolChain::ia64:
-        return QLatin1String("ia64");
-    case MsvcToolChain::x86_ia64:
-        return QLatin1String("x86_ia64");
-    case MsvcToolChain::arm:
-        return QLatin1String("arm");
-    case MsvcToolChain::x86_arm:
-        return QLatin1String("x86_arm");
-    case MsvcToolChain::amd64_arm:
-        return QLatin1String("amd64_arm");
-    }
+    if (const MsvcPlatform *p = platformEntry(t))
+        return QLatin1String(p->name);
     return QString();
 }
 
-static bool hostSupportsPlatform(MsvcToolChain::Platform platform)
+static bool hostPrefersPlatform(MsvcToolChain::Platform platform)
 {
-    switch (Utils::HostOsInfo::hostArchitecture()) {
-    case Utils::HostOsInfo::HostArchitectureAMD64:
-        if (platform == MsvcToolChain::amd64 || platform == MsvcToolChain::amd64_arm)
-            return true;
-        // fall through (all x86 toolchains are also working on an amd64 host)
-    case Utils::HostOsInfo::HostArchitectureX86:
+    switch (HostOsInfo::hostArchitecture()) {
+    case HostOsInfo::HostArchitectureAMD64:
+        return platform == MsvcToolChain::amd64 || platform == MsvcToolChain::amd64_arm
+               || platform == MsvcToolChain::amd64_x86 || platform == MsvcToolChain::amd64_arm64;
+    case HostOsInfo::HostArchitectureX86:
         return platform == MsvcToolChain::x86 || platform == MsvcToolChain::x86_amd64
-                || platform == MsvcToolChain::x86_ia64 || platform == MsvcToolChain::x86_arm;
-    case Utils::HostOsInfo::HostArchitectureArm:
+               || platform == MsvcToolChain::x86_ia64 || platform == MsvcToolChain::x86_arm
+               || platform == MsvcToolChain::x86_arm64;
+    case HostOsInfo::HostArchitectureArm:
         return platform == MsvcToolChain::arm;
-    case Utils::HostOsInfo::HostArchitectureItanium:
+#if 0
+    case HostOsInfo::HostArchitectureArm64:
+        return platform == MsvcToolChain::arm64
+               || platform == MsvcToolChain::arm64_x86 || platform == MsvcToolChain::arm64_amd64;
+#endif
+    case HostOsInfo::HostArchitectureItanium:
         return platform == MsvcToolChain::ia64;
     default:
         return false;
     }
 }
 
+static bool hostSupportsPlatform(MsvcToolChain::Platform platform)
+{
+    if (hostPrefersPlatform(platform))
+        return true;
+
+    switch (HostOsInfo::hostArchitecture()) {
+    // The x86 host toolchains are not the preferred toolchains on amd64 but they are still
+    // supported by that host
+    case HostOsInfo::HostArchitectureAMD64:
+        return platform == MsvcToolChain::x86 || platform == MsvcToolChain::x86_amd64
+               || platform == MsvcToolChain::x86_ia64 || platform == MsvcToolChain::x86_arm
+               || platform == MsvcToolChain::x86_arm64;
+#if 0
+    // The Arm64 host can run the cross-compilers via emulation of x86 and amd64
+    case HostOsInfo::HostArchitectureArm64:
+        return platform == MsvcToolChain::x86_arm || platform == MsvcToolChain::x86_arm64
+               || platform == MsvcToolChain::amd64_arm || platform == MsvcToolChain::amd64_arm64
+               || platform == MsvcToolChain::x86 || platform == MsvcToolChain::x86_amd64
+               || platform == MsvcToolChain::amd64 || platform == MsvcToolChain::amd64_x86;
+#endif
+    default:
+        return false;
+    }
+}
+
+static unsigned char wordWidthForPlatform(MsvcToolChain::Platform platform)
+{
+    switch (platform) {
+    case ProjectExplorer::Internal::MsvcToolChain::x86:
+    case ProjectExplorer::Internal::MsvcToolChain::arm:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_arm:
+    case ProjectExplorer::Internal::MsvcToolChain::amd64_arm:
+    case ProjectExplorer::Internal::MsvcToolChain::amd64_x86:
+    case ProjectExplorer::Internal::MsvcToolChain::arm64_x86:
+        return 32;
+    case ProjectExplorer::Internal::MsvcToolChain::amd64:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_amd64:
+    case ProjectExplorer::Internal::MsvcToolChain::ia64:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_ia64:
+    case ProjectExplorer::Internal::MsvcToolChain::amd64_arm64:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_arm64:
+    case ProjectExplorer::Internal::MsvcToolChain::arm64:
+    case ProjectExplorer::Internal::MsvcToolChain::arm64_amd64:
+        return 64;
+    }
+
+    return 0;
+}
+
+static Abi::Architecture archForPlatform(MsvcToolChain::Platform platform)
+{
+    switch (platform) {
+    case ProjectExplorer::Internal::MsvcToolChain::x86:
+    case ProjectExplorer::Internal::MsvcToolChain::amd64:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_amd64:
+    case ProjectExplorer::Internal::MsvcToolChain::amd64_x86:
+    case ProjectExplorer::Internal::MsvcToolChain::arm64_x86:
+    case ProjectExplorer::Internal::MsvcToolChain::arm64_amd64:
+        return Abi::X86Architecture;
+    case ProjectExplorer::Internal::MsvcToolChain::arm:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_arm:
+    case ProjectExplorer::Internal::MsvcToolChain::amd64_arm:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_arm64:
+    case ProjectExplorer::Internal::MsvcToolChain::amd64_arm64:
+    case ProjectExplorer::Internal::MsvcToolChain::arm64:
+        return Abi::ArmArchitecture;
+    case ProjectExplorer::Internal::MsvcToolChain::ia64:
+    case ProjectExplorer::Internal::MsvcToolChain::x86_ia64:
+        return Abi::ItaniumArchitecture;
+    }
+
+    return Abi::UnknownArchitecture;
+}
+
 static Abi findAbiOfMsvc(MsvcToolChain::Type type, MsvcToolChain::Platform platform, const QString &version)
 {
-    Abi::Architecture arch = Abi::X86Architecture;
     Abi::OSFlavor flavor = Abi::UnknownFlavor;
-    int wordWidth = 64;
-
-    switch (platform)
-    {
-    case MsvcToolChain::x86:
-        wordWidth = 32;
-        break;
-    case MsvcToolChain::ia64:
-    case MsvcToolChain::x86_ia64:
-        arch = Abi::ItaniumArchitecture;
-        break;
-    case MsvcToolChain::amd64:
-    case MsvcToolChain::x86_amd64:
-        break;
-    case MsvcToolChain::arm:
-    case MsvcToolChain::x86_arm:
-    case MsvcToolChain::amd64_arm:
-        arch = Abi::ArmArchitecture;
-        wordWidth = 32;
-        break;
-    };
 
     QString msvcVersionString = version;
     if (type == MsvcToolChain::WindowsSDK) {
@@ -136,7 +228,13 @@ static Abi findAbiOfMsvc(MsvcToolChain::Type type, MsvcToolChain::Platform platf
         else if (version == QLatin1String("v7.0A") || version == QLatin1String("v7.1"))
             msvcVersionString = QLatin1String("10.0");
     }
-    if (msvcVersionString.startsWith(QLatin1String("14.")))
+    if (msvcVersionString.startsWith(QLatin1String("17.")))
+        flavor = Abi::WindowsMsvc2022Flavor;
+    else if (msvcVersionString.startsWith(QLatin1String("16.")))
+        flavor = Abi::WindowsMsvc2019Flavor;
+    else if (msvcVersionString.startsWith(QLatin1String("15.")))
+        flavor = Abi::WindowsMsvc2017Flavor;
+    else if (msvcVersionString.startsWith(QLatin1String("14.")))
         flavor = Abi::WindowsMsvc2015Flavor;
     else if (msvcVersionString.startsWith(QLatin1String("12.")))
         flavor = Abi::WindowsMsvc2013Flavor;
@@ -148,7 +246,8 @@ static Abi findAbiOfMsvc(MsvcToolChain::Type type, MsvcToolChain::Platform platf
         flavor = Abi::WindowsMsvc2008Flavor;
     else
         flavor = Abi::WindowsMsvc2005Flavor;
-    const Abi result = Abi(arch, Abi::WindowsOS, flavor, Abi::PEFormat, wordWidth);
+    const Abi result = Abi(archForPlatform(platform), Abi::WindowsOS, flavor, Abi::PEFormat,
+                           wordWidthForPlatform(platform));
     if (!result.isValid())
         qWarning("Unable to completely determine the ABI of MSVC version %s (%s).",
                  qPrintable(version), qPrintable(result.toString()));
@@ -356,8 +455,8 @@ bool MsvcToolChain::isValid() const
 {
     if (!AbstractMsvcToolChain::isValid())
         return false;
-    QString vcVarsBat = MsvcToolChainFactory::vcVarsBatFor(QFileInfo(m_vcvarsBat).absolutePath(), m_varsBatArg);
-    return QFileInfo::exists(vcVarsBat);
+    QFileInfo fi(m_vcvarsBat);
+    return fi.isFile() && fi.isExecutable();
 }
 
 MsvcToolChain::MsvcToolChain() :
@@ -381,38 +480,7 @@ QString MsvcToolChain::typeDisplayName() const
 
 QList<Utils::FileName> MsvcToolChain::suggestedMkspecList() const
 {
-    switch (m_abi.osFlavor()) {
-    case Abi::WindowsMsvc2005Flavor:
-        return QList<Utils::FileName>() << Utils::FileName::fromLatin1("win32-msvc2005");
-    case Abi::WindowsMsvc2008Flavor:
-        return QList<Utils::FileName>() << Utils::FileName::fromLatin1("win32-msvc2008");
-    case Abi::WindowsMsvc2010Flavor:
-        return QList<Utils::FileName>() << Utils::FileName::fromLatin1("win32-msvc2010");
-    case Abi::WindowsMsvc2012Flavor:
-        return QList<Utils::FileName>()
-            << Utils::FileName::fromLatin1("win32-msvc2012")
-            << Utils::FileName::fromLatin1("win32-msvc2010");
-    case Abi::WindowsMsvc2013Flavor:
-        return QList<Utils::FileName>()
-            << Utils::FileName::fromLatin1("win32-msvc2013")
-            << Utils::FileName::fromLatin1("winphone-arm-msvc2013")
-            << Utils::FileName::fromLatin1("winphone-x86-msvc2013")
-            << Utils::FileName::fromLatin1("winrt-arm-msvc2013")
-            << Utils::FileName::fromLatin1("winrt-x86-msvc2013")
-            << Utils::FileName::fromLatin1("winrt-x64-msvc2013")
-            << Utils::FileName::fromLatin1("win32-msvc2012")
-            << Utils::FileName::fromLatin1("win32-msvc2010");
-    case Abi::WindowsMsvc2015Flavor:
-        return QList<Utils::FileName>()
-            << Utils::FileName::fromLatin1("win32-msvc2015")
-            << Utils::FileName::fromLatin1("winphone-arm-msvc2015")
-            << Utils::FileName::fromLatin1("winphone-x86-msvc2015")
-            << Utils::FileName::fromLatin1("winrt-arm-msvc2015")
-            << Utils::FileName::fromLatin1("winrt-x86-msvc2015")
-            << Utils::FileName::fromLatin1("winrt-x64-msvc2015");
-    default:
-        break;
-    }
+    // no longer required
     return QList<Utils::FileName>();
 }
 
@@ -498,33 +566,18 @@ bool MsvcToolChainFactory::checkForVisualStudioInstallation(const QString &vsNam
     return vsRegistry.contains(vsName);
 }
 
-QString MsvcToolChainFactory::vcVarsBatFor(const QString &basePath, const QString &toolchainName)
+QString MsvcToolChainFactory::vcVarsBatFor(const QString &basePath, MsvcToolChain::Platform platform, bool allInOneFolder)
 {
-    if (toolchainName.startsWith(QLatin1Char('/'))) // windows sdk case, all use SetEnv.cmd
-        return basePath + QLatin1String("/SetEnv.cmd");
-    if (toolchainName == QLatin1String("x86"))
-        return basePath + QLatin1String("/bin/vcvars32.bat");
-    if (toolchainName == QLatin1String("amd64_arm"))
-        return basePath + QLatin1String("/bin/amd64_arm/vcvarsamd64_arm.bat");
-    if (toolchainName == QLatin1String("x86_amd64"))
-        return basePath + QLatin1String("/bin/x86_amd64/vcvarsx86_amd64.bat");
-    if (toolchainName == QLatin1String("amd64"))
-        return basePath + QLatin1String("/bin/amd64/vcvars64.bat");
-    if (toolchainName == QLatin1String("x86_arm"))
-        return basePath + QLatin1String("/bin/x86_arm/vcvarsx86_arm.bat");
-    if (toolchainName == QLatin1String("arm"))
-        return basePath + QLatin1String("/bin/arm/vcvarsarm.bat");
-    if (toolchainName == QLatin1String("ia64"))
-        return basePath + QLatin1String("/bin/ia64/vcvars64.bat");
-    if (toolchainName == QLatin1String("x86_ia64"))
-        return basePath + QLatin1String("/bin/x86_ia64/vcvarsx86_ia64.bat");
-
-    return QString();
-}
-
-QString MsvcToolChainFactory::vcVarsBatFor(const QString &basePath, MsvcToolChain::Platform platform)
-{
-    return vcVarsBatFor(basePath, platformName(platform));
+    QString result;
+    if (const MsvcPlatform *p = platformEntry(platform)) {
+        result += basePath;
+        // Starting with 15.0 (MSVC2017), the .bat are in one folder.
+        if ( !allInOneFolder )
+            result += QLatin1String(p->prefix);
+        result += QLatin1Char('/');
+        result += QLatin1String(p->bat);
+    }
+    return result;
 }
 
 static ToolChain *findOrCreateToolChain(const QList<ToolChain *> &alreadyKnown,
@@ -545,8 +598,18 @@ static ToolChain *findOrCreateToolChain(const QList<ToolChain *> &alreadyKnown,
     return tc;
 }
 
+static QString windowsProgramFilesDir()
+{
+#ifdef Q_OS_WIN64
+    const char programFilesC[] = "ProgramFiles(x86)";
+#else
+    const char programFilesC[] = "ProgramFiles";
+#endif
+    return QDir::fromNativeSeparators(qgetenv(programFilesC));
+}
+
 // Detect build tools introduced with MSVC2015
-static void detectCppBuildTools(QList<ToolChain *> *list)
+static void detectCppBuildTools2015(QList<ToolChain *> *list)
 {
     struct Entry {
         const char *postFix;
@@ -556,32 +619,206 @@ static void detectCppBuildTools(QList<ToolChain *> *list)
         unsigned char wordSize;
     };
 
-    const Entry entries[] = {
-        {" (x86)", "x86", Abi::X86Architecture, Abi::PEFormat, 32},
-        {" (x64)", "amd64", Abi::X86Architecture, Abi::PEFormat, 64},
-        {" (x86_arm)", "x86_arm", Abi::ArmArchitecture, Abi::PEFormat, 32},
-        {" (x64_arm)", "amd64_arm", Abi::ArmArchitecture, Abi::PEFormat, 64}
-    };
+    const Entry entries[] = {{" (x86)", "x86", Abi::X86Architecture, Abi::PEFormat, 32},
+                             {" (x64)", "amd64", Abi::X86Architecture, Abi::PEFormat, 64},
+                             {" (x86_arm)", "x86_arm", Abi::ArmArchitecture, Abi::PEFormat, 32},
+                             {" (x64_arm)", "amd64_arm", Abi::ArmArchitecture, Abi::PEFormat, 32},
+                             {" (x86_arm64)", "x86_arm64", Abi::ArmArchitecture, Abi::PEFormat, 64},
+                             {" (x64_arm64)", "amd64_arm64", Abi::ArmArchitecture, Abi::PEFormat, 64}};
 
-#ifdef Q_OS_WIN64
-    const char programFilesC[] = "ProgramFiles(x86)";
-#else
-    const char programFilesC[] = "ProgramFiles";
-#endif
-    const QString name = QStringLiteral("Microsoft Visual C++ Build Tools");
-    const QString vcVarsBat = QFile::decodeName(qgetenv(programFilesC))
-        + QLatin1Char('/') + name + QStringLiteral("/vcbuildtools.bat");
+    const QString name = "Microsoft Visual C++ Build Tools";
+    const QString vcVarsBat = windowsProgramFilesDir() + '/' + name + "/vcbuildtools.bat";
     if (!QFileInfo(vcVarsBat).isFile())
         return;
+
     const size_t count = sizeof(entries) / sizeof(entries[0]);
     for (size_t i = 0; i < count; ++i) {
         const Entry &e = entries[i];
+
         const Abi abi(e.architecture, Abi::WindowsOS, Abi::WindowsMsvc2015Flavor,
                       e.format, e.wordSize);
+
         list->append(new MsvcToolChain(name + QLatin1String(e.postFix), abi,
                                        vcVarsBat, QLatin1String(e.varsBatArg),
                                        ToolChain::AutoDetection));
     }
+}
+
+// Detect build tools introduced with MSVC2017
+static VisualStudioInstallation detectCppBuildTools2017()
+{
+    const QString installPath = windowsProgramFilesDir()
+                                + "/Microsoft Visual Studio/2017/BuildTools";
+    const QString vcVarsPath = installPath + "/VC/Auxiliary/Build";
+    const QString vcVarsAllPath = vcVarsPath + "/vcvarsall.bat";
+
+    VisualStudioInstallation installation;
+    if (QFileInfo::exists(vcVarsAllPath))
+    {
+        installation.path = installPath;
+        installation.vcVarsAll = vcVarsAllPath;
+        installation.vcVarsPath = vcVarsPath;
+        installation.majorVersion = 15;
+        installation.vsName = "15.0";
+    }
+    return installation;
+}
+
+static QString fixRegistryPath(const QString &path)
+{
+    QString result = QDir::fromNativeSeparators(path);
+    if (result.endsWith(QLatin1Char('/')))
+        result.chop(1);
+    return result;
+}
+
+static VisualStudioInstallation installationFromPathAndVersion(
+    const QString &installationPath, int version)
+{
+    QString vcVarsPath = QDir::fromNativeSeparators(installationPath);
+    if (!vcVarsPath.endsWith('/'))
+        vcVarsPath += '/';
+    if (version > 14)
+        vcVarsPath += QStringLiteral("VC/Auxiliary/Build");
+    else
+        vcVarsPath += QStringLiteral("VC");
+
+    VisualStudioInstallation installation;
+    const QString vcVarsAllPath = vcVarsPath + QStringLiteral("/vcvarsall.bat");
+    if (!QFileInfo(vcVarsAllPath).isFile()) {
+        qWarning().noquote() << "Unable to find MSVC setup script "
+                             << QDir::toNativeSeparators(vcVarsPath) << " in version " << version;
+        return installation;
+    }
+
+    installation.path = installationPath;
+    installation.majorVersion = version;
+    installation.vsName = QString("%1.0").arg(version);
+    installation.vcVarsPath = vcVarsPath;
+    installation.vcVarsAll = vcVarsAllPath;
+    return installation;
+}
+
+static QVector<VisualStudioInstallation> detectVisualStudioFromRegistry()
+{
+    QVector<VisualStudioInstallation> result;
+#ifdef Q_OS_WIN64
+    const QString keyRoot = QStringLiteral(
+        "HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\SxS\\");
+#else
+    const QString keyRoot = QStringLiteral(
+        "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\SxS\\");
+#endif
+    QSettings vsRegistry(keyRoot + QStringLiteral("VS7"), QSettings::NativeFormat);
+    QScopedPointer<QSettings> vcRegistry;
+    const QStringList keys = vsRegistry.allKeys();
+    for (const QString &vsName : keys) {
+        const int dotPos = vsName.indexOf(QLatin1Char('.'));
+        if (dotPos == -1)
+            continue;
+        const int version = vsName.left(dotPos).toInt();
+        if (version) {
+            const QString installationPath = fixRegistryPath(vsRegistry.value(vsName).toString());
+
+            VisualStudioInstallation installation
+                = installationFromPathAndVersion(installationPath, version);
+            if (installation.majorVersion )
+                result.append(installation);
+        }
+    }
+
+    // Detect VS 2017 Build Tools
+    auto installation = detectCppBuildTools2017();
+    if (installation.majorVersion)
+        result.append(installation);
+
+    return result;
+}
+
+static QVector<VisualStudioInstallation> detectVisualStudioFromVsWhere(const QString &vswhere)
+{
+    QVector<VisualStudioInstallation> installations;
+    Utils::QtcProcess vsWhereProcess;
+    // TODO vsWhereProcess.setCodec(QTextCodec::codecForName("UTF-8"));
+    const QString cmdArguments = "-products * -prerelease -legacy -format json -utf8";
+    vsWhereProcess.setCommand(vswhere, cmdArguments);
+    vsWhereProcess.start();
+
+    if (!vsWhereProcess.waitForStarted()) {
+        qWarning().noquote() << QDir::toNativeSeparators(vswhere) << "could not be started.";
+        return installations;
+    }
+    if (!vsWhereProcess.waitForFinished(5000)) {
+        qWarning("%s: Timeout running '%s'", Q_FUNC_INFO, qPrintable(vswhere));
+        Utils::SynchronousProcess::stopProcess(vsWhereProcess);
+        return installations;
+    }
+    if( vsWhereProcess.exitStatus() == QProcess::CrashExit )
+    {
+        qWarning().noquote().nospace()
+            << QDir::toNativeSeparators(vswhere) << " crashed. Exit code: " << vsWhereProcess.exitCode();
+        return installations;
+    }
+
+    QByteArray output = vsWhereProcess.readAllStandardOutput();
+    QJsonParseError error;
+    const QJsonDocument doc = QJsonDocument::fromJson(output, &error);
+    if (error.error != QJsonParseError::NoError || doc.isNull()) {
+        qWarning() << "Could not parse json document from vswhere output.";
+        return installations;
+    }
+
+    const QJsonArray versions = doc.array();
+    if (versions.isEmpty()) {
+        qWarning() << "Could not detect any versions from vswhere output.";
+        return installations;
+    }
+
+    for (const QJsonValue &vsVersion : versions) {
+        const QJsonObject vsVersionObj = vsVersion.toObject();
+        if (vsVersionObj.isEmpty()) {
+            qWarning() << "Could not obtain object from vswhere version";
+            continue;
+        }
+
+        QJsonValue value = vsVersionObj.value("installationVersion");
+        if (value.isUndefined()) {
+            qWarning() << "Could not obtain VS version from json output";
+            continue;
+        }
+        const QString versionString = value.toString();
+        const int dotPos = versionString.indexOf(QLatin1Char('.'));
+        if (dotPos == -1)
+            continue;
+        const int version = versionString.left(dotPos).toInt();
+        if( version == 0 )
+            continue;
+        value = vsVersionObj.value("installationPath");
+        if (value.isUndefined()) {
+            qWarning() << "Could not obtain VS installation path from json output";
+            continue;
+        }
+        const QString installationPath = value.toString();
+        VisualStudioInstallation installation
+            = installationFromPathAndVersion(installationPath, version);
+
+        if (installation.majorVersion)
+            installations.append(installation);
+    }
+    return installations;
+}
+
+static QVector<VisualStudioInstallation> detectVisualStudio()
+{
+    const QString vswhere = windowsProgramFilesDir()
+                            + "/Microsoft Visual Studio/Installer/vswhere.exe";
+    if (QFileInfo::exists(vswhere)) {
+        const QVector<VisualStudioInstallation> installations = detectVisualStudioFromVsWhere(vswhere);
+        if (!installations.isEmpty())
+            return installations;
+    }
+
+    return detectVisualStudioFromRegistry();
 }
 
 QList<ToolChain *> MsvcToolChainFactory::autoDetect(const QList<ToolChain *> &alreadyKnown)
@@ -592,8 +829,10 @@ QList<ToolChain *> MsvcToolChainFactory::autoDetect(const QList<ToolChain *> &al
     const QSettings sdkRegistry(QLatin1String("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows"),
                                 QSettings::NativeFormat);
     const QString defaultSdkPath = sdkRegistry.value(QLatin1String("CurrentInstallFolder")).toString();
-    if (!defaultSdkPath.isEmpty()) {
-        foreach (const QString &sdkKey, sdkRegistry.childGroups()) {
+    if (!defaultSdkPath.isEmpty())
+    {
+        foreach (const QString &sdkKey, sdkRegistry.childGroups())
+        {
             const QString name = sdkRegistry.value(sdkKey + QLatin1String("/ProductName")).toString();
             const QString folder = sdkRegistry.value(sdkKey + QLatin1String("/InstallationFolder")).toString();
             if (folder.isEmpty())
@@ -620,6 +859,10 @@ QList<ToolChain *> MsvcToolChainFactory::autoDetect(const QList<ToolChain *> &al
                                              generateDisplayName(name, MsvcToolChain::WindowsSDK, MsvcToolChain::ia64),
                                              findAbiOfMsvc(MsvcToolChain::WindowsSDK, MsvcToolChain::ia64, sdkKey),
                                              fi.absoluteFilePath(), QLatin1String("/ia64"), ToolChain::AutoDetection));
+            tmp.append(findOrCreateToolChain(alreadyKnown,
+                                             generateDisplayName(name, MsvcToolChain::WindowsSDK, MsvcToolChain::arm64),
+                                             findAbiOfMsvc(MsvcToolChain::WindowsSDK, MsvcToolChain::arm64, sdkKey),
+                                             fi.absoluteFilePath(), QLatin1String("/arm64"), ToolChain::AutoDetection));
             // Make sure the default is front.
             if (folder == defaultSdkPath)
                 results = tmp + results;
@@ -628,53 +871,43 @@ QList<ToolChain *> MsvcToolChainFactory::autoDetect(const QList<ToolChain *> &al
         } // foreach
     }
 
-    // 2) Installed MSVCs
-    const QSettings vsRegistry(
-#ifdef Q_OS_WIN64
-                QLatin1String("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\SxS\\VC7"),
-#else
-                QLatin1String("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\SxS\\VC7"),
-#endif
-                QSettings::NativeFormat);
-    foreach (const QString &vsName, vsRegistry.allKeys()) {
-        // Scan for version major.minor
-        const int dotPos = vsName.indexOf(QLatin1Char('.'));
-        if (dotPos == -1)
-            continue;
-        if (!checkForVisualStudioInstallation(vsName))
-            continue;
+    // prioritized list.
+    // x86_arm was put before amd64_arm as a workaround for auto detected windows phone
+    // toolchains. As soon as windows phone builds support x64 cross builds, this change
+    // can be reverted.
+    const MsvcToolChain::Platform platforms[] = {MsvcToolChain::x86,
+                                                 MsvcToolChain::amd64_x86,
+                                                 MsvcToolChain::amd64,
+                                                 MsvcToolChain::x86_amd64,
+                                                 MsvcToolChain::arm,
+                                                 MsvcToolChain::x86_arm,
+                                                 MsvcToolChain::amd64_arm,
+                                                 MsvcToolChain::x86_arm64,
+                                                 MsvcToolChain::amd64_arm64,
+                                                 MsvcToolChain::ia64,
+                                                 MsvcToolChain::x86_ia64,
+                                                 MsvcToolChain::arm64,
+                                                 MsvcToolChain::arm64_x86,
+                                                 MsvcToolChain::arm64_amd64};
 
-        QString path = QDir::fromNativeSeparators(vsRegistry.value(vsName).toString());
-        if (path.endsWith(QLatin1Char('/')))
-            path.chop(1);
-        const int version = vsName.left(dotPos).toInt();
-        const QString vcvarsAllbat = path + QLatin1String("/vcvarsall.bat");
-        if (QFileInfo(vcvarsAllbat).isFile()) {
-            QList<MsvcToolChain::Platform> platforms; // prioritized list
-            // x86_arm was put before amd64_arm as a workaround for auto detected windows phone
-            // toolchains. As soon as windows phone builds support x64 cross builds, this change
-            // can be reverted.
-            platforms << MsvcToolChain::x86
-                      << MsvcToolChain::amd64 << MsvcToolChain::x86_amd64
-                      << MsvcToolChain::arm << MsvcToolChain::x86_arm << MsvcToolChain::amd64_arm
-                      << MsvcToolChain::ia64 << MsvcToolChain::x86_ia64;
-            foreach (const MsvcToolChain::Platform &platform, platforms) {
-                if (hostSupportsPlatform(platform)
-                        && QFileInfo(vcVarsBatFor(path, platform)).isFile()) {
-                    results.append(findOrCreateToolChain(
-                                       alreadyKnown,
-                                       generateDisplayName(vsName, MsvcToolChain::VS, platform),
-                                       findAbiOfMsvc(MsvcToolChain::VS, platform, vsName),
-                                       vcvarsAllbat, platformName(platform),
-                                       ToolChain::AutoDetection));
-                }
+    const QVector<VisualStudioInstallation> studios = detectVisualStudio();
+    for (const VisualStudioInstallation &i : studios) {
+        for (MsvcToolChain::Platform platform : platforms) {
+            const bool toolchainInstalled
+                = QFileInfo(vcVarsBatFor(i.vcVarsPath, platform, i.majorVersion >= 15 )).isFile();
+            if (hostSupportsPlatform(platform) && toolchainInstalled) {
+                results.append(
+                    findOrCreateToolChain(alreadyKnown,
+                                           generateDisplayName(i.vsName, MsvcToolChain::VS, platform),
+                                           findAbiOfMsvc(MsvcToolChain::VS, platform, i.vsName),
+                                           i.vcVarsAll,
+                                           platformName(platform),
+                                           ToolChain::AutoDetection ));
             }
-        } else {
-            qWarning("Unable to find MSVC setup script %s in version %d", qPrintable(vcvarsAllbat), version);
         }
     }
 
-    detectCppBuildTools(&results);
+    detectCppBuildTools2015(&results);
 
     return results;
 }

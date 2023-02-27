@@ -1,23 +1,16 @@
 /****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
-** Contact: http://www.qt.io/licensing
+** Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
 ** This file is part of LeanCreator.
 **
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company.  For licensing terms and
-** conditions see http://www.qt.io/terms-conditions.  For further information
-** use the contact form at http://www.qt.io/contact-us.
-**
+** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
+** This file may be used under the terms of the GNU Lesser
 ** General Public License version 2.1 or version 3 as published by the Free
 ** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file.  Please review the
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
 ** following information to ensure the GNU Lesser General Public License
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
@@ -243,7 +236,7 @@ bool AbstractMsvcToolChain::generateEnvironmentSettings(Utils::Environment &env,
                                                         const QString &batchArgs,
                                                         QMap<QString, QString> &envPairs)
 {
-    const QByteArray marker = "####################\r\n";
+    const QString marker = "####################";
     // Create a temporary file name for the output. Use a temporary file here
     // as I don't know another way to do this in Qt...
     // Note, can't just use a QTemporaryFile all the way through as it remains open
@@ -258,26 +251,41 @@ bool AbstractMsvcToolChain::generateEnvironmentSettings(Utils::Environment &env,
         call += ' ';
         call += batchArgs.toLocal8Bit();
     }
+
+    if (Utils::HostOsInfo::isWindowsHost())
+        saver.write("chcp 65001\r\n");
+    saver.write("set VSCMD_SKIP_SENDTELEMETRY=1\r\n");
+    saver.write("set CLINK_NOAUTORUN=1\r\n");
+    saver.write("setlocal enableextensions\r\n");
+    saver.write("if defined VCINSTALLDIR (\r\n");
+    saver.write("  if not defined QTC_NO_MSVC_CLEAN_ENV (\r\n");
+    saver.write("    call \"%VCINSTALLDIR%/Auxiliary/Build/vcvarsall.bat\" /clean_env\r\n");
+    saver.write("  )\r\n");
+    saver.write(")\r\n");
     saver.write(call + "\r\n");
-    saver.write("@echo " + marker);
+    saver.write("@echo " + marker.toLocal8Bit() + "\r\n");
     saver.write("set\r\n");
-    saver.write("@echo " + marker);
+    saver.write("@echo " + marker.toLocal8Bit() + "\r\n");
     if (!saver.finalize()) {
         qWarning("%s: %s", Q_FUNC_INFO, qPrintable(saver.errorString()));
         return false;
     }
 
     Utils::QtcProcess run;
+
     // As of WinSDK 7.1, there is logic preventing the path from being set
     // correctly if "ORIGINALPATH" is already set. That can cause problems
     // if Creator is launched within a session set up by setenv.cmd.
-    env.unset(QLatin1String("ORIGINALPATH"));
-    run.setEnvironment(env);
+    Utils::Environment runEnv = env;
+    runEnv.unset(QLatin1String("ORIGINALPATH"));
+    run.setEnvironment(runEnv);
+    //run.setTimeoutS(60);
     Utils::FileName cmdPath = Utils::FileName::fromUserInput(QString::fromLocal8Bit(qgetenv("COMSPEC")));
     if (cmdPath.isEmpty())
         cmdPath = env.searchInPath(QLatin1String("cmd.exe"));
     // Windows SDK setup scripts require command line switches for environment expansion.
-    QString cmdArguments = QLatin1String(" /E:ON /V:ON /c \"");
+
+    QString cmdArguments = QLatin1String(" /D /E:ON /V:ON /c \"");
     cmdArguments += QDir::toNativeSeparators(saver.fileName());
     cmdArguments += QLatin1Char('"');
     run.setCommand(cmdPath.toString(), cmdArguments);
@@ -296,6 +304,8 @@ bool AbstractMsvcToolChain::generateEnvironmentSettings(Utils::Environment &env,
         Utils::SynchronousProcess::stopProcess(run);
         return false;
     }
+
+
     // The SDK/MSVC scripts do not return exit codes != 0. Check on stdout.
     QByteArray stdOut = run.readAllStandardOutput();
     if (!stdOut.isEmpty() && (stdOut.contains("Unknown") || stdOut.contains("Error")))
