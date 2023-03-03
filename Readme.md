@@ -29,6 +29,7 @@ Note that there is an issue with LLDB on Mac M1 (see https://github.com/rochus-k
 - [x] GCC, Clang and MSVC support 
 - [x] GDB, LLDB and CDB support 
 - [x] Extend BUSY file navigation
+- [x] BUSY multi-core parallel builder
 - [ ] BUSY builds with header dependency tracking
 - [ ] Wizzards for project and code file creation
 - [ ] Other convenience features

@@ -22,7 +22,6 @@
 #include <QAbstractItemModel>
 #include <QSet>
 #include <projectexplorer/abi.h>
-#include <QThread>
 
 namespace busy
 {
@@ -83,13 +82,14 @@ public:
     ProcessResult():success(true){}
 };
 
-class AbstractJob : public QThread
+class AbstractJob : public QObject
 {
     Q_OBJECT
 public:
-    AbstractJob(QObject* owner):QThread(owner) {}
+    AbstractJob(QObject* owner):QObject(owner) {}
 
     ErrorInfo error() const { return err; }
+    virtual void start() {}
 
 signals:
     void taskStarted(const QString& description,int maxValue);
@@ -113,15 +113,17 @@ enum CommandEchoMode {
 class BuildOptions
 {
 public:
+    BuildOptions():d_maxJobs(0) {}
+
     void setFilesToConsider(const QStringList &files) {}
 
     void setChangedFiles(const QStringList &changedFiles) {}
 
     void setActiveFileTags(const QStringList &fileTags) {}
 
-    static int defaultMaxJobCount() { return 0; }
-    int maxJobCount() const { return 0; }
-    void setMaxJobCount(int jobCount) {}
+    static int defaultMaxJobCount();
+    int maxJobCount() const { return d_maxJobs; }
+    void setMaxJobCount(int jobCount) { d_maxJobs = jobCount; }
 
     bool dryRun() const { return false; }
     void setDryRun(bool dryRun) {}
@@ -137,6 +139,8 @@ public:
 
     bool removeExistingInstallation() const { return false; }
     void setRemoveExistingInstallation(bool removeExisting) {}
+private:
+   quint8 d_maxJobs;
 };
 
 class CleanOptions
@@ -353,18 +357,13 @@ public:
             const InstallOptions &installOptions,
             const QProcessEnvironment &environment, Settings *settings) const;
 
-    enum ProductSelection { ProductSelectionDefaultOnly, ProductSelectionWithNonDefault };
-    BuildJob *buildAllProducts(const BuildOptions &options,
-                               ProductSelection productSelection = ProductSelectionDefaultOnly,
-                               QObject *jobOwner = 0) const;
+    BuildJob *buildAllProducts(const BuildOptions &options, QObject *jobOwner = 0) const;
     BuildJob *buildSomeProducts(const QList<Product> &products, const BuildOptions &options,
                                 QObject *jobOwner = 0) const;
 
     CleanJob *cleanAllProducts(const CleanOptions &options, QObject *jobOwner = 0) const { return 0; }
 
-    InstallJob *installAllProducts(const InstallOptions &options,
-                                   ProductSelection productSelection = ProductSelectionDefaultOnly,
-                                   QObject *jobOwner = 0) const { return 0; }
+    InstallJob *installAllProducts(const InstallOptions &options, QObject *jobOwner = 0) const { return 0; }
 
     QList<InstallableFile> installableFilesForProject(const Module &project,
                                    const InstallOptions &options) const { return QList<InstallableFile>(); }
@@ -386,21 +385,21 @@ class BuildJob : public AbstractJob
 {
     Q_OBJECT
 public:
-    class Imp;
-
     BuildJob(QObject* owner, Engine*, const QProcessEnvironment&, const QByteArrayList& targets, int count);
     ~BuildJob();
 
+    void start();
     void cancel();
 
 signals:
     void reportCommandDescription(const QString& highlight, const QString& message);
     void reportProcessResult(const busy::ProcessResult&);
 
-protected:
-    void run();
+protected slots:
+    void reportResult( bool success, const QStringList& stdErr );
 
 private:
+    class Imp;
     Imp* d_imp;
 };
 

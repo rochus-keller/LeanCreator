@@ -19,7 +19,7 @@
 
 #include <QSharedData>
 #include <QString>
-#include <bslogger.h>
+#include <bscallbacks.h>
 
 extern "C" {
 typedef int (*BSRunCmd)(const char* cmd, void* data);
@@ -65,6 +65,8 @@ public:
     bool parse( const ParseParams& params, bool checkTargets = true );
     bool build( const QByteArrayList& targets, BSRunCmd, void* data );
     QByteArrayList generateBuildCommands(const QByteArrayList& targets = QByteArrayList());
+    bool createBuildDirs();
+    bool visit(BSBeginOp,BSOpParam,BSEndOp,BSForkGroup,void* data, const QByteArrayList& targets = QByteArrayList());
     int getRootModule() const;
     int findModule(const QString& path) const; // TODO: path can point to more than one module
     QList<int> findDeclByPos(const QString& path, int row, int col ) const;

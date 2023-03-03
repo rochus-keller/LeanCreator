@@ -26,6 +26,7 @@ extern "C" {
 #include <bsparser.h>
 #include <bshost.h>
 #include <bsrunner.h>
+#include <bsvisitor.h>
 }
 
 using namespace busy;
@@ -58,11 +59,16 @@ public:
         switch( err )
         {
         case LUA_ERRRUN:
-            if( logger )
-                error( what, 0, 0, lua_tostring(L, -1 ));
-            else
-                qCritical() << lua_tostring(L, -1 );
-            lua_pop(L, 1 );  /* remove error message */
+            {
+                const char* msg = lua_tostring(L, -1 );
+                if( msg == 0 )
+                    msg = "LUA_ERRRUN";
+                if( logger )
+                    error( what, 0, 0, msg);
+                else
+                    qCritical() << msg;
+                lua_pop(L, 1 );  /* remove error message */
+            }
             return false;
         case LUA_ERRMEM:
             qCritical() << "Lua memory exception";
@@ -311,6 +317,81 @@ QByteArrayList Engine::generateBuildCommands(const QByteArrayList& targets)
     }
     bool res = d_imp->call(2,0);
     return list;
+}
+
+bool Engine::createBuildDirs()
+{
+    if( !d_imp->ok() )
+        return false;
+
+    const int top = lua_gettop(d_imp->L);
+    lua_pushcfunction(d_imp->L, bs_createBuildDirs);
+    lua_getglobal(d_imp->L,"#root");
+    lua_getglobal(d_imp->L,"#builtins");
+    lua_getfield(d_imp->L,-1,"#inst");
+    lua_replace(d_imp->L,-2);
+    lua_getfield(d_imp->L,-1,"root_build_dir");
+    lua_replace(d_imp->L,-2);
+    lua_call(d_imp->L,2,0);
+    Q_ASSERT( top == lua_gettop(d_imp->L));
+    return true;
+}
+
+bool Engine::visit(BSBeginOp b, BSOpParam p, BSEndOp e, BSForkGroup g, void* data, const QByteArrayList& targets)
+{
+    if( !d_imp->ok() )
+        return false;
+
+    const int top = lua_gettop(d_imp->L);
+
+    lua_pushcfunction(d_imp->L, bs_findProductsToProcess);
+    lua_getglobal(d_imp->L,"#root");
+    if( targets.isEmpty() )
+        lua_pushnil(d_imp->L);
+    else
+    {
+        lua_createtable(d_imp->L,0,targets.size());
+        const int table = lua_gettop(d_imp->L);
+        for( int i = 0; i < targets.size(); i++ )
+        {
+            lua_pushstring(d_imp->L,targets[i].constData());
+            lua_pushstring(d_imp->L,"true");
+            lua_rawset(d_imp->L,table);
+        }
+    }
+    lua_getglobal(d_imp->L,"#builtins");
+    bool res = d_imp->call(3,1);
+    if( !res )
+    {
+        Q_ASSERT( top == lua_gettop(d_imp->L));
+        return false;
+    }
+
+    const int prods = lua_gettop(d_imp->L);
+
+    for( int i = 1; i <= lua_objlen(d_imp->L,prods); i++ )
+    {
+        lua_pushcfunction(d_imp->L, bs_visit);
+        lua_rawgeti(d_imp->L,prods,i);
+        BSVisitorCtx* ctx = (BSVisitorCtx*)lua_newuserdata(d_imp->L, sizeof(BSVisitorCtx) );
+        ctx->d_data = data;
+        ctx->d_begin = b;
+        ctx->d_end = e;
+        ctx->d_param = p;
+        ctx->d_fork = g;
+        ctx->d_log = d_imp->logger;
+        res = d_imp->call(2,0);
+        if( !res )
+        {
+            lua_pop(d_imp->L, 1); // prods
+            Q_ASSERT( top == lua_gettop(d_imp->L));
+            return false;
+        }
+    }
+
+    lua_pop(d_imp->L, 1); // prods
+    Q_ASSERT( top == lua_gettop(d_imp->L));
+    return true;
 }
 
 int Engine::getRootModule() const

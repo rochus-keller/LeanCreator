@@ -504,8 +504,6 @@ BusyBuildStepConfigWidget::BusyBuildStepConfigWidget(BusyBuildStep *step) :
     m_ui->showCommandLinesCheckBox->hide();
     m_ui->installCheckBox->hide();
     m_ui->cleanInstallRootCheckBox->hide();
-    m_ui->jobsLabel->hide();
-    m_ui->jobSpinBox->hide();
 
     updateState();
 }

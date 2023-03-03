@@ -15,7 +15,8 @@
 */
 
 #include "busyapi.h"
-#include "busytools/Engine.h"
+#include "Engine.h"
+#include "busyBuilder.h"
 extern "C" {
 #include <bshost.h>
 #include <bsparser.h>
@@ -548,36 +549,20 @@ QProcessEnvironment Project::getRunEnvironment(const Product& product, const Ins
     return environment;
 }
 
-extern "C" {
-static void dummyLogger(BSLogLevel, void* data, const char* file, BSRowCol loc, const char* format, va_list)
-{
-}
-}
-
-BuildJob*Project::buildAllProducts(const BuildOptions& options, Project::ProductSelection productSelection,
-                                   QObject* jobOwner) const
+BuildJob* Project::buildAllProducts(const BuildOptions& options, QObject* jobOwner) const
 {
     if( !isValid() )
         return 0;
 
     d_imp->d_errs.d_errs.clear();
 
-    Engine::Ptr eng( new Engine() );
-    eng->registerLogger(dummyLogger,0); // this is a redundant run, output already known
-    if( eng->parse(d_imp->params) )
-    {
-        // TODO: this is an expensive way to find count approximation
-        // (the exact number is only known after true run)
-        const int count = d_imp->d_eng->generateBuildCommands().size();
-        return new BuildJob(jobOwner,eng.data(),d_imp->env, d_imp->params.targets, count);
-    }else
-        return 0;
+    return new BuildJob(jobOwner,d_imp->d_eng.data(),d_imp->env, d_imp->params.targets, options.maxJobCount());
 }
 
 BuildJob*Project::buildSomeProducts(const QList<Product>& products, const BuildOptions& options,
                                     QObject* jobOwner) const
 {
-    return buildAllProducts(options,ProductSelectionWithNonDefault, jobOwner); // TODO
+    return buildAllProducts(options, jobOwner); // TODO
 }
 
 static void walkAllProducts(Engine* eng, int module, QList<int>& res, bool onlyRunnables, bool onlyActives )
@@ -690,167 +675,204 @@ QString ILogSink::logLevelTag(LoggerLevel level)
     return str;
 }
 
-class BuildJob::Imp
+class BuildJob::Imp : public Builder
 {
 public:
-    BuildJob* that;
+    Imp(int count):Builder(count){}
+
     QProcessEnvironment env;
-    Engine::Ptr eng;
     QString workdir;
-    QByteArrayList targets;
-    quint16 cur;
-    quint16 max;
-    bool cancel;
-    Imp():cancel(false),cur(0),max(0),that(0){}
+    QString sourcedir;
+    Builder::OpList ops;
 };
 
-static QStringList splitCommand(const QByteArray& cmd)
+struct BuildJobVisitorContext
 {
-    class Lex
+    Builder::OpList ops;
+    Builder::Operation op;
+    QHash<const char*,QByteArray> strings;
+    quint32 group;
+    bool inGroup;
+    BuildJobVisitorContext():group(0),inGroup(false){}
+    QByteArray toSym(const char* str)
     {
-    public:
-        Lex(const QByteArray& str, int pos):d_str(str),d_pos(pos){}
-        char next()
-        {
-            if( d_pos < d_str.size() )
-                return d_str[d_pos++];
-            else
-                return 0;
-        }
-
-    private:
-        QByteArray d_str;
-        int d_pos;
-    };
-
-    QStringList res;
-
-    Lex lex(cmd,0);
-    char ch = lex.next();
-    bool inString = false;
-    while( ch )
-    {
-        while( !inString && ::isspace(ch) )
-            ch = lex.next();
-
-        QByteArray arg;
-        while( ch && (inString || !::isspace(ch)) )
-        {
-            if( ch == '\\' )
-            {
-                ch = lex.next();
-                if( ch == '"' || ch == '\\' )
-                    arg += ch;
-                else
-                {
-                    arg += '\\';
-                    arg += ch;
-                }
-            }else if( ch == '"' )
-                inString = !inString;
-            else
-                arg += ch;
-            ch = lex.next();
-        }
-        if( !arg.isEmpty() )
-            res << QString::fromUtf8(arg);
+        QByteArray& sym = strings[str];
+        if( sym.isEmpty() )
+            sym = str;
+        return sym;
     }
-    return res;
-}
-
-static QStringList convert(const QByteArray& str)
-{
-    QStringList res;
-    QByteArrayList l = str.split('\n');
-    foreach( const QByteArray& s, l )
-        res << QString::fromUtf8( s.trimmed() );
-    return res;
-}
+};
 
 extern "C" {
-static int runner(const char* rawcmd, void* data)
+static int BuildJobBeginOp(BSBuildOperation op, const char* command, int toolchain, int os, void* data)
 {
-    BuildJob::Imp* imp = (BuildJob::Imp*)data;
+    BuildJobVisitorContext* ctx = (BuildJobVisitorContext*)data;
 
-    if( imp->cancel )
-        return -1;
+    ctx->op = Builder::Operation();
+    ctx->op.op = op;
+    ctx->op.os = os;
+    ctx->op.tc = toolchain;
+    ctx->op.cmd = ctx->toSym(command);
+    if( !ctx->inGroup )
+        ctx->group++;
+    ctx->op.group = ctx->group;
 
-    emit imp->that->taskProgress(imp->cur++ % imp->max);
-        // TODO: even though we count mod the progress bar stays at 100%
-
-    QStringList cmd = splitCommand(rawcmd);
-
-    emit imp->that->reportCommandDescription(QString(), cmd.join(' ') );
-
-    ProcessResult res;
-    res.executableFilePath = !cmd.isEmpty() ? cmd.takeFirst() : QString();
-    res.arguments = cmd;
-    res.workingDirectory = imp->workdir;
-
-    if( res.arguments.size() == 2 && res.executableFilePath == "copy" )
-    {
-        QFile::remove(res.arguments[1]);
-        res.success = QFile::copy(res.arguments[0],res.arguments[1]);
-    }else if( !res.executableFilePath.isEmpty() )
-    {
-        QProcess proc;
-        proc.setProcessEnvironment(imp->env);
-        proc.setProgram(res.executableFilePath);
-        proc.setArguments(res.arguments);
-        proc.setWorkingDirectory(imp->workdir); // this is where the debug.pdb is written
-        proc.start();
-        if( proc.waitForStarted() )
-        {
-            if( !proc.waitForFinished() )
-            {
-                res.success = false;
-                res.stdErr << "process timeout";
-            }else
-            {
-                res.success = proc.exitCode() == 0;
-                res.stdErr = convert( proc.readAllStandardError() );
-                res.stdOut = convert( proc.readAllStandardOutput() );
-            }
-        }else
-        {
-            res.success = false;
-            res.stdErr << "cannot start process" << proc.errorString();
-        }
-    }
-
-    qRegisterMetaType<ProcessResult>();
-    emit imp->that->reportProcessResult(res);
     return 0;
 }
+
+static void BuildJobOpParam(BSBuildParam k, const char* value, void* data)
+{
+    BuildJobVisitorContext* ctx = (BuildJobVisitorContext*)data;
+    Builder::Parameter p;
+    p.kind = k;
+    p.value = ctx->toSym(value);
+    ctx->op.params << p;
 }
 
-BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env, const QByteArrayList& targets, int count)
+static void BuildJobEndOp(void* data)
+{
+    BuildJobVisitorContext* ctx = (BuildJobVisitorContext*)data;
+    ctx->ops << ctx->op;
+}
+
+static void BuildJobForkGroup(int n, void* data)
+{
+    BuildJobVisitorContext* ctx = (BuildJobVisitorContext*)data;
+
+    if( n > 0)
+        ctx->group++;
+    ctx->inGroup = n >= 0;
+}
+}
+
+BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
+                   const QByteArrayList& targets, int count)
     :AbstractJob(owner)
 {
-    d_imp = new Imp();
-    d_imp->that = this;
+    eng->createBuildDirs();
+
+    BuildJobVisitorContext ctx;
+    const bool res = eng->visit(BuildJobBeginOp,BuildJobOpParam,BuildJobEndOp,BuildJobForkGroup, &ctx, targets);
+
+#if 0
+    qDebug() << ctx.ops.count() << ctx.strings.count() << ctx.group << res;
+    for( int i = 0; i < ctx.ops.size(); i++ )
+    {
+        QByteArray prefix;
+        switch(ctx.ops[i].op)
+        {
+        case BS_Compile:
+            prefix = "COMPILE: ";
+            break;
+        case BS_LinkExe:
+        case BS_LinkDll:
+        case BS_LinkLib:
+            prefix = "LINK: ";
+            break;
+        case BS_RunMoc:
+            prefix = "MOC: ";
+            break;
+        case BS_RunRcc:
+            prefix = "RCC: ";
+            break;
+        case BS_RunUic:
+            prefix = "UIC: ";
+            break;
+        case BS_RunLua:
+            prefix = "LUA: ";
+            break;
+        case BS_Copy:
+            prefix = "COPY: ";
+            break;
+        default:
+            prefix = "BEGIN OP: " + QByteArray::number(ctx.ops[i].op) + " ";
+            break;
+        }
+        qDebug() << i << prefix.constData() << ctx.ops[i].group << ctx.ops[i].getOutfile();
+
+#if 1
+        for( int j = 0; j < ctx.ops[i].params.size(); j++ )
+        {
+            switch(ctx.ops[i].params[j].kind)
+            {
+            case BS_infile:
+                prefix = "  INFILE: ";
+                break;
+            case BS_outfile:
+                prefix = "  OUTFILE: ";
+                break;
+            case BS_cflag:
+                prefix = "  CFLAG: ";
+                break;
+            case BS_define:
+                prefix = "  DEFINE: ";
+                break;
+            case BS_include_dir:
+                prefix = "  INCLUDEDIR: ";
+                break;
+            case BS_ldflag:
+                prefix = "  LDFLAG: ";
+                break;
+            case BS_lib_dir:
+                prefix = "  LIBDIR: ";
+                break;
+            case BS_lib_name:
+                prefix = "  LIBNAME: ";
+                break;
+            default:
+                prefix = "  PARAM: ";
+                break;
+            }
+            qDebug() << prefix.constData() << ctx.ops[i].params[j].value.constData();
+        }
+#endif
+
+    }
+#endif
+
+    d_imp = new Imp(count);
     d_imp->env = env;
-    d_imp->eng = eng;
-    d_imp->targets = targets;
     const int globals = eng->getGlobals();
     d_imp->workdir = eng->getPath(globals,"root_build_dir");
-    d_imp->cur = 0;
-    d_imp->max = count;
+    d_imp->sourcedir = eng->getPath(globals,"root_source_dir");
+    d_imp->ops = ctx.ops;
+
+    connect(d_imp,SIGNAL(taskStarted(const QString&,int)),this,SIGNAL(taskStarted(const QString&,int)));
+    connect(d_imp,SIGNAL(taskProgress(int)),this,SIGNAL(taskProgress(int)));
+    connect(d_imp,SIGNAL(taskFinished(bool)),this,SIGNAL(taskFinished(bool)));
+    connect(d_imp,SIGNAL(reportCommandDescription(const QString&, const QString&)),
+            this,SIGNAL(reportCommandDescription(const QString&, const QString&)));
+    connect(d_imp,SIGNAL(reportResult( bool, const QStringList& )),
+            this,SLOT(reportResult( bool, const QStringList& )));
 }
 
 BuildJob::~BuildJob()
 {
-    delete d_imp;
+    d_imp->deleteLater();
+}
+
+void BuildJob::start()
+{
+    d_imp->start( d_imp->ops, d_imp->sourcedir, d_imp->workdir, d_imp->env );
 }
 
 void BuildJob::cancel()
 {
-    d_imp->cancel = true;
+    QMetaObject::invokeMethod( d_imp, "onCancel" );
 }
 
-void BuildJob::run()
+void BuildJob::reportResult( bool success, const QStringList& stdErr )
 {
-    emit taskStarted("BUSY build run", d_imp->max);
-    const bool success = d_imp->eng->build(d_imp->targets, runner, d_imp);
-    emit taskFinished(success);
+    ProcessResult res;
+    res.stdErr = stdErr;
+    res.success = success;
+    res.workingDirectory = d_imp->workdir;
+    qRegisterMetaType<ProcessResult>();
+    emit reportProcessResult(res);
+}
+
+int BuildOptions::defaultMaxJobCount()
+{
+    const int count = QThread::idealThreadCount();
+    return qMax(count,1);
 }

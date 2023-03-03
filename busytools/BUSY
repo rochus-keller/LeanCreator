@@ -23,6 +23,7 @@ let run_rcc : Rcc {
 let run_moc : Moc {
 	.sources += [
 		./busyapi.h
+		./busyBuilder.h
 	]
 }
 
@@ -31,6 +32,7 @@ let lib * : Library {
 		./busyapi.cpp
 		./busyLexer.cpp
 		./Engine.cpp
+		./busyBuilder.cpp
 	]
 	.deps += [ run_rcc run_moc busy.lib busy.run_rcc ]
 	.include_dirs += build_dir()
