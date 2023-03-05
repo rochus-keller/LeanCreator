@@ -65,7 +65,7 @@ namespace Internal {
 
 BusyBuildStep::BusyBuildStep(ProjectExplorer::BuildStepList *bsl) :
     ProjectExplorer::BuildStep(bsl, Core::Id(Constants::BUSY_BUILDSTEP_ID)),
-    m_job(0), m_parser(0), m_parsingProject(false)
+    m_job(0), m_parser(0)
 {
     setDisplayName(tr("Busy Build"));
     setBusyConfiguration(QVariantMap());
@@ -73,7 +73,7 @@ BusyBuildStep::BusyBuildStep(ProjectExplorer::BuildStepList *bsl) :
 
 BusyBuildStep::BusyBuildStep(ProjectExplorer::BuildStepList *bsl, const BusyBuildStep *other) :
     ProjectExplorer::BuildStep(bsl, Core::Id(Constants::BUSY_BUILDSTEP_ID)),
-    m_qbsBuildOptions(other->m_qbsBuildOptions),  m_job(0), m_parser(0), m_parsingProject(false)
+    m_qbsBuildOptions(other->m_qbsBuildOptions),  m_job(0), m_parser(0)
 {
     setBusyConfiguration(other->busyConfiguration());
 }
@@ -124,9 +124,13 @@ void BusyBuildStep::run(QFutureInterface<bool> &fi)
 {
     m_fi = &fi;
 
+#if 0
     // We need a pre-build parsing step in order not to lose project file changes done
     // right before building (but before the delay has elapsed).
     parseProject();
+#else
+    build();
+#endif
 }
 
 ProjectExplorer::BuildStepConfigWidget *BusyBuildStep::createConfigWidget()
@@ -141,9 +145,7 @@ bool BusyBuildStep::runInGuiThread() const
 
 void BusyBuildStep::cancel()
 {
-    if (m_parsingProject)
-        busyProject()->cancelParsing();
-    else if (m_job)
+    if (m_job)
         m_job->cancel();
 }
 
@@ -249,26 +251,7 @@ void BusyBuildStep::buildingDone(bool success)
     // Building can uncover additional target artifacts.
     pro->updateAfterBuild();
 
-    // The reparsing, if it is necessary, has to be done before finished() is emitted, as
-    // otherwise a potential additional build step could conflict with the parsing step.
-    if (pro->parsingScheduled())
-        parseProject();
-    else
-        finish();
-}
-
-void BusyBuildStep::reparsingDone(bool success)
-{
-    disconnect(busyProject(), SIGNAL(projectParsingDone(bool)), this, SLOT(reparsingDone(bool)));
-    m_parsingProject = false;
-    if (m_job) { // This was a scheduled reparsing after building.
-        finish();
-    } else if (!success) {
-        m_lastWasSuccess = false;
-        finish();
-    } else {
-        build();
-    }
+    finish();
 }
 
 void BusyBuildStep::handleTaskStarted(const QString &desciption, int max)
@@ -400,13 +383,6 @@ void BusyBuildStep::setCleanInstallRoot(bool clean)
         return;
     m_qbsBuildOptions.setRemoveExistingInstallation(clean);
     emit busyBuildOptionsChanged();
-}
-
-void BusyBuildStep::parseProject()
-{
-    m_parsingProject = true;
-    connect(busyProject(), SIGNAL(projectParsingDone(bool)), SLOT(reparsingDone(bool)));
-    busyProject()->parseCurrentBuildConfiguration();
 }
 
 void BusyBuildStep::build()

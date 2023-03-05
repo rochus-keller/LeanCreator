@@ -83,9 +83,6 @@ public:
     bool isParsing() const;
     bool hasParseResult() const;
     void parseCurrentBuildConfiguration();
-    void scheduleParsing() { m_parsingScheduled = true; }
-    bool parsingScheduled() const { return m_parsingScheduled; }
-    void cancelParsing();
     void updateAfterBuild();
 
     busy::Module busyModule() const;
@@ -138,13 +135,6 @@ private:
     BusyRootProjectNode *m_rootProjectNode;
 
     QFutureInterface<bool> *m_busyUpdateFutureInterface;
-    bool m_parsingScheduled;
-
-    enum CancelStatus {
-        CancelStatusNone,
-        CancelStatusCancelingForReparse,
-        CancelStatusCancelingAltoghether
-    } m_cancelStatus;
 
     QFuture<void> m_codeModelFuture;
     CppTools::ProjectInfo m_codeModelProjectInfo;

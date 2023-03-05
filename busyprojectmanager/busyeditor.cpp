@@ -97,9 +97,11 @@ Core::IDocument::OpenResult EditorDocument::open(QString* errorString, const QSt
 
 bool EditorDocument::save(QString* errorString, const QString& fileName, bool autoSave)
 {
+    // This is called by DocumentManager::saveDocument which already took care that the doc
+    // is not observed by the Watcher during save; filename is empty;
+    // Core::EditorManager::currentDocument() gives the right document
     return TextDocument::save(errorString,fileName, autoSave);
 }
-
 
 EditorWidget::EditorWidget():d_outline(0),d_mdl(0)
 {

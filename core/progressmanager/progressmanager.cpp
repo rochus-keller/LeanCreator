@@ -536,6 +536,8 @@ void ProgressManagerPrivate::fadeAwaySummaryProgress()
     m_opacityAnimation->setEndValue(0.);
     connect(m_opacityAnimation, SIGNAL(finished()), this, SLOT(summaryProgressFinishedFading()));
     m_opacityAnimation->start(QAbstractAnimation::DeleteWhenStopped);
+#else
+    m_summaryProgressWidget->hide();
 #endif
 }
 
@@ -547,6 +549,8 @@ void ProgressManagerPrivate::stopFadeOfSummaryProgress()
         m_opacityEffect->setOpacity(1.);
         delete m_opacityAnimation;
     }
+#else
+    m_summaryProgressWidget->show();
 #endif
 }
 
@@ -649,8 +653,7 @@ void ProgressManagerPrivate::deleteTask(FutureProgress *progress)
 void ProgressManagerPrivate::updateVisibility()
 {
     m_progressView->setVisible(m_progressViewPinned || m_hovered || m_progressView->isHovered());
-    m_summaryProgressWidget->setVisible((!m_runningTasks.isEmpty() || !m_taskList.isEmpty())
-                                     && !m_progressViewPinned);
+    m_summaryProgressWidget->setVisible((!m_runningTasks.isEmpty() || !m_taskList.isEmpty()) && !m_progressViewPinned);
 }
 
 void ProgressManagerPrivate::updateVisibilityWithDelay()

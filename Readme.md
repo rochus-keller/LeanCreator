@@ -19,7 +19,7 @@ Here is a screenshot:
 
 ### Planned or work-in-progress features
 
-The current version was successfully compiled and tested on Linux x86 & x86_64, macOS x86_64 & M1, and Windows x86. The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
+The current version was successfully compiled and tested on Linux x86 & x86_64, macOS x86_64 & M1, and Windows x86 & AMD64. The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
 Note that there is an issue with LLDB on Mac M1 (see https://github.com/rochus-keller/LeanCreator/issues/1).
 
 - [x] Basic, stand-alone application with statically linked plugins
@@ -70,6 +70,8 @@ Just download, unzip and run; no installation required; it's just a single execu
 
 On Mac the terminal opens when LeanCreator is run, and the menus are only active if the application was in the background one time; to avoid this the application can be included in an application bundle. Also note that the application on Mac must be started via the "open" command from the context menu; otherwise the system refuses to start the app.
 
+NOTE that the Windows versions are compiled with MT using a statically linked C/C++ runtime, so no Microsoft runtime has to be installed. The executable runs even on Windows 7 (Windows XP though doesn't recognize the executable format).
+
 ### How to build LeanCreator
 
 To build LeanCreator using LeanQt and the BUSY build system (with no other dependencies than a C++11 compiler), do the following:
@@ -81,7 +83,7 @@ To build LeanCreator using LeanQt and the BUSY build system (with no other depen
 1. Open a command line in the build directory and type `cc *.c -O2 -lm -O2 -o lua` or `cl /O2 /MD /Fe:lua.exe *.c` depending on whether you are on a Unix or Windows machine; wait a few seconds until the Lua executable is built.
 1. Now type `./lua build.lua ../LeanCreator` (or `lua build.lua ../LeanCreator` on Windows); wait until the LeanCreator executable is built (about an hour); you find it in the output/app subdirectory.
 
-Note that if you build on Windows you have to first open a console and run vcvars32.bat or vcvars64.bat provided e.g. by VisualStudio (see e.g. [here](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-170) for more information).
+NOTE that if you build on Windows you have to first open a console and run vcvars32.bat or vcvars64.bat provided e.g. by VisualStudio (see e.g. [here](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-170) for more information).
 
 ### Additional Credits
 

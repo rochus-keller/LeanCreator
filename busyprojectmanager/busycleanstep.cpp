@@ -105,11 +105,11 @@ void BusyCleanStep::run(QFutureInterface<bool> &fi)
 
     m_progressBase = 0;
 
-    connect(m_job, SIGNAL(finished(bool,busy::AbstractJob*)), this, SLOT(cleaningDone(bool)));
-    connect(m_job, SIGNAL(taskStarted(QString,int,busy::AbstractJob*)),
-            this, SLOT(handleTaskStarted(QString,int)));
-    connect(m_job, SIGNAL(taskProgress(int,busy::AbstractJob*)),
-            this, SLOT(handleProgress(int)));
+    connect(m_job, SIGNAL(taskFinished(bool)), this, SLOT(cleaningDone(bool)));
+    connect(m_job, SIGNAL(taskStarted(QString,int)),this, SLOT(handleTaskStarted(QString,int)));
+    connect(m_job, SIGNAL(taskProgress(int)), this, SLOT(handleProgress(int)));
+
+    m_job->start();
 }
 
 ProjectExplorer::BuildStepConfigWidget *BusyCleanStep::createConfigWidget()

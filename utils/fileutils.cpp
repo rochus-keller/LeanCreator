@@ -462,7 +462,14 @@ bool FileSaverBase::setResult(QXmlStreamWriter *stream)
 FileSaver::FileSaver(const QString &filename, QIODevice::OpenMode mode)
 {
     m_fileName = filename;
-    if (mode & (QIODevice::ReadOnly | QIODevice::Append)) {
+    if ( ( mode & (QIODevice::ReadOnly | QIODevice::Append) )
+     #ifdef _WIN32
+         // NOTE: for unknown reasons if we use SaveFile for BUSY files on Windows 11
+         // QFile::rename fails when orig file should be deleted even if QFile::rename closed the
+         // file before and even if disabling all file watchers
+        || filename.endsWith("BUSY") || filename.endsWith("BUSY.busy")
+     #endif
+         ) {
         m_file = new QFile(filename);
         m_isSafe = false;
     } else {

@@ -541,11 +541,14 @@ void BusyProjectManagerPlugin::reparseProject(BusyProject *project)
     if (!project)
         return;
 
+#if 0
+    // no longer true:
     // Busy does update the build graph during the build. So we cannot
     // start to parse while a build is running or we will lose information.
     if (BuildManager::isBuilding(project))
         project->scheduleParsing();
     else
+#endif
         project->parseCurrentBuildConfiguration();
 }
 

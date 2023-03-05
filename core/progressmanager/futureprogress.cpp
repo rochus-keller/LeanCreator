@@ -390,6 +390,12 @@ void FutureProgressPrivate::fadeAway()
     connect(group, SIGNAL(finished()), m_q, SIGNAL(removeMe()));
     group->start(QAbstractAnimation::DeleteWhenStopped);
     emit m_q->fadeStarted();
+#else
+    m_isFading = true;
+    m_q->hide();
+    m_q->setMaximumHeight(0);
+    m_q->fadeStarted();
+    m_q->removeMe();
 #endif
 }
 

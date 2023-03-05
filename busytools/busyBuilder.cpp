@@ -406,14 +406,14 @@ void Builder::onCancel()
 
 void Builder::onFinished()
 {
-    if( d_cancel )
-        return;
     Runner* r = (Runner*) sender();
     //qDebug() << "finished" << r;
-    d_available.push_back(r);
     emit reportResult(r->d_success, r->d_stdErr );
     if( !r->d_success )
         d_success = false;
+    if( d_cancel )
+        return;
+    d_available.push_back(r);
     select();
 }
 
@@ -431,17 +431,19 @@ void Builder::onQuit()
     quit();
 }
 
+static const bool d_quitOnError = true; // TODO should this be configurable?
+
 void Builder::select()
 {
     if( d_quitting )
         return;
 
-    if( d_work.isEmpty() )
+    if( d_work.isEmpty() || (d_quitOnError && !d_success ) )
     {
+        d_quitting = true;
         for( int i = 0; i < d_pool.size(); i++ )
             d_pool[i]->wait();
         // now all onFinished signals are in the queue
-        d_quitting = true;
         QMetaObject::invokeMethod(this,"onQuit");
         return;
     }

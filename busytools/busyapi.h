@@ -361,9 +361,9 @@ public:
     BuildJob *buildSomeProducts(const QList<Product> &products, const BuildOptions &options,
                                 QObject *jobOwner = 0) const;
 
-    CleanJob *cleanAllProducts(const CleanOptions &options, QObject *jobOwner = 0) const { return 0; }
+    CleanJob *cleanAllProducts(const CleanOptions &options, QObject *jobOwner = 0);
 
-    InstallJob *installAllProducts(const InstallOptions &options, QObject *jobOwner = 0) const { return 0; }
+    InstallJob *installAllProducts(const InstallOptions &options, QObject *jobOwner = 0);
 
     QList<InstallableFile> installableFilesForProject(const Module &project,
                                    const InstallOptions &options) const { return QList<InstallableFile>(); }
@@ -406,6 +406,10 @@ private:
 class CleanJob : public AbstractJob
 {
 public:
+    CleanJob(QObject* owner, Engine*, const QByteArrayList& targets);
+    void start();
+private:
+    QList<QString> d_files;
 };
 
 class InstallJob : public AbstractJob

@@ -118,6 +118,8 @@ private slots:
         anim->setEndValue(0.);
         connect(anim, &QAbstractAnimation::finished, this, &QObject::deleteLater);
         anim->start(QAbstractAnimation::DeleteWhenStopped);
+#else
+        hide();
 #endif
     }
 

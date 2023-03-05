@@ -5,7 +5,7 @@ if busy_version < "2023-02-22" {
 	error("this version of BUSY is not compatible with this build")
 }
 
-param HAVE_NOOPT = false
+param HAVE_MT = false
 param HAVE_SHARED_QT = false
 
 submod qt - = ../LeanQt (HAVE_ITEMVIEWS, HAVE_PROCESS, HAVE_NETACCESS, HAVE_LOCALSOCK, HAVE_SHARED = HAVE_SHARED_QT, 
@@ -39,14 +39,12 @@ submod busytools -
 submod busyprojectmanager -
 submod app
 
-let nooptconf : Config {
-	if target_toolchain == `msvc {
-		.cflags += "-MD"
-	}
+let mtconf : Config {
+    .cflags = [ "/O2", "/MT" ]
 }
 
-if HAVE_NOOPT {
-	set_defaults(target_toolchain,nooptconf)
+if HAVE_MT && (target_toolchain == `msvc) {
+    set_defaults(target_toolchain,mtconf)
 }
 
 

@@ -565,6 +565,18 @@ BuildJob*Project::buildSomeProducts(const QList<Product>& products, const BuildO
     return buildAllProducts(options, jobOwner); // TODO
 }
 
+CleanJob*Project::cleanAllProducts(const CleanOptions& options, QObject* jobOwner)
+{
+    if( !isValid() )
+        return 0;
+    return new CleanJob(jobOwner,d_imp->d_eng.data(),d_imp->params.targets);
+}
+
+InstallJob*Project::installAllProducts(const InstallOptions& options, QObject* jobOwner)
+{
+    return 0;
+}
+
 static void walkAllProducts(Engine* eng, int module, QList<int>& res, bool onlyRunnables, bool onlyActives )
 {
     QList<int> subs = eng->getSubModules(module);
@@ -729,6 +741,13 @@ static void BuildJobOpParam(BSBuildParam k, const char* value, void* data)
     ctx->op.params << p;
 }
 
+static void CleanJobOpParam(BSBuildParam k, const char* value, void* data)
+{
+    QList<QString>* files = (QList<QString> *)data;
+    if( k == BS_outfile )
+        files->append( QString::fromUtf8(value) );
+}
+
 static void BuildJobEndOp(void* data)
 {
     BuildJobVisitorContext* ctx = (BuildJobVisitorContext*)data;
@@ -875,4 +894,21 @@ int BuildOptions::defaultMaxJobCount()
 {
     const int count = QThread::idealThreadCount();
     return qMax(count,1);
+}
+
+
+CleanJob::CleanJob(QObject* owner, Engine* eng, const QByteArrayList& targets):AbstractJob(owner)
+{
+    eng->visit(0,CleanJobOpParam,0,0, &d_files, targets);
+}
+
+void CleanJob::start()
+{
+    emit taskStarted("Cleaning BUSY project", d_files.size() );
+    for( int i = 0; i < d_files.size(); i++ )
+    {
+        QFile::remove(d_files[i]);
+        emit taskProgress(i);
+    }
+    emit taskFinished(true);
 }

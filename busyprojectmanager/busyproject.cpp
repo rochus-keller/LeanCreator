@@ -102,8 +102,6 @@ BusyProject::BusyProject(BusyManager *manager, const QString &fileName) :
     m_fileName(fileName),
     m_rootProjectNode(0),
     m_busyUpdateFutureInterface(0),
-    m_parsingScheduled(false),
-    m_cancelStatus(CancelStatusNone),
     m_currentBc(0)
 {
     if( fileName.endsWith("BUSY") || fileName.endsWith("BUSY.busy") )
@@ -422,15 +420,6 @@ bool BusyProject::needsSpecialDeployment() const
 
 void BusyProject::handleBusyParsingDone(bool success)
 {
-    const CancelStatus cancelStatus = m_cancelStatus;
-    m_cancelStatus = CancelStatusNone;
-
-    // Start a new one parse operation right away, ignoring the old result.
-    if (cancelStatus == CancelStatusCancelingForReparse) {
-        parseCurrentBuildConfiguration();
-        return;
-    }
-
     generateErrors(m_project.errors());
 
     bool dataChanged = false;
@@ -442,7 +431,7 @@ void BusyProject::handleBusyParsingDone(bool success)
 
         updateDocuments(m_project.isValid()
                         ? m_project.buildSystemFiles() : QSet<QString>() << m_fileName);
-        dataChanged = true;
+        dataChanged = success;
     }
 
     if (m_busyUpdateFutureInterface) {
@@ -455,7 +444,6 @@ void BusyProject::handleBusyParsingDone(bool success)
 
     if (dataChanged) { // Do this now when isParsing() is false!
         updateCppCodeModel();
-        //updateQmlJsCodeModel();
         updateBuildTargetData();
 
         emit fileListChanged();
@@ -494,12 +482,16 @@ void BusyProject::buildConfigurationChanged(BuildConfiguration *bc)
 
 void BusyProject::startParsing()
 {
+#if 0
+    // no longer true:
+
     // Busy does update the build graph during the build. So we cannot
     // start to parse while a build is running or we will lose information.
     if (BuildManager::isBuilding(this)) {
         scheduleParsing();
         return;
     }
+#endif
 
     parseCurrentBuildConfiguration();
 }
@@ -511,43 +503,13 @@ void BusyProject::delayParsing()
 
 void BusyProject::parseCurrentBuildConfiguration()
 {
-    m_parsingScheduled = false;
-    if (m_cancelStatus == CancelStatusCancelingForReparse)
-        return;
-
-    // The CancelStatusCancelingAltoghether type can only be set by a build job, during
-    // which no other parse requests come through to this point (except by the build job itself,
-    // but of course not while canceling is in progress).
-    QTC_ASSERT(m_cancelStatus == CancelStatusNone, return);
-
     if (!activeTarget())
         return;
     BusyBuildConfiguration *bc = qobject_cast<BusyBuildConfiguration *>(activeTarget()->activeBuildConfiguration());
     if (!bc)
         return;
 
-    // New parse requests override old ones.
-    // NOTE: We need to wait for the current operation to finish, since otherwise there could
-    //       be a conflict. Consider the case where the old qbs::ProjectSetupJob is writing
-    //       to the build graph file when the cancel request comes in. If we don't wait for
-    //       acknowledgment, it might still be doing that when the new one already reads from the
-    //       same file.
-#if 0
-    // parser is too fast to cancel:
-    if (m_qbsProjectParser) {
-        m_cancelStatus = CancelStatusCancelingForReparse;
-        m_qbsProjectParser->cancel();
-        return;
-    }
-#endif
-
     parse(bc->busyConfiguration(), bc->environment(), bc->buildDirectory().toString());
-}
-
-void BusyProject::cancelParsing()
-{
-    m_cancelStatus = CancelStatusCancelingAltoghether;
-    // parser is too fast to cancel: m_qbsProjectParser->cancel();
 }
 
 void BusyProject::updateAfterBuild()
@@ -647,7 +609,7 @@ void BusyProject::parse(const QVariantMap &config, const Environment &env, const
         params.env = env.toProcessEnvironment();
 
     const bool res = m_project.parse(params, BusyManager::logSink());
-    //  void parse(const QVariantMap &config, const Utils::Environment &env, const QString &dir);
+
     emit projectParsingStarted();
     handleBusyParsingDone(res);
 }

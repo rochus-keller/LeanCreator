@@ -61,12 +61,15 @@ public:
         case LUA_ERRRUN:
             {
                 const char* msg = lua_tostring(L, -1 );
-                if( msg == 0 )
-                    msg = "LUA_ERRRUN";
-                if( logger )
-                    error( what, 0, 0, msg);
-                else
-                    qCritical() << msg;
+                if( logger == 0 && msg == 0 )
+                    msg = "LUA_ERRRUN with no message";
+                if( msg )
+                {
+                    if( logger )
+                        error( what, 0, 0, msg);
+                    else
+                        qCritical() << msg;
+                }
                 lua_pop(L, 1 );  /* remove error message */
             }
             return false;
@@ -344,6 +347,17 @@ bool Engine::visit(BSBeginOp b, BSOpParam p, BSEndOp e, BSForkGroup g, void* dat
 
     const int top = lua_gettop(d_imp->L);
 
+    // NOTE: no precheck required since operation is very fast
+
+    lua_pushcfunction(d_imp->L, bs_resetOut );
+    lua_getglobal(d_imp->L,"#root");
+    bool res = d_imp->call(1,0);
+    if( !res )
+    {
+        Q_ASSERT( top == lua_gettop(d_imp->L));
+        return false;
+    }
+
     lua_pushcfunction(d_imp->L, bs_findProductsToProcess);
     lua_getglobal(d_imp->L,"#root");
     if( targets.isEmpty() )
@@ -360,7 +374,7 @@ bool Engine::visit(BSBeginOp b, BSOpParam p, BSEndOp e, BSForkGroup g, void* dat
         }
     }
     lua_getglobal(d_imp->L,"#builtins");
-    bool res = d_imp->call(3,1);
+    res = d_imp->call(3,1);
     if( !res )
     {
         Q_ASSERT( top == lua_gettop(d_imp->L));
