@@ -28,12 +28,8 @@
 #include <QString>
 #include <QStringList>
 #include <QVariant>
+#include <QSettings>
 
-#ifndef QT_NO_SQL
-#include <QSqlDatabase>
-#include <QSqlError>
-#include <QSqlQuery>
-#endif
 #include <QDebug>
 
 /*!
@@ -48,6 +44,8 @@
 
     The SettingsDatabase API mimics that of QSettings.
 */
+
+// TODO: not found large amounts of data so far; if so, implement with e.g. LMDB
 
 using namespace Core;
 using namespace Core::Internal;
@@ -80,10 +78,7 @@ public:
 
     QStringList m_groups;
     QStringList m_dirtyKeys;
-
-#ifndef QT_NO_SQL
-    QSqlDatabase m_db; // TODO RK: replace by something without SQL
-#endif
+    QSettings d_db;
 };
 
 } // namespace Internal
@@ -106,35 +101,9 @@ SettingsDatabase::SettingsDatabase(const QString &path,
     if (!fileName.endsWith(slash))
         fileName += slash;
     fileName += application;
-    fileName += QLatin1String(".db");
+    fileName += QLatin1String(".settings");
 
-#ifndef QT_NO_SQL
-    d->m_db = QSqlDatabase::addDatabase(QLatin1String("QSQLITE"), QLatin1String("settings"));
-    d->m_db.setDatabaseName(fileName);
-    if (!d->m_db.open()) {
-        qWarning().nospace() << "Warning: Failed to open settings database at " << fileName << " ("
-                             << d->m_db.lastError().driverText() << ")";
-    } else {
-        // Create the settings table if it doesn't exist yet
-        QSqlQuery query(d->m_db);
-        query.prepare(QLatin1String("CREATE TABLE IF NOT EXISTS settings ("
-                                    "key PRIMARY KEY ON CONFLICT REPLACE, "
-                                    "value)"));
-        if (!query.exec())
-            qWarning().nospace() << "Warning: Failed to prepare settings database! ("
-                                 << query.lastError().driverText() << ")";
-
-        // Retrieve all available keys (values are retrieved lazily)
-        if (query.exec(QLatin1String("SELECT key FROM settings"))) {
-            while (query.next()) {
-                d->m_settings.insert(query.value(0).toString(), QVariant());
-            }
-        }
-
-        // syncing can be slow, especially on Linux and Windows
-        d->m_db.exec(QLatin1String("PRAGMA synchronous = OFF;"));
-    }
-#endif
+    d->d_db.setPath(QSettings::IniFormat, QSettings::UserScope, fileName);
 }
 
 SettingsDatabase::~SettingsDatabase()
@@ -142,9 +111,6 @@ SettingsDatabase::~SettingsDatabase()
     sync();
 
     delete d;
-#ifndef QT_NO_SQL
-    QSqlDatabase::removeDatabase(QLatin1String("settings"));
-#endif
 }
 
 void SettingsDatabase::setValue(const QString &key, const QVariant &value)
@@ -154,20 +120,10 @@ void SettingsDatabase::setValue(const QString &key, const QVariant &value)
     // Add to cache
     d->m_settings.insert(effectiveKey, value);
 
-#ifndef QT_NO_SQL
-    if (!d->m_db.isOpen())
-        return;
+    if( value.type() == QVariant::ByteArray && value.toByteArray().size() > 500000 )
+        qWarning() << "SettingsDatabase::setValue(" << key << ") with large bytearray";
 
-    // Instant apply (TODO: Delay writing out settings)
-    QSqlQuery query(d->m_db);
-    query.prepare(QLatin1String("INSERT INTO settings VALUES (?, ?)"));
-    query.addBindValue(effectiveKey);
-    query.addBindValue(value);
-    query.exec();
-
-    if (debug_settings)
-        qDebug() << "Stored:" << effectiveKey << "=" << value;
-#endif
+    d->d_db.setValue(key, value);
 }
 
 QVariant SettingsDatabase::value(const QString &key, const QVariant &defaultValue) const
@@ -179,24 +135,8 @@ QVariant SettingsDatabase::value(const QString &key, const QVariant &defaultValu
     if (i != d->m_settings.constEnd() && i.value().isValid()) {
         value = i.value();
     }
-#ifndef QT_NO_SQL
-    else if (d->m_db.isOpen()) {
-        // Try to read the value from the database
-        QSqlQuery query(d->m_db);
-        query.prepare(QLatin1String("SELECT value FROM settings WHERE key = ?"));
-        query.addBindValue(effectiveKey);
-        query.exec();
-        if (query.next()) {
-            value = query.value(0);
-
-            if (debug_settings)
-                qDebug() << "Retrieved:" << effectiveKey << "=" << value;
-        }
-
-        // Cache the result
-        d->m_settings.insert(effectiveKey, value);
-    }
-#endif
+    value = d->d_db.value( effectiveKey, defaultValue );
+    d->m_settings.insert(effectiveKey, value);
 
     return value;
 }
@@ -221,17 +161,7 @@ void SettingsDatabase::remove(const QString &key)
         }
     }
 
-#ifndef QT_NO_SQL
-    if (!d->m_db.isOpen())
-        return;
-
-    // Delete keys from the database
-    QSqlQuery query(d->m_db);
-    query.prepare(QLatin1String("DELETE FROM settings WHERE key = ? OR key LIKE ?"));
-    query.addBindValue(effectiveKey);
-    query.addBindValue(QString(effectiveKey + QLatin1String("/%")));
-    query.exec();
-#endif
+    d->d_db.remove(key);
 }
 
 void SettingsDatabase::beginGroup(const QString &prefix)
@@ -266,23 +196,12 @@ QStringList SettingsDatabase::childKeys() const
 
 void SettingsDatabase::beginTransaction()
 {
-#ifndef QT_NO_SQL
-    if (!d->m_db.isOpen())
-        return;
-    d->m_db.exec(QLatin1String("BEGIN TRANSACTION;"));
-#endif
 }
 
 void SettingsDatabase::endTransaction()
 {
-#ifndef QT_NO_SQL
-    if (!d->m_db.isOpen())
-        return;
-    d->m_db.exec(QLatin1String("END TRANSACTION;"));
-#endif
 }
 
 void SettingsDatabase::sync()
 {
-    // TODO: Delay writing of dirty keys and save them here
 }

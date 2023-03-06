@@ -272,7 +272,7 @@ public:
     QVariantMap properties() const;
     bool isEnabled() const;
     bool isRunnable() const;
-    QStringList allFilePaths() const;
+    QStringList allFilePaths(bool addHeaders = false) const;
     PropertyMap buildConfig() const;
     QString executable(bool synthIfEmpty = true) const;
 private:
@@ -309,7 +309,7 @@ public:
     CodeLocation location() const; // path to the submod declaration
     QString busyFile() const;
     QString buildDirectory() const;
-    QList<Product> products() const;
+    QList<Product> products(bool withSourcesOnly = true) const;
     QList<Module> subModules() const;
 
 private:
@@ -348,9 +348,10 @@ public:
     ErrorInfo errors() const;
 
     Module topModule() const;
-    QList<Product> allProducts(bool onlyRunnables = false, bool onlyActives = false) const;
+    enum ProductFilter { AllProducts, RunnableProducts, CompiledProducts };
+    QList<Product> allProducts(ProductFilter = AllProducts, bool onlyActives = false) const;
     QSet<QString> buildSystemFiles() const;
-    QSet<QString> allSources(bool onlyActives = false) const;
+    QSet<QString> allSources(bool onlyActives = false, bool addHeaders = false) const;
 
     QString targetExecutable(const Product &product, const InstallOptions &installoptions) const;
     QProcessEnvironment getRunEnvironment(const Product &product,

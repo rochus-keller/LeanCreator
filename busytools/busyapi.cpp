@@ -104,12 +104,13 @@ QString Module::buildDirectory() const
     return QString();
 }
 
-QList<Product> Module::products() const
+QList<Product> Module::products(bool withSourcesOnly) const
 {
     QList<Product> res;
     if( !isValid() )
         return res;
-    QList<int> ids = d_imp->d_eng->getAllProducts(d_imp->d_id,true);
+    QList<int> ids = d_imp->d_eng->getAllProducts(d_imp->d_id,withSourcesOnly ?
+                                                      Engine::WithSources : Engine::AllProducts );
     for( int i = 0; i < ids.size(); i++ )
         res << Product(d_imp->d_eng.data(),ids[i]);
     return res;
@@ -473,11 +474,45 @@ bool Product::isRunnable() const
     return d_imp->d_eng->isExecutable(d_imp->d_id);
 }
 
-QStringList Product::allFilePaths() const
+static QStringList findHeaders(const QStringList& files )
+{
+    QStringList headers;
+    foreach (const QString &file, files) {
+        if( file.endsWith(".cpp") || file.endsWith(".c") || file.endsWith(".cc") || file.endsWith(".c")
+                || file.endsWith(".c++") || file.endsWith(".cxx")
+                || file.endsWith(".m") || file.endsWith(".mm"))
+        {
+            QFileInfo fi(file);
+            const QString base = fi.absoluteDir().absoluteFilePath(fi.completeBaseName() );
+            if( QFileInfo(base + ".h").exists() )
+                headers << base + ".h";
+            else if( QFileInfo(base + ".hh").exists() )
+                headers << base + ".hh";
+            else if( QFileInfo(base + ".hpp").exists() )
+                headers << base + ".hpp";
+            else if( QFileInfo(base + ".h++").exists() )
+                headers << base + ".h++";
+            else if( QFileInfo(base + ".hp").exists() )
+                headers << base + ".hp";
+            else if( QFileInfo(base + ".hxx").exists() )
+                headers << base + ".hxx";
+
+            if( QFileInfo(base + "_p.h").exists() )
+                headers << base + "_p.h";
+        }
+    }
+    return headers;
+}
+
+QStringList Product::allFilePaths(bool addHeaders) const
 {
     if( !isValid() )
         return QStringList();
-    return d_imp->d_eng->getAllSources(d_imp->d_id);
+    QStringList sources = d_imp->d_eng->getAllSources(d_imp->d_id);
+    if( addHeaders )
+        return findHeaders(sources) + sources;
+    else
+        return sources;
 }
 
 PropertyMap Product::buildConfig() const
@@ -526,13 +561,16 @@ QSet<QString> Project::buildSystemFiles() const
     return res;
 }
 
-QSet<QString> Project::allSources(bool onlyActives) const
+QSet<QString> Project::allSources(bool onlyActives, bool addHeaders) const
 {
-    QList<Product> prods = allProducts(false,onlyActives);
+    QList<Product> prods = allProducts(CompiledProducts,onlyActives);
     QSet<QString> res;
     foreach( const Product& p, prods )
     {
         QStringList files = p.allFilePaths();
+        if( addHeaders )
+            files += findHeaders(files);
+
         foreach( const QString& f, files)
             res << f;
     }
@@ -577,20 +615,35 @@ InstallJob*Project::installAllProducts(const InstallOptions& options, QObject* j
     return 0;
 }
 
-static void walkAllProducts(Engine* eng, int module, QList<int>& res, bool onlyRunnables, bool onlyActives )
+static void walkAllProducts(Engine* eng, int module, QList<int>& res, Engine::ProductFilter filter, bool onlyActives )
 {
     QList<int> subs = eng->getSubModules(module);
     for(int i = 0; i < subs.size(); i++ )
-        walkAllProducts(eng,subs[i],res,onlyRunnables, onlyActives);
-    res += eng->getAllProducts(module,true, onlyRunnables, onlyActives);
+        walkAllProducts(eng,subs[i],res,filter, onlyActives);
+    res += eng->getAllProducts(module, filter, onlyActives);
 }
 
-QList<Product> Project::allProducts(bool onlyRunnables, bool onlyActives) const
+QList<Product> Project::allProducts(ProductFilter filter, bool onlyActives) const
 {
     if( !isValid() )
         return QList<Product>();
     QList<int> ids;
-    walkAllProducts(d_imp->d_eng.data(),d_imp->d_eng->getRootModule(),ids, onlyRunnables, onlyActives);
+
+    Engine::ProductFilter ef = Engine::AllProducts;
+    switch(filter)
+    {
+    case AllProducts:
+        ef = Engine::WithSources;
+        break;
+    case RunnableProducts:
+        ef = Engine::Executable;
+        break;
+    case CompiledProducts:
+        ef = Engine::Compiled;
+        break;
+    }
+
+    walkAllProducts(d_imp->d_eng.data(),d_imp->d_eng->getRootModule(),ids, ef, onlyActives);
     QList<Product> res;
     for( int i = 0; i < ids.size(); i++ )
         res << Product(d_imp->d_eng.data(),ids[i]);

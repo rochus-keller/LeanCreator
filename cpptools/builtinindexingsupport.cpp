@@ -119,7 +119,7 @@ private:
     int m_processedDiagnostics;
 };
 
-void classifyFiles(const QSet<QString> &files, QStringList *headers, QStringList *sources)
+static void classifyFiles(const QSet<QString> &files, QStringList *headers, QStringList *sources)
 {
     foreach (const QString &file, files) {
         if (ProjectFile::isSource(ProjectFile::classify(file)))
@@ -129,7 +129,7 @@ void classifyFiles(const QSet<QString> &files, QStringList *headers, QStringList
     }
 }
 
-void indexFindErrors(QFutureInterface<void> &future, const ParseParams params)
+static void indexFindErrors(QFutureInterface<void> &future, const ParseParams params)
 {
     QStringList sources, headers;
     classifyFiles(params.sourceFiles, &headers, &sources);
@@ -174,7 +174,7 @@ void indexFindErrors(QFutureInterface<void> &future, const ParseParams params)
     qDebug("FindErrorsIndexing: Finished after %s.", qPrintable(time));
 }
 
-void index(QFutureInterface<void> &future, const ParseParams params)
+static void index(QFutureInterface<void> &future, const ParseParams params)
 {
     QScopedPointer<CppSourceProcessor> sourceProcessor(CppModelManager::createSourceProcessor());
     sourceProcessor->setHeaderPaths(params.headerPaths);
@@ -235,7 +235,7 @@ void index(QFutureInterface<void> &future, const ParseParams params)
     }
 }
 
-void parse(QFutureInterface<void> &future, const ParseParams params)
+static void parse(QFutureInterface<void> &future, const ParseParams params)
 {
     const QSet<QString> &files = params.sourceFiles;
     if (files.isEmpty())

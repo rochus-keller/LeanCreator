@@ -74,7 +74,8 @@ public:
     QList<Loc> findDeclInstsInFile(const QString& path, int decl) const;
     QList<AllLocsInFile> findAllLocsOf(int decl) const;
     QList<int> getSubModules(int) const;
-    QList<int> getAllProducts(int module, bool withSourceOnly = false, bool runnableOnly = false, bool onlyActives = false) const;
+    enum ProductFilter { AllProducts, WithSources, Executable, Compiled };
+    QList<int> getAllProducts(int module, ProductFilter = AllProducts, bool onlyActives = false) const;
     QList<int> getAllDecls(int module) const;
     QStringList getAllSources(int product) const;
     QStringList getIncludePaths(int product) const;

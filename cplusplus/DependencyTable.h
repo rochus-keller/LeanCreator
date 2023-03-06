@@ -56,13 +56,16 @@ private:
 
     friend class Snapshot;
     void build(const Snapshot &snapshot);
-    Utils::FileNameList filesDependingOn(const Utils::FileName &fileName) const;
-    Utils::FileNameList allFilesDependingOnModifieds() const;
 
     QVector<File> files;
     QHash<Utils::FileName, int> fileIndex;
     QHash<int, QList<int> > includes;
     QVector<QBitArray> includeMap;
+
+public:
+    Utils::FileNameList filesDependingOn(const Utils::FileName &fileName) const;
+    Utils::FileNameList allFilesDependingOnModifieds() const;
+    bool anyNewerDeps(const QString& path, uint ref) const;
 };
 
 } // namespace CPlusPlus

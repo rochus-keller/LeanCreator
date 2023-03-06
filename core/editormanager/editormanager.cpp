@@ -630,9 +630,14 @@ IEditor *EditorManagerPrivate::openEditor(EditorView *view, const QString &fileN
     if (factories.isEmpty()) {
         Utils::MimeDatabase mdb;
         Utils::MimeType mimeType = mdb.mimeTypeForFile(fn);
+        QString suffix;
+        if( mimeType.isValid() )
+            suffix = mimeType.name();
+        else
+            suffix = fi.suffix();
         QMessageBox msgbox(QMessageBox::Critical, EditorManager::tr("File Error"),
                            tr("Could not open \"%1\": Cannot open files of type \"%2\".")
-                           .arg(FileName::fromString(realFn).toUserOutput()).arg(mimeType.name()),
+                           .arg(FileName::fromString(realFn).toUserOutput()).arg(suffix),
                            QMessageBox::Ok, ICore::dialogParent());
         msgbox.exec();
         return 0;

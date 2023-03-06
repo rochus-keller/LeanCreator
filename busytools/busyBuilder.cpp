@@ -19,6 +19,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QtDebug>
+//#include <cpptools/cppmodelmanager.h>
 extern "C" {
 #include <bsvisitor.h>
 #include <lua.h>
@@ -390,6 +391,12 @@ void Builder::start(const Builder::OpList& work,
     d_available.clear();
     for( int i = 0; i < d_pool.size(); i++ )
         d_available.append(d_pool[i]);
+
+    d_checkHeaders = true;
+
+    if( d_checkHeaders )
+        ; // TODO d_deps = CppTools::CppModelManager::instance()->snapshot().dependencyTable();
+
     QThread::start();
 }
 
@@ -561,7 +568,11 @@ bool Builder::isDue(const Builder::Operation& op)
         if( info.lastModified() > ref )
             return true; // at least one input is newer than existing output
     }
-    // TODO: if op.op == BS_Compile also check with include headers in the sourcedir
+    if( d_checkHeaders && op.op == BS_Compile )
+    {
+        // also check with include headers in the sourcedir
+        // TODO return d_deps.anyNewerDeps(outinfo.absoluteFilePath(),op.toTime_t());
+    }
     return false;
 }
 

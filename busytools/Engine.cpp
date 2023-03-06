@@ -638,10 +638,8 @@ QList<int> Engine::getSubModules(int id) const
     return res;
 }
 
-QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly, bool onlyActives) const
+QList<int> Engine::getAllProducts(int id, ProductFilter filter, bool onlyActives) const
 {
-    if( runnableOnly )
-        withSourceOnly = false;
     QList<int> res;
     if( !d_imp->ok() )
         return res;
@@ -650,8 +648,11 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly
     {
         const int inst = lua_gettop(d_imp->L);
         lua_getglobal(d_imp->L,"#builtins");
-        if( runnableOnly )
+
+        if( filter == Executable )
             lua_getfield(d_imp->L,-1,"Executable");
+        else if( filter == Compiled )
+            lua_getfield(d_imp->L,-1,"CompiledProduct");
         else
             lua_getfield(d_imp->L,-1,"Product");
         lua_replace(d_imp->L,-2);
@@ -679,7 +680,7 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly
                     Q_ASSERT( !lua_isnil(d_imp->L,-1) );
                     const bool isProduct = bs_isa(d_imp->L,productClass,-1);
                     bool hasSource = false;
-                    if( withSourceOnly )
+                    if( filter == WithSources )
                     {
                         lua_getfield(d_imp->L,-1,"sources");
                         lua_getfield(d_imp->L,-2,"use_deps"); // exclude Copy
@@ -687,15 +688,12 @@ QList<int> Engine::getAllProducts(int id, bool withSourceOnly, bool runnableOnly
                         lua_pop(d_imp->L,2);
                     }
                     lua_pop(d_imp->L,1);
-                    if( isProduct )
+                    if( isProduct || hasSource )
                     {
-                        if( !withSourceOnly || hasSource )
-                        {
-                            lua_getfield(d_imp->L,-1,"#ref");
-                            const int ref = lua_tointeger(d_imp->L,-1);
-                            lua_pop(d_imp->L,1);
-                            res += ref;
-                        }
+                        lua_getfield(d_imp->L,-1,"#ref");
+                        const int ref = lua_tointeger(d_imp->L,-1);
+                        lua_pop(d_imp->L,1);
+                        res += ref;
                     }
                 }
             }

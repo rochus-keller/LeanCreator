@@ -839,6 +839,12 @@ void Snapshot::updateDependencyTable() const
         m_deps.build(*this);
 }
 
+const DependencyTable& Snapshot::dependencyTable() const
+{
+    updateDependencyTable();
+    return m_deps;
+}
+
 bool Snapshot::operator==(const Snapshot &other) const
 {
     return _documents == other._documents;

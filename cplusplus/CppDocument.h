@@ -446,6 +446,7 @@ public:
     { return filesDependingOn(Utils::FileName::fromString(fileName)); }
     Utils::FileNameList allFilesDependingOnModifieds() const;
     void updateDependencyTable() const;
+    const DependencyTable& dependencyTable() const;
 
     bool operator==(const Snapshot &other) const;
 

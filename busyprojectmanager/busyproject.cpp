@@ -445,7 +445,7 @@ void BusyProject::handleBusyParsingDone(bool success)
     if (dataChanged) { // Do this now when isParsing() is false!
         updateCppCodeModel();
         updateBuildTargetData();
-
+        // TODO updateCppCompilerCallData();
         emit fileListChanged();
     }
     emit projectParsingDone(success);
@@ -514,6 +514,7 @@ void BusyProject::parseCurrentBuildConfiguration()
 
 void BusyProject::updateAfterBuild()
 {
+    // not used
     QTC_ASSERT(m_rootModule.isValid(), return);
     updateBuildTargetData();
     updateCppCompilerCallData();
@@ -665,15 +666,16 @@ void BusyProject::updateCppCodeModel()
     if (!m_rootModule.isValid())
         return;
 
+    m_codeModelFuture.cancel();
 
     CppTools::CppModelManager *modelmanager = CppTools::CppModelManager::instance();
     CppTools::ProjectInfo pinfo(this);
     CppTools::ProjectPartBuilder ppBuilder(pinfo);
 
-    ppBuilder.setQtVersion(CppTools::ProjectPart::NoQt);
+    ppBuilder.setQtVersion(CppTools::ProjectPart::Qt5);
 
     QHash<QString, QString> uiFiles;
-    foreach (const busy::Product &prd, m_project.allProducts()) {
+    foreach (const busy::Product &prd, m_project.allProducts(busy::Project::CompiledProducts,true)) {
         const busy::PropertyMap &props = prd.buildConfig();
 
         ppBuilder.setCxxFlags(props.properties[busy::PropertyMap::CXXFLAGS]);
@@ -709,16 +711,21 @@ void BusyProject::updateCppCodeModel()
 
         ppBuilder.setHeaderPaths(grpHeaderPaths);
 
-        const QStringList pch = props.properties[busy::PropertyMap::PRECOMPILEDHEADER];
-        ppBuilder.setPreCompiledHeaders(pch);
+        //const QStringList pch = props.properties[busy::PropertyMap::PRECOMPILEDHEADER];
+        //ppBuilder.setPreCompiledHeaders(pch);
 
-        ppBuilder.setDisplayName(prd.name(true));
+        ppBuilder.setDisplayName(prd.qualident()); // prd.name(true));
         ppBuilder.setProjectFile(QString::fromLatin1("%1:%2:%3")
                 .arg(prd.location().filePath())
                 .arg(prd.location().line())
                 .arg(prd.location().column()));
 
-        const QStringList files = prd.allFilePaths();
+        const QStringList files = prd.allFilePaths(true); // we need the project headers here, otherwise
+                                                          // BaseEditorDocumentParser::determineProjectPart
+                                                          // doesn't find a header in CppModelManager::projectPart
+                                                          // and makes an expensive dependency calc or a guess
+#if 0
+        // TODO: do we need this?
         foreach (const QString &file, files) {
             if (file.endsWith(QLatin1String(".ui"))) {
                 QStringList generated = m_rootProjectNode->busyProject()
@@ -727,7 +734,7 @@ void BusyProject::updateCppCodeModel()
                     uiFiles.insert(file, generated.at(0));
             }
         }
-
+#endif
         const QList<Id> languages = ppBuilder.createProjectPartsForFiles(files);
         foreach (Id language, languages)
             setProjectLanguage(language, true);
@@ -736,7 +743,6 @@ void BusyProject::updateCppCodeModel()
     pinfo.finish();
 
     // Update the code model
-    m_codeModelFuture.cancel();
     m_codeModelFuture = modelmanager->updateProjectInfo(pinfo);
     m_codeModelProjectInfo = modelmanager->projectInfo(this);
     QTC_CHECK(m_codeModelProjectInfo == pinfo);
@@ -748,7 +754,7 @@ void BusyProject::updateCppCompilerCallData()
     QTC_ASSERT(m_codeModelProjectInfo == modelManager->projectInfo(this), return);
 
     CppTools::ProjectInfo::CompilerCallData data;
-    foreach (const busy::Product &product, m_project.allProducts()) {
+    foreach (const busy::Product &product, m_project.allProducts(busy::Project::CompiledProducts,true)) {
 
         if (!product.isEnabled())
             continue;
@@ -782,7 +788,7 @@ void BusyProject::updateCppCompilerCallData()
 void BusyProject::updateApplicationTargets()
 {
     BuildTargetInfoList applications;
-    foreach (const busy::Product &product, m_project.allProducts(true,true)) {
+    foreach (const busy::Product &product, m_project.allProducts(busy::Project::RunnableProducts,true)) {
         const QString displayName = productDisplayName(m_project, product);
         QList<busy::TargetArtifact> ta = product.targetArtifacts();
         if (ta.isEmpty()) { // No build yet.

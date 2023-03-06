@@ -63,6 +63,8 @@ public:
     void setPreprocessorSettings(const CppTools::ProjectPart::Ptr &projectPart,
                                  const QByteArray &defines);
 
+    // bool save(QString *errorString, const QString &fileName, bool autoSave);
+
 signals:
     void codeWarningsUpdated(unsigned contentsRevision,
                              const QList<QTextEdit::ExtraSelection> selections);

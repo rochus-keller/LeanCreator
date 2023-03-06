@@ -71,6 +71,23 @@ Utils::FileNameList DependencyTable::allFilesDependingOnModifieds() const
     return res;
 }
 
+bool DependencyTable::anyNewerDeps(const QString& path, uint ref) const
+{
+    ;
+    int index = fileIndex.value(Utils::FileName::fromString(path), -1);
+    if(index == -1)
+        return false;
+
+    QList<int> toCheck = includes.value(index);
+    for( int i = 0; i < toCheck.size(); i++ )
+    {
+        const File& f = files[toCheck[i]];
+        if( f.modified > ref )
+            return true;
+    }
+    return false;
+}
+
 void DependencyTable::build(const Snapshot &snapshot)
 {
     files.clear();

@@ -20,6 +20,7 @@
 #include <QThread>
 #include <QProcessEnvironment>
 #include <QVector>
+//#include <cplusplus/DependencyTable.h>
 
 namespace busy
 {
@@ -84,9 +85,11 @@ private:
     QList<Runner*> d_available;
     quint32 d_curGroup;
     quint32 d_done;
+    //CPlusPlus::DependencyTable d_deps;
     bool d_success;
     bool d_cancel;
     bool d_quitting;
+    bool d_checkHeaders;
 };
 }
 

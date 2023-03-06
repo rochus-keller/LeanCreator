@@ -269,6 +269,16 @@ void CppEditorDocument::setPreprocessorSettings(const CppTools::ProjectPart::Ptr
     }
 }
 
+#if 0
+bool CppEditorDocument::save(QString* errorString, const QString& fileName, bool autoSave)
+{
+    bool res = TextDocument::save(errorString,fileName, autoSave);
+    // NOTE RK: this is not necessary; the model immediately gets the changes without calliong updateSourceFiles!
+    mm()->updateSourceFiles(QSet<QString>() << Core::EditorManager::currentDocument()->filePath().toString());
+    return res;
+}
+#endif
+
 unsigned CppEditorDocument::contentsRevision() const
 {
     return document()->revision();
