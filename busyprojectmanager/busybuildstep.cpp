@@ -45,8 +45,8 @@
 #include <busytools/busyapi.h>
 
 static const char BUSY_CONFIG[] = "Busy.Configuration";
-static const char BUSY_DRY_RUN[] = "Busy.DryRun";
-static const char BUSY_KEEP_GOING[] = "Busy.DryKeepGoing";
+static const char BUSY_STOP_ON_ERRORS[] = "Busy.StopOnErrors";
+static const char BUSY_TRACK_HEADERS[] = "Busy.TrackHeaders";
 static const char BUSY_MAXJOBCOUNT[] = "Busy.MaxJobs";
 static const char BUSY_SHOWCOMMANDLINES[] = "Busy.ShowCommandLines";
 static const char BUSY_INSTALL[] = "Busy.Install";
@@ -173,14 +173,14 @@ void BusyBuildStep::setBusyConfiguration(const QVariantMap &config)
     emit busyConfigurationChanged();
 }
 
-bool BusyBuildStep::dryRun() const
+bool BusyBuildStep::stopOnError() const
 {
-    return m_qbsBuildOptions.dryRun();
+    return m_qbsBuildOptions.d_stopOnError;
 }
 
-bool BusyBuildStep::keepGoing() const
+bool BusyBuildStep::trackHeaders() const
 {
-    return m_qbsBuildOptions.keepGoing();
+    return m_qbsBuildOptions.d_trackHeaders;
 }
 
 bool BusyBuildStep::showCommandLines() const
@@ -211,8 +211,8 @@ bool BusyBuildStep::fromMap(const QVariantMap &map)
         return false;
 
     setBusyConfiguration(map.value(QLatin1String(BUSY_CONFIG)).toMap());
-    m_qbsBuildOptions.setDryRun(map.value(QLatin1String(BUSY_DRY_RUN)).toBool());
-    m_qbsBuildOptions.setKeepGoing(map.value(QLatin1String(BUSY_KEEP_GOING)).toBool());
+    m_qbsBuildOptions.d_stopOnError = map.value(QLatin1String(BUSY_STOP_ON_ERRORS), true).toBool();
+    m_qbsBuildOptions.d_trackHeaders = map.value(QLatin1String(BUSY_TRACK_HEADERS), true).toBool();
     m_qbsBuildOptions.setMaxJobCount(map.value(QLatin1String(BUSY_MAXJOBCOUNT)).toInt());
     const bool showCommandLines = map.value(QLatin1String(BUSY_SHOWCOMMANDLINES)).toBool();
     m_qbsBuildOptions.setEchoMode(showCommandLines ? busy::CommandEchoModeCommandLine
@@ -227,8 +227,8 @@ QVariantMap BusyBuildStep::toMap() const
 {
     QVariantMap map = ProjectExplorer::BuildStep::toMap();
     map.insert(QLatin1String(BUSY_CONFIG), m_qbsConfiguration);
-    map.insert(QLatin1String(BUSY_DRY_RUN), m_qbsBuildOptions.dryRun());
-    map.insert(QLatin1String(BUSY_KEEP_GOING), m_qbsBuildOptions.keepGoing());
+    map.insert(QLatin1String(BUSY_STOP_ON_ERRORS), m_qbsBuildOptions.d_stopOnError);
+    map.insert(QLatin1String(BUSY_TRACK_HEADERS), m_qbsBuildOptions.d_trackHeaders);
     map.insert(QLatin1String(BUSY_MAXJOBCOUNT), m_qbsBuildOptions.maxJobCount());
     map.insert(QLatin1String(BUSY_SHOWCOMMANDLINES),
                m_qbsBuildOptions.echoMode() == busy::CommandEchoModeCommandLine);
@@ -336,19 +336,19 @@ QString BusyBuildStep::profile() const
     return busyConfiguration().value(QLatin1String(Constants::BUSY_CONFIG_PROFILE_KEY)).toString();
 }
 
-void BusyBuildStep::setDryRun(bool dr)
+void BusyBuildStep::setStopOnError(bool dr)
 {
-    if (m_qbsBuildOptions.dryRun() == dr)
+    if (m_qbsBuildOptions.d_stopOnError == dr)
         return;
-    m_qbsBuildOptions.setDryRun(dr);
+    m_qbsBuildOptions.d_stopOnError = dr;
     emit busyBuildOptionsChanged();
 }
 
-void BusyBuildStep::setKeepGoing(bool kg)
+void BusyBuildStep::setTrackHeaders(bool kg)
 {
-    if (m_qbsBuildOptions.keepGoing() == kg)
+    if (m_qbsBuildOptions.d_trackHeaders == kg)
         return;
-    m_qbsBuildOptions.setKeepGoing(kg);
+    m_qbsBuildOptions.d_trackHeaders = kg;
     emit busyBuildOptionsChanged();
 }
 
@@ -463,8 +463,8 @@ BusyBuildStepConfigWidget::BusyBuildStepConfigWidget(BusyBuildStep *step) :
     connect(m_ui->parametersTextEdit, SIGNAL(textChanged()), this, SLOT(changedParams()));
     connect(m_ui->buildVariantComboBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(changeBuildVariant(int)));
-    connect(m_ui->dryRunCheckBox, SIGNAL(toggled(bool)), this, SLOT(changeDryRun(bool)));
-    connect(m_ui->keepGoingCheckBox, SIGNAL(toggled(bool)), this, SLOT(changeKeepGoing(bool)));
+    connect(m_ui->stopOnError, SIGNAL(toggled(bool)), this, SLOT(changeStopOnError(bool)));
+    connect(m_ui->trackHeaders, SIGNAL(toggled(bool)), this, SLOT(changeKeepGoing(bool)));
     connect(m_ui->jobSpinBox, SIGNAL(valueChanged(int)), this, SLOT(changeJobCount(int)));
     connect(m_ui->showCommandLinesCheckBox, &QCheckBox::toggled, this,
             &BusyBuildStepConfigWidget::changeShowCommandLines);
@@ -474,9 +474,6 @@ BusyBuildStepConfigWidget::BusyBuildStepConfigWidget(BusyBuildStep *step) :
             &BusyBuildStepConfigWidget::changeCleanInstallRoot);
 
     // TODO: adapt or remove
-    m_ui->dryRunCheckBox->hide();
-    m_ui->flagsLabel->hide();
-    m_ui->keepGoingCheckBox->hide();
     m_ui->showCommandLinesCheckBox->hide();
     m_ui->installCheckBox->hide();
     m_ui->cleanInstallRootCheckBox->hide();
@@ -502,8 +499,8 @@ QString BusyBuildStepConfigWidget::displayName() const
 void BusyBuildStepConfigWidget::updateState()
 {
     if (!m_ignoreChange) {
-        m_ui->dryRunCheckBox->setChecked(m_step->dryRun());
-        m_ui->keepGoingCheckBox->setChecked(m_step->keepGoing());
+        m_ui->stopOnError->setChecked(m_step->stopOnError());
+        m_ui->trackHeaders->setChecked(m_step->trackHeaders());
         m_ui->jobSpinBox->setValue(m_step->maxJobs());
         m_ui->showCommandLinesCheckBox->setChecked(m_step->showCommandLines());
         m_ui->installCheckBox->setChecked(m_step->install());
@@ -543,10 +540,10 @@ void BusyBuildStepConfigWidget::changeBuildVariant(int idx)
     m_ignoreChange = false;
 }
 
-void BusyBuildStepConfigWidget::changeDryRun(bool dr)
+void BusyBuildStepConfigWidget::changeStopOnError(bool dr)
 {
     m_ignoreChange = true;
-    m_step->setDryRun(dr);
+    m_step->setStopOnError(dr);
     m_ignoreChange = false;
 }
 
@@ -560,7 +557,7 @@ void BusyBuildStepConfigWidget::changeShowCommandLines(bool show)
 void BusyBuildStepConfigWidget::changeKeepGoing(bool kg)
 {
     m_ignoreChange = true;
-    m_step->setKeepGoing(kg);
+    m_step->setTrackHeaders(kg);
     m_ignoreChange = false;
 }
 

@@ -335,21 +335,6 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
     QTC_ASSERT(busyProject().isValid(), return 0);
     QTC_ASSERT(!isParsing(), return 0);
 
-#if 0
-    // TODO: options: check for modified includes, use Ninja
-    CppTools::CppModelManager *modelmanager = CppTools::CppModelManager::instance();
-    CPlusPlus::Snapshot snap = modelmanager->snapshot();
-    const Utils::FileNameList toTouch = snap.allFilesDependingOnModifieds();
-    const QSet<QString> sources = m_project.allSources(true);
-    QFile f("out.txt");
-    f.open(QIODevice::WriteOnly);
-    QTextStream out(&f);
-    foreach( const Utils::FileName& f, toTouch )
-        if( sources.contains(f.toString()) )
-            out << f.toString() << endl;
-    // here comes much more than expected.
-    //    bs_touch2(f.toString().toUtf8().constData()); // TODO: don't directly touch if open
-#endif
     busy::BuildOptions opts2 = opts;
 
     if (productNames.isEmpty())
@@ -720,21 +705,13 @@ void BusyProject::updateCppCodeModel()
                 .arg(prd.location().line())
                 .arg(prd.location().column()));
 
-        const QStringList files = prd.allFilePaths(true); // we need the project headers here, otherwise
-                                                          // BaseEditorDocumentParser::determineProjectPart
-                                                          // doesn't find a header in CppModelManager::projectPart
-                                                          // and makes an expensive dependency calc or a guess
-#if 0
-        // TODO: do we need this?
-        foreach (const QString &file, files) {
-            if (file.endsWith(QLatin1String(".ui"))) {
-                QStringList generated = m_rootProjectNode->busyProject()
-                        .generatedFiles(prd, file, QStringList(QLatin1String("hpp")));
-                if (generated.count() == 1)
-                    uiFiles.insert(file, generated.at(0));
-            }
-        }
-#endif
+        const QStringList files = prd.allFilePaths(true, true);
+              // we need the project headers here, otherwise
+              // BaseEditorDocumentParser::determineProjectPart
+              // doesn't find a header in CppModelManager::projectPart
+              // and makes an expensive dependency calc or a guess
+              // we also need the generated files
+
         const QList<Id> languages = ppBuilder.createProjectPartsForFiles(files);
         foreach (Id language, languages)
             setProjectLanguage(language, true);

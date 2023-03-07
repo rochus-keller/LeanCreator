@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>723</width>
+    <width>786</width>
     <height>247</height>
    </rect>
   </property>
@@ -116,22 +116,28 @@
    <item row="5" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QCheckBox" name="dryRunCheckBox">
+      <widget class="QCheckBox" name="stopOnError">
        <property name="toolTip">
-        <string>No commands will be executed and no permanent changes to the build graph will be done.</string>
+        <string>Stop the build on the first compiler or linker run with errors.</string>
        </property>
        <property name="text">
-        <string>Dry run</string>
+        <string>Stop build on error</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QCheckBox" name="keepGoingCheckBox">
+      <widget class="QCheckBox" name="trackHeaders">
        <property name="toolTip">
-        <string>Keep going when errors occur (if at all possible).</string>
+        <string>When compiling a source file also check the modification date of the headers it depends on to decide whether compilation is required or not.</string>
        </property>
        <property name="text">
-        <string>Keep going</string>
+        <string>Track header dependencies</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
      </item>

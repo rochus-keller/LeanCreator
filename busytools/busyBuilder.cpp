@@ -19,7 +19,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QtDebug>
-//#include <cpptools/cppmodelmanager.h>
+#include <cpptools/cppmodelmanager.h>
 extern "C" {
 #include <bsvisitor.h>
 #include <lua.h>
@@ -329,8 +329,8 @@ public:
                 argv[i+1] = args[i].constData();
             argv[argc] = 0;
 
-            d_success == lua_main_with_reporter(argc, const_cast<char**>(argv.data()),
-                                                Builder_lua_reporter, &d_stdErr ) == 0;
+            d_success == (lua_main_with_reporter(argc, const_cast<char**>(argv.data()),
+                                                Builder_lua_reporter, &d_stdErr ) == 0);
         }else
         {
             QProcess proc;
@@ -341,7 +341,7 @@ public:
             proc.start();
             if( proc.waitForStarted() )
             {
-                if( !proc.waitForFinished() )
+                if( !proc.waitForFinished(240000) )
                 {
                     d_success = false;
                     d_stdErr << "process timeout";
@@ -362,9 +362,10 @@ public:
     Runner(QObject* p):QThread(p),d_success(true) {}
 };
 
-Builder::Builder(int threadCount, QObject *parent) : QThread(parent)
+Builder::Builder(int threadCount, bool stopOnError, bool trackHeaders, QObject *parent)
+    : QThread(parent),d_stopOnError(stopOnError), d_trackHeaders(trackHeaders)
 {
-    connect(this,SIGNAL(started()), this, SLOT(onStarted()) );
+    connect(this,SIGNAL(started()), this, SLOT(onStarted()), Qt::QueuedConnection );
     d_pool.resize(threadCount);
     for( int i = 0; i < d_pool.size(); i++ )
     {
@@ -388,14 +389,13 @@ void Builder::start(const Builder::OpList& work,
     d_quitting = false;
     d_curGroup = 0;
     d_done = 0;
+    d_title.clear();
     d_available.clear();
     for( int i = 0; i < d_pool.size(); i++ )
         d_available.append(d_pool[i]);
 
-    d_checkHeaders = true;
-
-    if( d_checkHeaders )
-        ; // TODO d_deps = CppTools::CppModelManager::instance()->snapshot().dependencyTable();
+    if( d_trackHeaders )
+        d_deps = CppTools::CppModelManager::instance()->snapshot().dependencyTable();
 
     QThread::start();
 }
@@ -438,14 +438,12 @@ void Builder::onQuit()
     quit();
 }
 
-static const bool d_quitOnError = true; // TODO should this be configurable?
-
 void Builder::select()
 {
     if( d_quitting )
         return;
 
-    if( d_work.isEmpty() || (d_quitOnError && !d_success ) )
+    if( d_work.isEmpty() || (d_stopOnError && !d_success ) )
     {
         d_quitting = true;
         for( int i = 0; i < d_pool.size(); i++ )
@@ -529,17 +527,31 @@ bool Builder::startOne()
 {
     Operation op = d_work.takeFirst();
     emit taskProgress(++d_done);
+
+    if( op.op == BS_EnteringProduct )
+    {
+        d_title = QString::fromUtf8(op.cmd);
+        return false;
+    }
+
     const bool due = isDue(op);
     //dump(op, d_done-1,due);
     if( !due )
         return false;
 
+    if( !d_title.isEmpty() )
+    {
+        emit reportCommandDescription(QString(), QString("    # running %1").arg(d_title) );
+        d_title.clear();
+    }
+    Q_ASSERT( op.op != BS_EnteringProduct );
+
     Runner* r = d_available.takeFirst();
     //qDebug() << "started" << r;
     r->d_env = d_env;
     r->d_workdir = d_workdir;
-    const QString cmdline = r->d_program + QChar(' ') + r->d_arguments.join(' ');
     r->prepare(op);
+    const QString cmdline = r->d_program + QChar(' ') + r->d_arguments.join(' ');
     emit reportCommandDescription(QString(), QString(4,QChar(' ')) + cmdline );
 
     r->start();
@@ -567,11 +579,14 @@ bool Builder::isDue(const Builder::Operation& op)
             return true; // cause an error message by the command
         if( info.lastModified() > ref )
             return true; // at least one input is newer than existing output
-    }
-    if( d_checkHeaders && op.op == BS_Compile )
-    {
-        // also check with include headers in the sourcedir
-        // TODO return d_deps.anyNewerDeps(outinfo.absoluteFilePath(),op.toTime_t());
+        QString reason;
+        if( d_trackHeaders && op.op == BS_Compile &&
+                d_deps.anyNewerDeps(info.absoluteFilePath(),ref.toTime_t(), &reason) )
+        {
+            // also check with include headers (possibly restrict to sourcedir)
+            qDebug() << "compiled" << info.fileName() << "because of modified header" << reason; // TEST
+            return true;
+        }
     }
     return false;
 }

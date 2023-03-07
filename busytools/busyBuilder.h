@@ -20,7 +20,7 @@
 #include <QThread>
 #include <QProcessEnvironment>
 #include <QVector>
-//#include <cplusplus/DependencyTable.h>
+#include <cplusplus/DependencyTable.h>
 
 namespace busy
 {
@@ -50,7 +50,7 @@ public:
 
     typedef QList<Operation> OpList;
 
-    explicit Builder(int threadCount = 1, QObject *parent = 0);
+    explicit Builder(int threadCount = 1, bool stopOnError = true, bool trackHeaders = true, QObject *parent = 0);
 
     void start( const OpList&, const QString& sourcedir, const QString& workdir,
                 const QProcessEnvironment& env);
@@ -85,11 +85,13 @@ private:
     QList<Runner*> d_available;
     quint32 d_curGroup;
     quint32 d_done;
-    //CPlusPlus::DependencyTable d_deps;
+    CPlusPlus::DependencyTable d_deps;
+    QString d_title;
     bool d_success;
     bool d_cancel;
     bool d_quitting;
-    bool d_checkHeaders;
+    bool d_stopOnError;
+    bool d_trackHeaders;
 };
 }
 

@@ -22,6 +22,9 @@ Here is a screenshot:
 The current version was successfully compiled and tested on Linux x86 & x86_64, macOS x86_64 & M1, and Windows x86 & AMD64. The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
 Note that there is an issue with LLDB on Mac M1 (see https://github.com/rochus-keller/LeanCreator/issues/1).
 
+The new multi-core BUSY builder is extremely fast. Building LeanCreator on the eight cores of Mac M1 takes less than 10 minutes. Also finding out whether something has to be recompiled is only a split second (compared to several minutes with Qt Creator and make). Also the header dependency tracking is very fast; it is based on the built-in C++ parser used for code indexing. All in all LeanCreator builds much faster than Qt Creator with qmake or cmake even without the Ninja backend; the latter is therefore no longer a top priority.
+
+
 - [x] Basic, stand-alone application with statically linked plugins
 - [x] C++ support
 - [x] rebranding
@@ -30,10 +33,9 @@ Note that there is an issue with LLDB on Mac M1 (see https://github.com/rochus-k
 - [x] GDB, LLDB and CDB support 
 - [x] Extend BUSY file navigation
 - [x] BUSY multi-core parallel builder
-- [ ] BUSY builds with header dependency tracking
+- [x] BUSY builds with header dependency tracking
+- [x] Other convenience features
 - [ ] Wizzards for project and code file creation
-- [ ] Other convenience features
-- [ ] Ninja builds
 
 ### Long term plan
 
@@ -41,6 +43,7 @@ Note that there is an issue with LLDB on Mac M1 (see https://github.com/rochus-k
 - [ ] Lua automation
 - [ ] Designer integration
 - [ ] Oberon+, Verilog and Lola integration
+- [ ] Ninja builds
 
 
 ### No support planned
@@ -70,7 +73,7 @@ Just download, unzip and run; no installation required; it's just a single execu
 
 On Mac the terminal opens when LeanCreator is run, and the menus are only active if the application was in the background one time; to avoid this the application can be included in an application bundle. Also note that the application on Mac must be started via the "open" command from the context menu; otherwise the system refuses to start the app.
 
-NOTE that the Windows versions are compiled with MT using a statically linked C/C++ runtime, so no Microsoft runtime has to be installed. The executable runs even on Windows 7 (Windows XP though doesn't recognize the executable format).
+NOTE that the Windows versions are compiled with MT using a statically linked C/C++ runtime, so no Microsoft runtime has to be installed. The executable runs even on Windows 7.
 
 ### How to build LeanCreator
 

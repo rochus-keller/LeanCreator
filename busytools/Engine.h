@@ -77,7 +77,7 @@ public:
     enum ProductFilter { AllProducts, WithSources, Executable, Compiled };
     QList<int> getAllProducts(int module, ProductFilter = AllProducts, bool onlyActives = false) const;
     QList<int> getAllDecls(int module) const;
-    QStringList getAllSources(int product) const;
+    QStringList getAllSources(int product, bool addGenerated = false) const;
     QStringList getIncludePaths(int product) const;
     QStringList getDefines(int product) const;
     QStringList getCppFlags(int product) const;

@@ -65,7 +65,7 @@ private:
 public:
     Utils::FileNameList filesDependingOn(const Utils::FileName &fileName) const;
     Utils::FileNameList allFilesDependingOnModifieds() const;
-    bool anyNewerDeps(const QString& path, uint ref) const;
+    bool anyNewerDeps(const QString& path, uint ref, QString* reason = 0) const;
 };
 
 } // namespace CPlusPlus

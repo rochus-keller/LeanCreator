@@ -60,8 +60,8 @@ public:
     QVariantMap busyConfiguration() const;
     void setBusyConfiguration(const QVariantMap &config);
 
-    bool dryRun() const;
-    bool keepGoing() const;
+    bool stopOnError() const;
+    bool trackHeaders() const;
     bool showCommandLines() const;
     bool install() const;
     bool cleanInstallRoot() const;
@@ -83,14 +83,16 @@ private slots:
     void handleProcessResultReport(const busy::ProcessResult &result);
 
 private:
+    friend class BusyBuildStepConfigWidget;
+
     void createTaskAndOutput(ProjectExplorer::Task::TaskType type,
                              const QString &message, const QString &file, int line);
 
     void setBuildVariant(const QString &variant);
     QString profile() const;
 
-    void setDryRun(bool dr);
-    void setKeepGoing(bool kg);
+    void setStopOnError(bool dr);
+    void setTrackHeaders(bool kg);
     void setMaxJobs(int jobcount);
     void setShowCommandLines(bool show);
     void setInstall(bool install);
@@ -115,7 +117,6 @@ private:
     bool m_lastWasSuccess;
     ProjectExplorer::IOutputParser *m_parser;
 
-    friend class BusyBuildStepConfigWidget;
 };
 
 namespace Ui { class BusyBuildStepConfigWidget; }
@@ -134,7 +135,7 @@ private slots:
     void updateTargetEdit(const QVariantMap &data);
 
     void changeBuildVariant(int);
-    void changeDryRun(bool dr);
+    void changeStopOnError(bool dr);
     void changeShowCommandLines(bool show);
     void changeKeepGoing(bool kg);
     void changeJobCount(int count);

@@ -387,7 +387,7 @@ bool Engine::visit(BSBeginOp b, BSOpParam p, BSEndOp e, BSForkGroup g, void* dat
     {
         lua_pushcfunction(d_imp->L, bs_visit);
         lua_rawgeti(d_imp->L,prods,i);
-        BSVisitorCtx* ctx = (BSVisitorCtx*)lua_newuserdata(d_imp->L, sizeof(BSVisitorCtx) );
+        BSVisitorCtx* ctx = bs_newctx(d_imp->L);
         ctx->d_data = data;
         ctx->d_begin = b;
         ctx->d_end = e;
@@ -735,7 +735,7 @@ QList<int> Engine::getAllDecls(int module) const
     return res;
 }
 
-QStringList Engine::getAllSources(int product) const
+QStringList Engine::getAllSources(int product, bool addGenerated) const
 {
     QStringList res;
     if( d_imp->ok() && pushInst(product) )
@@ -748,11 +748,9 @@ QStringList Engine::getAllSources(int product) const
         const int absDir = lua_gettop(d_imp->L);
 
         lua_getfield(d_imp->L,decl,"#inst");
-        lua_getfield(d_imp->L,-1,"sources");
-        lua_replace(d_imp->L,-2);
+        const int inst = lua_gettop(d_imp->L);
+        lua_getfield(d_imp->L,inst,"sources");
         const int sources = lua_gettop(d_imp->L);
-
-
         if( !lua_isnil(d_imp->L,sources) )
         {
             const int n = lua_objlen(d_imp->L,sources);
@@ -770,7 +768,28 @@ QStringList Engine::getAllSources(int product) const
                 lua_pop(d_imp->L,1);
             }
         }
-        lua_pop(d_imp->L,3);
+
+        if( addGenerated )
+        {
+            lua_getfield(d_imp->L,inst,"#generated");
+            const int generated = lua_gettop(d_imp->L);
+            const int n = lua_objlen(d_imp->L,generated);
+            for( int i = 1; i <= n; i++ )
+            {
+                lua_rawgeti(d_imp->L,generated,i);
+                const int file = lua_gettop(d_imp->L);
+                if( *lua_tostring(d_imp->L,file) != '/' )
+                {
+                    if( bs_add_path(d_imp->L,absDir,file) == 0 )
+                        lua_replace(d_imp->L,file);
+                }
+                res << QString::fromUtf8( bs_denormalize_path(lua_tostring(d_imp->L,file)) );
+
+                lua_pop(d_imp->L,1);
+            }
+            lua_pop(d_imp->L,1); // generated
+        }
+        lua_pop(d_imp->L,4);
     }
     return res;
 }

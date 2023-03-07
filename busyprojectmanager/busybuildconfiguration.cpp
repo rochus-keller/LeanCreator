@@ -221,7 +221,7 @@ public:
 
     bool dryRun() const {
         if (m_qbsBuildStep)
-            return m_qbsBuildStep->dryRun();
+            return m_qbsBuildStep->stopOnError();
         if (m_qbsCleanStep)
             return m_qbsCleanStep->dryRun();
         return m_qbsInstallStep->dryRun();
@@ -229,7 +229,7 @@ public:
 
     bool keepGoing() const {
         if (m_qbsBuildStep)
-            return m_qbsBuildStep->keepGoing();
+            return m_qbsBuildStep->trackHeaders();
         if (m_qbsCleanStep)
             return m_qbsCleanStep->keepGoing();
         return m_qbsInstallStep->keepGoing();

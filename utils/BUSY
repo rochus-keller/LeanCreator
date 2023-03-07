@@ -73,6 +73,7 @@ let run_moc : Moc {
 		./treeviewcombobox.h
 		./wizard.h
 		./wizardpage.h
+        ./fadingindicator.cpp
 	]
 }
 

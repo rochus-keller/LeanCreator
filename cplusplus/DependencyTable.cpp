@@ -71,13 +71,13 @@ Utils::FileNameList DependencyTable::allFilesDependingOnModifieds() const
     return res;
 }
 
-bool DependencyTable::anyNewerDeps(const QString& path, uint ref) const
+bool DependencyTable::anyNewerDeps(const QString& path, uint ref, QString* reason) const
 {
-    ;
     int index = fileIndex.value(Utils::FileName::fromString(path), -1);
-    if(index == -1)
+    if(index == -1 || index >= includeMap.size() )
         return false;
 
+#if 0
     QList<int> toCheck = includes.value(index);
     for( int i = 0; i < toCheck.size(); i++ )
     {
@@ -85,6 +85,18 @@ bool DependencyTable::anyNewerDeps(const QString& path, uint ref) const
         if( f.modified > ref )
             return true;
     }
+#else
+    const QBitArray &bits = includeMap.at(index);
+    for( int j = 0; j < files.size(); j++ )
+    {
+        if( j < bits.size() && bits.testBit(j) && files[j].modified > ref )
+        {
+            if( reason )
+                *reason = files[j].name.toString();
+            return true;
+        }
+    }
+#endif
     return false;
 }
 

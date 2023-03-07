@@ -504,7 +504,7 @@ static QStringList findHeaders(const QStringList& files )
     return headers;
 }
 
-QStringList Product::allFilePaths(bool addHeaders) const
+QStringList Product::allFilePaths(bool addHeaders, bool addGenerated) const
 {
     if( !isValid() )
         return QStringList();
@@ -594,7 +594,8 @@ BuildJob* Project::buildAllProducts(const BuildOptions& options, QObject* jobOwn
 
     d_imp->d_errs.d_errs.clear();
 
-    return new BuildJob(jobOwner,d_imp->d_eng.data(),d_imp->env, d_imp->params.targets, options.maxJobCount());
+    return new BuildJob(jobOwner,d_imp->d_eng.data(),d_imp->env, d_imp->params.targets,
+                        options.maxJobCount(), options.d_stopOnError, options.d_trackHeaders);
 }
 
 BuildJob*Project::buildSomeProducts(const QList<Product>& products, const BuildOptions& options,
@@ -743,7 +744,7 @@ QString ILogSink::logLevelTag(LoggerLevel level)
 class BuildJob::Imp : public Builder
 {
 public:
-    Imp(int count):Builder(count){}
+    Imp(int count, bool stopOnErr, bool trackHdr):Builder(count,stopOnErr,trackHdr){}
 
     QProcessEnvironment env;
     QString workdir;
@@ -782,6 +783,9 @@ static int BuildJobBeginOp(BSBuildOperation op, const char* command, int toolcha
         ctx->group++;
     ctx->op.group = ctx->group;
 
+    if( op == BS_EnteringProduct )
+        ctx->ops << ctx->op; // no end, so do it here
+
     return 0;
 }
 
@@ -818,7 +822,7 @@ static void BuildJobForkGroup(int n, void* data)
 }
 
 BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
-                   const QByteArrayList& targets, int count)
+                   const QByteArrayList& targets, int count, bool stopOnErr, bool trackHdr)
     :AbstractJob(owner)
 {
     eng->createBuildDirs();
@@ -856,13 +860,16 @@ BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
         case BS_Copy:
             prefix = "COPY: ";
             break;
+        case BS_EnteringProduct:
+            prefix = "### running " + ctx.ops[i].cmd + ": ";
+            break;
         default:
             prefix = "BEGIN OP: " + QByteArray::number(ctx.ops[i].op) + " ";
             break;
         }
         qDebug() << i << prefix.constData() << ctx.ops[i].group << ctx.ops[i].getOutfile();
 
-#if 1
+#if 0
         for( int j = 0; j < ctx.ops[i].params.size(); j++ )
         {
             switch(ctx.ops[i].params[j].kind)
@@ -902,7 +909,7 @@ BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
     }
 #endif
 
-    d_imp = new Imp(count);
+    d_imp = new Imp(count, stopOnErr, trackHdr);
     d_imp->env = env;
     const int globals = eng->getGlobals();
     d_imp->workdir = eng->getPath(globals,"root_build_dir");

@@ -41,9 +41,7 @@ namespace Internal {
 
 class FadingIndicatorPrivate : public QWidget
 {
-#ifndef QT_NO_ANIMATION
     Q_OBJECT
-#endif
 public:
     FadingIndicatorPrivate(QWidget *parent, FadingIndicator::TextSize size)
         : QWidget(parent)
@@ -90,9 +88,7 @@ public:
     {
         show();
         raise();
-#ifndef QT_NO_ANIMATION
         QTimer::singleShot(ms, this, SLOT(runInternal()));
-#endif
     }
 
 protected:
@@ -158,4 +154,4 @@ void showPixmap(QWidget *parent, const QString &pixmap)
 } // FadingIndicator
 } // Utils
 
-//#include "fadingindicator.moc"
+#include "fadingindicator.moc"

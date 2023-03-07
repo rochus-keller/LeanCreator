@@ -7,7 +7,7 @@ let lib_conf : Config {
 	.include_dirs += [ .. . ]
 	.defines += [ 
 	 ]
-	#.configs += ^cpp11conf # required for DependencyTable and CppModelManager includes
+	.configs += ^cpp11conf # required for DependencyTable and CppModelManager includes
 }
 
 let conf * : Config {

@@ -275,6 +275,13 @@ BusyInstallStepConfigWidget::BusyInstallStepConfigWidget(BusyInstallStep *step) 
     m_ui->installRootChooser->setExpectedKind(Utils::PathChooser::Directory);
     m_ui->installRootChooser->setHistoryCompleter(QLatin1String("Busy.InstallRoot.History"));
 
+    m_ui->flagsLabel->hide();
+    m_ui->dryRunCheckBox->hide();
+    m_ui->keepGoingCheckBox->hide();
+    m_ui->removeFirstCheckBox->hide();
+    m_ui->commandLineKeyLabel->hide();
+    m_ui->commandLineTextEdit->hide();
+
     connect(m_ui->installRootChooser, SIGNAL(rawPathChanged(QString)), this,
             SLOT(changeInstallRoot()));
     connect(m_ui->removeFirstCheckBox, SIGNAL(toggled(bool)), this, SLOT(changeRemoveFirst(bool)));

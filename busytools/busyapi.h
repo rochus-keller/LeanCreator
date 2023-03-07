@@ -113,7 +113,7 @@ enum CommandEchoMode {
 class BuildOptions
 {
 public:
-    BuildOptions():d_maxJobs(0) {}
+    BuildOptions():d_maxJobs(0), d_stopOnError(true), d_trackHeaders(true) {}
 
     void setFilesToConsider(const QStringList &files) {}
 
@@ -125,11 +125,8 @@ public:
     int maxJobCount() const { return d_maxJobs; }
     void setMaxJobCount(int jobCount) { d_maxJobs = jobCount; }
 
-    bool dryRun() const { return false; }
-    void setDryRun(bool dryRun) {}
-
-    bool keepGoing() const { return false; }
-    void setKeepGoing(bool keepGoing) {}
+    bool d_stopOnError;
+    bool d_trackHeaders;
 
     CommandEchoMode echoMode() const { return CommandEchoModeSilent; }
     void setEchoMode(CommandEchoMode echoMode) {}
@@ -272,7 +269,7 @@ public:
     QVariantMap properties() const;
     bool isEnabled() const;
     bool isRunnable() const;
-    QStringList allFilePaths(bool addHeaders = false) const;
+    QStringList allFilePaths(bool addHeaders = false, bool addGenerated = false) const;
     PropertyMap buildConfig() const;
     QString executable(bool synthIfEmpty = true) const;
 private:
@@ -386,7 +383,8 @@ class BuildJob : public AbstractJob
 {
     Q_OBJECT
 public:
-    BuildJob(QObject* owner, Engine*, const QProcessEnvironment&, const QByteArrayList& targets, int count);
+    BuildJob(QObject* owner, Engine*, const QProcessEnvironment&, const QByteArrayList& targets,
+             int count, bool stopOnErr, bool trackHdr);
     ~BuildJob();
 
     void start();

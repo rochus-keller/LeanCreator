@@ -259,6 +259,13 @@ BusyCleanStepConfigWidget::BusyCleanStepConfigWidget(BusyCleanStep *step) :
     m_ui = new Ui::BusyCleanStepConfigWidget;
     m_ui->setupUi(this);
 
+    m_ui->flagsLabel->hide();
+    m_ui->cleanAllCheckBox->hide();
+    m_ui->dryRunCheckBox->hide();
+    m_ui->keepGoingCheckBox->hide();
+    m_ui->commandLineKeyLabel->hide();
+    m_ui->commandLineTextEdit->hide();
+
     connect(m_ui->cleanAllCheckBox, SIGNAL(toggled(bool)),
             this, SLOT(changeCleanAll(bool)));
     connect(m_ui->dryRunCheckBox, SIGNAL(toggled(bool)), this, SLOT(changeDryRun(bool)));
