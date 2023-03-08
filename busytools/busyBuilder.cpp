@@ -568,8 +568,13 @@ bool Builder::isDue(const Builder::Operation& op)
         return true; // cause an error message by the command
     QFileInfo outinfo( QString::fromUtf8(outfile) );
     if( !outinfo.exists() )
+    {
+        //if( op.op == BS_Compile || op.op == BS_LinkDll || op.op == BS_LinkExe || op.op == BS_LinkLib )
+        //    qDebug() << "compiled or linked because outfile not exists:" << outinfo.absoluteFilePath();
         return true;
-    const QDateTime ref = outinfo.lastModified();
+    }
+
+    const uint ref = outinfo.lastModified().toTime_t();
 
     const QByteArrayList infiles = op.getInFiles();
     foreach( const QByteArray& infile, infiles )
@@ -577,14 +582,18 @@ bool Builder::isDue(const Builder::Operation& op)
         QFileInfo info( QString::fromUtf8(infile) );
         if( infile.isEmpty() || !info.exists() )
             return true; // cause an error message by the command
-        if( info.lastModified() > ref )
+        if( info.lastModified().toTime_t() > ref )
+        {
+            //if( op.op == BS_Compile || op.op == BS_LinkDll || op.op == BS_LinkExe || op.op == BS_LinkLib )
+            //    qDebug() << "compiled or linked" << outinfo.absoluteFilePath() << "because of younger input" << info.fileName();
             return true; // at least one input is newer than existing output
+        }
         QString reason;
         if( d_trackHeaders && op.op == BS_Compile &&
-                d_deps.anyNewerDeps(info.absoluteFilePath(),ref.toTime_t(), &reason) )
+                d_deps.anyNewerDeps(info.absoluteFilePath(),ref, &reason) )
         {
             // also check with include headers (possibly restrict to sourcedir)
-            qDebug() << "compiled" << info.fileName() << "because of modified header" << reason; // TEST
+            // qDebug() << "compiled" << info.fileName() << "because of modified header" << reason; // TEST
             return true;
         }
     }

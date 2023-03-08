@@ -756,10 +756,11 @@ struct BuildJobVisitorContext
 {
     Builder::OpList ops;
     Builder::Operation op;
-    QHash<const char*,QByteArray> strings;
     quint32 group;
     bool inGroup;
     BuildJobVisitorContext():group(0),inGroup(false){}
+#if 0
+    QHash<const char*,QByteArray> strings;
     QByteArray toSym(const char* str)
     {
         QByteArray& sym = strings[str];
@@ -767,6 +768,19 @@ struct BuildJobVisitorContext
             sym = str;
         return sym;
     }
+#else
+    QHash<QByteArray,QByteArray> strings;
+    QByteArray toSym(const char* str)
+    {
+        // str pointer is not a reliable identity for the string;
+        // it can change over the call of bsvisitor for large projects
+        QByteArray tmp(str);
+        QByteArray& sym = strings[tmp];
+        if( sym.isEmpty() )
+            sym = tmp;
+        return sym;
+    }
+#endif
 };
 
 extern "C" {
@@ -821,21 +835,16 @@ static void BuildJobForkGroup(int n, void* data)
 }
 }
 
-BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
-                   const QByteArrayList& targets, int count, bool stopOnErr, bool trackHdr)
-    :AbstractJob(owner)
+static void dumpOps( const Builder::OpList& ops )
 {
-    eng->createBuildDirs();
+    QFile f( QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("ops.log") );
+    f.open(QIODevice::WriteOnly);
+    QTextStream out(&f);
 
-    BuildJobVisitorContext ctx;
-    const bool res = eng->visit(BuildJobBeginOp,BuildJobOpParam,BuildJobEndOp,BuildJobForkGroup, &ctx, targets);
-
-#if 0
-    qDebug() << ctx.ops.count() << ctx.strings.count() << ctx.group << res;
-    for( int i = 0; i < ctx.ops.size(); i++ )
+    for( int i = 0; i < ops.size(); i++ )
     {
         QByteArray prefix;
-        switch(ctx.ops[i].op)
+        switch(ops[i].op)
         {
         case BS_Compile:
             prefix = "COMPILE: ";
@@ -861,18 +870,18 @@ BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
             prefix = "COPY: ";
             break;
         case BS_EnteringProduct:
-            prefix = "### running " + ctx.ops[i].cmd + ": ";
+            prefix = "### running " + ops[i].cmd + ": ";
             break;
         default:
-            prefix = "BEGIN OP: " + QByteArray::number(ctx.ops[i].op) + " ";
+            prefix = "BEGIN OP: " + QByteArray::number(ops[i].op) + " ";
             break;
         }
-        qDebug() << i << prefix.constData() << ctx.ops[i].group << ctx.ops[i].getOutfile();
+        out << i << " " << prefix.constData() << " " << ops[i].group << " " << ops[i].getOutfile() << endl;
 
-#if 0
-        for( int j = 0; j < ctx.ops[i].params.size(); j++ )
+#if 1
+        for( int j = 0; j < ops[i].params.size(); j++ )
         {
-            switch(ctx.ops[i].params[j].kind)
+            switch(ops[i].params[j].kind)
             {
             case BS_infile:
                 prefix = "  INFILE: ";
@@ -902,11 +911,23 @@ BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
                 prefix = "  PARAM: ";
                 break;
             }
-            qDebug() << prefix.constData() << ctx.ops[i].params[j].value.constData();
+            out << prefix.constData() << " " << ops[i].params[j].value.constData() << endl;
         }
 #endif
-
     }
+}
+
+BuildJob::BuildJob(QObject* owner, Engine* eng, const QProcessEnvironment& env,
+                   const QByteArrayList& targets, int count, bool stopOnErr, bool trackHdr)
+    :AbstractJob(owner)
+{
+    eng->createBuildDirs();
+
+    BuildJobVisitorContext ctx;
+    const bool res = eng->visit(BuildJobBeginOp,BuildJobOpParam,BuildJobEndOp,BuildJobForkGroup, &ctx, targets);
+
+#if 0
+    dumpOps(ctx.ops);
 #endif
 
     d_imp = new Imp(count, stopOnErr, trackHdr);

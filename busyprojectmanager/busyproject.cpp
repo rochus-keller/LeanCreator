@@ -102,7 +102,8 @@ BusyProject::BusyProject(BusyManager *manager, const QString &fileName) :
     m_fileName(fileName),
     m_rootProjectNode(0),
     m_busyUpdateFutureInterface(0),
-    m_currentBc(0)
+    m_currentBc(0),
+    d_lastParseOk(false)
 {
     if( fileName.endsWith("BUSY") || fileName.endsWith("BUSY.busy") )
         m_projectName = QFileInfo(fileName).absoluteDir().dirName();
@@ -335,6 +336,12 @@ busy::BuildJob *BusyProject::build(const busy::BuildOptions &opts, QStringList p
     QTC_ASSERT(busyProject().isValid(), return 0);
     QTC_ASSERT(!isParsing(), return 0);
 
+    if( m_parsingDelay.isActive() && !parseCurrentBuildConfiguration() )
+        return 0; // we cannot build since the config has errors
+
+    if( !d_lastParseOk )
+        return 0; // don't build if config has errors
+
     busy::BuildOptions opts2 = opts;
 
     if (productNames.isEmpty())
@@ -486,15 +493,15 @@ void BusyProject::delayParsing()
     m_parsingDelay.start();
 }
 
-void BusyProject::parseCurrentBuildConfiguration()
+bool BusyProject::parseCurrentBuildConfiguration()
 {
     if (!activeTarget())
-        return;
+        return false;
     BusyBuildConfiguration *bc = qobject_cast<BusyBuildConfiguration *>(activeTarget()->activeBuildConfiguration());
     if (!bc)
-        return;
+        return false;
 
-    parse(bc->busyConfiguration(), bc->environment(), bc->buildDirectory().toString());
+    return parse(bc->busyConfiguration(), bc->environment(), bc->buildDirectory().toString());
 }
 
 void BusyProject::updateAfterBuild()
@@ -548,7 +555,7 @@ QString BusyProject::uniqueProductName(const busy::Product &product)
     return name;
 }
 
-void BusyProject::parse(const QVariantMap &config, const Environment &env, const QString &dir)
+bool BusyProject::parse(const QVariantMap &config, const Environment &env, const QString &dir)
 {
     prepareForParsing();
 
@@ -594,10 +601,11 @@ void BusyProject::parse(const QVariantMap &config, const Environment &env, const
     }else
         params.env = env.toProcessEnvironment();
 
-    const bool res = m_project.parse(params, BusyManager::logSink());
+    d_lastParseOk = m_project.parse(params, BusyManager::logSink());
 
     emit projectParsingStarted();
-    handleBusyParsingDone(res);
+    handleBusyParsingDone(d_lastParseOk);
+    return d_lastParseOk;
 }
 
 void BusyProject::prepareForParsing()

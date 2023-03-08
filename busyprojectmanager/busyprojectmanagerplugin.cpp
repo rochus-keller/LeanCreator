@@ -129,13 +129,13 @@ bool BusyProjectManagerPlugin::initialize(const QStringList &arguments, QString 
     //register actions
     Core::Command *command;
 
-    m_reparseBusy = new QAction(tr("Reparse Busy"), this);
+    m_reparseBusy = new QAction(tr("Reparse BUSY"), this);
     command = Core::ActionManager::registerAction(m_reparseBusy, Constants::ACTION_REPARSE_BUSY, projectContext);
     command->setAttribute(Core::Command::CA_Hide);
     mbuild->addAction(command, ProjectExplorer::Constants::G_BUILD_BUILD);
     connect(m_reparseBusy, SIGNAL(triggered()), this, SLOT(reparseCurrentProject()));
 
-    m_reparseBusyCtx = new QAction(tr("Reparse Busy"), this);
+    m_reparseBusyCtx = new QAction(tr("Reparse BUSY"), this);
     command = Core::ActionManager::registerAction(m_reparseBusyCtx, Constants::ACTION_REPARSE_BUSY_CONTEXT, projectContext);
     command->setAttribute(Core::Command::CA_Hide);
     mproject->addAction(command, ProjectExplorer::Constants::G_PROJECT_BUILD);

@@ -82,7 +82,7 @@ public:
     QString profileForTarget(const ProjectExplorer::Target *t) const;
     bool isParsing() const;
     bool hasParseResult() const;
-    void parseCurrentBuildConfiguration();
+    bool parseCurrentBuildConfiguration();
     void updateAfterBuild();
 
     busy::Module busyModule() const;
@@ -90,6 +90,8 @@ public:
 
     bool needsSpecialDeployment() const;
     void generateErrors(const busy::ErrorInfo &e);
+
+    bool lastParseOk() const { return d_lastParseOk; }
 
     static QString productDisplayName(const busy::Project& project,
                                       const busy::Product &product);
@@ -114,7 +116,7 @@ private slots:
 private:
     RestoreResult fromMap(const QVariantMap &map, QString *errorMessage);
 
-    void parse(const QVariantMap &config, const Utils::Environment &env, const QString &dir);
+    bool parse(const QVariantMap &config, const Utils::Environment &env, const QString &dir);
 
     void prepareForParsing();
     void updateDocuments(const QSet<QString> &files);
@@ -142,6 +144,7 @@ private:
     BusyBuildConfiguration *m_currentBc;
 
     QTimer m_parsingDelay;
+    bool d_lastParseOk;
 };
 
 } // namespace Internal

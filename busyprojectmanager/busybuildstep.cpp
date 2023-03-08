@@ -124,13 +124,7 @@ void BusyBuildStep::run(QFutureInterface<bool> &fi)
 {
     m_fi = &fi;
 
-#if 0
-    // We need a pre-build parsing step in order not to lose project file changes done
-    // right before building (but before the delay has elapsed).
-    parseProject();
-#else
     build();
-#endif
 }
 
 ProjectExplorer::BuildStepConfigWidget *BusyBuildStep::createConfigWidget()
@@ -392,8 +386,12 @@ void BusyBuildStep::build()
     options.setFilesToConsider(m_changedFiles);
     options.setActiveFileTags(m_activeFileTags);
 
+    m_job = 0;
     QString error;
-    m_job = busyProject()->build(options, m_products, error);
+    if( busyProject()->lastParseOk() )
+        m_job = busyProject()->build(options, m_products, error);
+    else
+        error = "cannot start build with BUSY errors; reparse and fix the BUSY files";
     if (!m_job) {
         emit addOutput(error, ErrorMessageOutput);
         m_fi->reportResult(false);
