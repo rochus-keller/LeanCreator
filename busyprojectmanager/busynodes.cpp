@@ -443,29 +443,6 @@ ProjectExplorer::FileType BusyGroupNode::fileType(const busy::Product &product,
             return ProjectExplorer::UnknownFileType;
     }else
         return ProjectExplorer::SourceType;
-
-#if 0
-    const busy::SourceArtifact artifact = Utils::findOrDefault(product.allFilePaths(),
-            [&fileNode](const QString &sa) { return sa == fileNode.path(); });
-    QTC_ASSERT(artifact.isValid() || !fileNode.isFile(),
-               qDebug() << fileNode.path() << product.name(); return ProjectExplorer::UnknownFileType);
-    if (!artifact.isValid())
-        return ProjectExplorer::UnknownFileType;
-
-    if (artifact.fileTags().contains(QLatin1String("c"))
-            || artifact.fileTags().contains(QLatin1String("cpp"))
-            || artifact.fileTags().contains(QLatin1String("objc"))
-            || artifact.fileTags().contains(QLatin1String("objcpp"))) {
-        return ProjectExplorer::SourceType;
-    }
-    if (artifact.fileTags().contains(QLatin1String("hpp")))
-        return ProjectExplorer::HeaderType;
-    if (artifact.fileTags().contains(QLatin1String("qrc")))
-        return ProjectExplorer::ResourceType;
-    if (artifact.fileTags().contains(QLatin1String("ui")))
-        return ProjectExplorer::FormType;
-    return ProjectExplorer::UnknownFileType;
-#endif
 }
 
 #if 0
@@ -698,7 +675,7 @@ void BusyProductNode::setBusyProductData(const busy::Project& project, const bus
     QList<ProjectExplorer::ProjectNode *> toAdd;
     QList<ProjectExplorer::ProjectNode *> toRemove = subProjectNodes();
 
-    BusyGroupNode::setupFiles(this, prd, prd.allFilePaths(), productPath, updateExisting);
+    BusyGroupNode::setupFiles(this, prd, prd.allFilePaths(prd.isCompiled()), productPath, updateExisting);
 
     addProjectNodes(toAdd);
     removeProjectNodes(toRemove);

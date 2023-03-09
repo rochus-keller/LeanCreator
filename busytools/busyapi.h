@@ -269,6 +269,7 @@ public:
     QVariantMap properties() const;
     bool isEnabled() const;
     bool isRunnable() const;
+    bool isCompiled() const;
     QStringList allFilePaths(bool addHeaders = false, bool addGenerated = false) const;
     PropertyMap buildConfig() const;
     QString executable(bool synthIfEmpty = true) const;

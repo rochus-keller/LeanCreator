@@ -19,8 +19,11 @@ Here is a screenshot:
 
 ### Planned or work-in-progress features
 
-The current version was successfully compiled and tested on Linux x86 & x86_64, macOS x86_64 & M1, and Windows x86 & AMD64. The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
+The current version was successfully compiled and tested on Linux x86 & x86_64 (GCC), macOS x86_64 & M1 (CLANG), and Windows x86 & AMD64 (MSVC & MinGW). The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
+
 Note that there is an issue with LLDB on Mac M1 (see https://github.com/rochus-keller/LeanCreator/issues/1).
+
+On Windows LeanCreator was successfully tested with MSVC 2013, 2015 and 2022 (with CDB), and also with [MinGW 12.2.0 i686](https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/i686-12.2.0-release-win32-dwarf-msvcrt-rt_v10-rev2.7z) (with GDB). Debugging seems to even work better than with MSVC, where CDB is very slow on symbol load. But no success yet with Clang or LLDB on Windows.
 
 The new multi-core BUSY builder is extremely fast. Building LeanCreator on the eight cores of Mac M1 takes less than 10 minutes. Also finding out whether something has to be recompiled is only a split second (compared to several minutes with Qt Creator and make). Also the header dependency tracking is very fast; it is based on the built-in C++ parser used for code indexing. All in all LeanCreator builds much faster than Qt Creator with qmake or cmake even without the Ninja backend; the latter is therefore no longer a top priority.
 

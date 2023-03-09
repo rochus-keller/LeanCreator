@@ -300,7 +300,8 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         d_imp->params.cpu = "ppc";
         break;
     default:
-        err.d_msg = "architecture not supported: " + ProjectExplorer::Abi::toString(in.abi.architecture());
+        err.d_msg = "toolchain architecture not supported: " + ProjectExplorer::Abi::toString(in.abi.architecture());
+        d_imp->d_errs.d_errs.append(err);
         return false;
     }
 
@@ -322,7 +323,8 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         d_imp->params.os = "win32";
         break;
     default:
-        err.d_msg = "operating system not supported: " + ProjectExplorer::Abi::toString(in.abi.os());
+        err.d_msg = "toolchain operating system not supported: " + ProjectExplorer::Abi::toString(in.abi.os());
+        d_imp->d_errs.d_errs.append(err);
         return false;
     }
 
@@ -341,7 +343,8 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         d_imp->params.wordsize = "16";
         break;
     default:
-        err.d_msg = "word width not supported: " + ProjectExplorer::Abi::toString(in.abi.wordWidth());
+        err.d_msg = "toolchain word width not supported: " + ProjectExplorer::Abi::toString(in.abi.wordWidth());
+        d_imp->d_errs.d_errs.append(err);
         return false;
     }
 
@@ -474,6 +477,13 @@ bool Product::isRunnable() const
     return d_imp->d_eng->isExecutable(d_imp->d_id);
 }
 
+bool Product::isCompiled() const
+{
+    if( !isValid() )
+        return false;
+    return d_imp->d_eng->isClass(d_imp->d_id,"CompiledProduct");
+}
+
 static QStringList findHeaders(const QStringList& files )
 {
     QStringList headers;
@@ -508,7 +518,7 @@ QStringList Product::allFilePaths(bool addHeaders, bool addGenerated) const
 {
     if( !isValid() )
         return QStringList();
-    QStringList sources = d_imp->d_eng->getAllSources(d_imp->d_id);
+    QStringList sources = d_imp->d_eng->getAllSources(d_imp->d_id, addGenerated);
     if( addHeaders )
         return findHeaders(sources) + sources;
     else

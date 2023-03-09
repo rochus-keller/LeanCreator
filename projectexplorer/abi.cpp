@@ -38,6 +38,7 @@
 #include <QString>
 #include <QStringList>
 #include <QSysInfo>
+#include <QRegularExpression>
 
 /*!
     \class ProjectExplorer::Abi
@@ -364,21 +365,8 @@ Abi::Abi(const QString &abiString) :
 {
     QStringList abiParts = abiString.split(QLatin1Char('-'));
     if (abiParts.count() >= 1) {
-        if (abiParts.at(0) == QLatin1String("unknown"))
-            m_architecture = UnknownArchitecture;
-        else if (abiParts.at(0) == QLatin1String("arm"))
-            m_architecture = ArmArchitecture;
-        else if (abiParts.at(0) == QLatin1String("x86"))
-            m_architecture = X86Architecture;
-        else if (abiParts.at(0) == QLatin1String("mips"))
-            m_architecture = MipsArchitecture;
-        else if (abiParts.at(0) == QLatin1String("ppc"))
-            m_architecture = PowerPCArchitecture;
-        else if (abiParts.at(0) == QLatin1String("itanium"))
-            m_architecture = ItaniumArchitecture;
-        else if (abiParts.at(0) == QLatin1String("sh"))
-            m_architecture = ShArchitecture;
-        else
+        m_architecture = architectureFromString(abiParts.at(0));
+        if( m_architecture == UnknownArchitecture )
             return;
     }
 
@@ -397,6 +385,8 @@ Abi::Abi(const QString &abiString) :
             m_os = WindowsOS;
         else if (abiParts.at(1) == QLatin1String("vxworks"))
             m_os = VxWorks;
+        else if (abiParts.at(1) == QLatin1String("baremetal"))
+            m_os = BareMetalOS;
         else
             return;
     }
@@ -474,81 +464,167 @@ Abi::Abi(const QString &abiString) :
 
 Abi Abi::abiFromTargetTriplet(const QString &triple)
 {
-    QString machine = triple.toLower();
+    const QString machine = triple.toLower();
     if (machine.isEmpty())
         return Abi();
 
-    QStringList parts = machine.split(QRegExp(QLatin1String("[ /-]")));
+    const QStringList parts = machine.split(QRegularExpression("[ /-]"));
 
-    Abi::Architecture arch = Abi::UnknownArchitecture;
-    Abi::OS os = Abi::UnknownOS;
-    Abi::OSFlavor flavor = Abi::UnknownFlavor;
-    Abi::BinaryFormat format = Abi::UnknownFormat;
-    int width = 0;
+    Architecture arch = UnknownArchitecture;
+    OS os = UnknownOS;
+    OSFlavor flavor = UnknownFlavor;
+    BinaryFormat format = UnknownFormat;
+    unsigned char width = 0;
     int unknownCount = 0;
 
-    foreach (const QString &p, parts) {
-        if (p == QLatin1String("unknown") || p == QLatin1String("pc") || p == QLatin1String("none")
-                || p == QLatin1String("gnu") || p == QLatin1String("uclibc")
-                || p == QLatin1String("86_64") || p == QLatin1String("redhat")
-                || p == QLatin1String("gnueabi") || p == QLatin1String("w64")) {
+    for (const QString &p : parts) {
+        if (p == "unknown" || p == "pc"
+                || p == "gnu" || p == "uclibc"
+                || p == "86_64" || p == "redhat"
+                || p == "w64") {
             continue;
-        } else if (p == QLatin1String("i386") || p == QLatin1String("i486") || p == QLatin1String("i586")
-                   || p == QLatin1String("i686") || p == QLatin1String("x86")) {
-            arch = Abi::X86Architecture;
+        } else if (p == "i386" || p == "i486" || p == "i586"
+                   || p == "i686" || p == "x86") {
+            arch = X86Architecture;
             width = 32;
-        } else if (p.startsWith(QLatin1String("arm"))) {
-            arch = Abi::ArmArchitecture;
-            width = p.contains(QLatin1String("64")) ? 64 : 32;
-        } else if (p.startsWith(QLatin1String("mips"))) {
-            arch = Abi::MipsArchitecture;
-            width = p.contains(QLatin1String("64")) ? 64 : 32;
-        } else if (p == QLatin1String("x86_64") || p == QLatin1String("amd64")) {
-            arch = Abi::X86Architecture;
-            width = 64;
-        } else if (p == QLatin1String("powerpc64")) {
-            arch = Abi::PowerPCArchitecture;
-            width = 64;
-        } else if (p == QLatin1String("powerpc")) {
-            arch = Abi::PowerPCArchitecture;
+        } else if (p == "xtensa") {
+            arch = XtensaArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
             width = 32;
-        } else if (p == QLatin1String("linux") || p == QLatin1String("linux6e")) {
-            os = Abi::LinuxOS;
-            if (flavor == Abi::UnknownFlavor)
-                flavor = Abi::GenericLinuxFlavor;
-            format = Abi::ElfFormat;
-        } else if (p == QLatin1String("android")) {
-            flavor = Abi::AndroidLinuxFlavor;
-        } else if (p == QLatin1String("androideabi")) {
-            flavor = Abi::AndroidLinuxFlavor;
-        } else if (p.startsWith(QLatin1String("freebsd"))) {
-            os = Abi::BsdOS;
-            if (flavor == Abi::UnknownFlavor)
-                flavor = Abi::FreeBsdFlavor;
-            format = Abi::ElfFormat;
-        } else if (p == QLatin1String("mingw32") || p == QLatin1String("win32")
-                   || p == QLatin1String("mingw32msvc") || p == QLatin1String("msys")
-                   || p == QLatin1String("cygwin")) {
-            arch = Abi::X86Architecture;
-            os = Abi::WindowsOS;
-            flavor = Abi::WindowsMSysFlavor;
-            format = Abi::PEFormat;
-        } else if (p == QLatin1String("apple")) {
-            os = Abi::MacOS;
-            flavor = Abi::GenericMacFlavor;
-            format = Abi::MachOFormat;
-        } else if (p == QLatin1String("darwin10")) {
+        } else if (p.startsWith("arm")) {
+            arch = ArmArchitecture;
+            width = p.contains("64") ? 64 : 32;
+        } else if (p.startsWith("aarch64")) {
+            arch = ArmArchitecture;
             width = 64;
-        } else if (p == QLatin1String("darwin9")) {
+        } else if (p == "avr") {
+            arch = AvrArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 16;
+        } else if (p == "avr32") {
+            arch = Avr32Architecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
             width = 32;
-        } else if (p == QLatin1String("gnueabi")) {
-            format = Abi::ElfFormat;
-        } else if (p == QLatin1String("wrs")) {
+        } else if (p == "cr16") {
+            arch = CR16Architecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            // Note that GCC macro returns 32-bit value for this architecture.
+            width = 32;
+        } else if (p == "msp430") {
+            arch = Msp430Architecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 16;
+        } else if (p == "rl78") {
+            arch = Rl78Architecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 16;
+        } else if (p == "rx") {
+            arch = RxArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 32;
+        } else if (p == "sh") {
+            arch = ShArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 32;
+        } else if (p == "v850") {
+            arch = V850Architecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 32;
+        } else if (p == "m68k") {
+            arch = M68KArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 16;
+        } else if (p == "m32c") {
+            arch = M32CArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 16;
+        } else if (p == "m32r") {
+            arch = M32RArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = 32;
+        } else if (p.startsWith("riscv")) {
+            arch = RiscVArchitecture;
+            os = BareMetalOS;
+            flavor = UnknownFlavor;
+            format = ElfFormat;
+            width = p.contains("64") ? 64 : 32;
+        } else if (p.startsWith("mips")) {
+            arch = MipsArchitecture;
+            width = p.contains("64") ? 64 : 32;
+        } else if (p == "x86_64" || p == "amd64") {
+            arch = X86Architecture;
+            width = 64;
+        } else if (p == "powerpc64") {
+            arch = PowerPCArchitecture;
+            width = 64;
+        } else if (p == "powerpc") {
+            arch = PowerPCArchitecture;
+            width = 32;
+        } else if (p == "linux" || p == "linux6e") {
+            os = LinuxOS;
+            if (flavor == UnknownFlavor)
+                flavor = GenericLinuxFlavor;
+            format = ElfFormat;
+        } else if (p == "android" || p == "androideabi") {
+            flavor = AndroidLinuxFlavor;
+        } else if (p.startsWith("freebsd")) {
+            os = BsdOS;
+            if (flavor == UnknownFlavor)
+                flavor = FreeBsdFlavor;
+            format = ElfFormat;
+        } else if (p.startsWith("openbsd")) {
+            os = BsdOS;
+            if (flavor == UnknownFlavor)
+                flavor = OpenBsdFlavor;
+            format = ElfFormat;
+        } else if (p == "mingw32" || p == "win32"
+                   || p == "mingw32msvc" || p == "msys"
+                   || p == "cygwin" || p == "windows") {
+            if (arch == UnknownArchitecture)
+                arch = X86Architecture;
+            os = WindowsOS;
+            flavor = WindowsMSysFlavor;
+            format = PEFormat;
+        } else if (p == "apple") {
+            os = MacOS;
+            flavor = GenericMacFlavor;
+            format = MachOFormat;
+        } else if (p == "darwin10") {
+            width = 64;
+        } else if (p == "darwin9") {
+            width = 32;
+        } else if (p == "gnueabi" || p == "elf") {
+            format = ElfFormat;
+        } else if (p == "wrs") {
             continue;
-        } else if (p == QLatin1String("vxworks")) {
-            os = Abi::VxWorks;
-            flavor = Abi::VxWorksFlavor;
-            format = Abi::ElfFormat;
+        } else if (p == "vxworks") {
+            os = VxWorks;
+            flavor = VxWorksFlavor;
+            format = ElfFormat;
         } else {
             ++unknownCount;
         }
@@ -629,8 +705,18 @@ QString Abi::toString(const Architecture &a)
     switch (a) {
     case ArmArchitecture:
         return QLatin1String("arm");
+    case AvrArchitecture:
+        return QLatin1String("avr");
+    case Avr32Architecture:
+        return QLatin1String("avr32");
+    case XtensaArchitecture:
+        return QLatin1String("xtensa");
     case X86Architecture:
         return QLatin1String("x86");
+    case Mcs51Architecture:
+        return QLatin1String("mcs51");
+    case Mcs251Architecture:
+        return QLatin1String("mcs251");
     case MipsArchitecture:
         return QLatin1String("mips");
     case PowerPCArchitecture:
@@ -639,7 +725,40 @@ QString Abi::toString(const Architecture &a)
         return QLatin1String("itanium");
     case ShArchitecture:
         return QLatin1String("sh");
-    case UnknownArchitecture: // fall through!
+    case AsmJsArchitecture:
+        return QLatin1String("asmjs");
+    case Stm8Architecture:
+        return QLatin1String("stm8");
+    case Msp430Architecture:
+        return QLatin1String("msp430");
+    case Rl78Architecture:
+        return QLatin1String("rl78");
+    case C166Architecture:
+        return QLatin1String("c166");
+    case V850Architecture:
+        return QLatin1String("v850");
+    case Rh850Architecture:
+        return QLatin1String("rh850");
+    case RxArchitecture:
+        return QLatin1String("rx");
+    case K78Architecture:
+        return QLatin1String("78k");
+    case M68KArchitecture:
+        return QLatin1String("m68k");
+    case M32CArchitecture:
+        return QLatin1String("m32c");
+    case M16CArchitecture:
+        return QLatin1String("m16c");
+    case M32RArchitecture:
+        return QLatin1String("m32r");
+    case R32CArchitecture:
+        return QLatin1String("r32c");
+    case CR16Architecture:
+        return QLatin1String("cr16");
+    case RiscVArchitecture:
+        return QLatin1String("riscv");
+    case UnknownArchitecture:
+        // fallthrough
     default:
         return QLatin1String("unknown");
     }
@@ -660,6 +779,8 @@ QString Abi::toString(const OS &o)
         return QLatin1String("windows");
     case VxWorks:
         return QLatin1String("vxworks");
+    case BareMetalOS:
+        return QLatin1String("baremetal");
     case UnknownOS: // fall through!
     default:
         return QLatin1String("unknown");
@@ -874,6 +995,70 @@ QList<Abi> Abi::abisOfBinary(const Utils::FileName &path)
     }
 
     return result;
+}
+
+Abi::Architecture Abi::architectureFromString(const QString &a)
+{
+    if (a == "unknown")
+        return UnknownArchitecture;
+    if (a == "arm")
+        return ArmArchitecture;
+    if (a == "aarch64")
+        return ArmArchitecture;
+    if (a == "avr")
+        return AvrArchitecture;
+    if (a == "avr32")
+        return Avr32Architecture;
+    if (a == "x86")
+        return X86Architecture;
+    if (a == "mcs51")
+        return Mcs51Architecture;
+    if (a == "mcs251")
+        return Mcs251Architecture;
+    if (a == "mips")
+        return MipsArchitecture;
+    if (a == "ppc")
+        return PowerPCArchitecture;
+    if (a == "itanium")
+        return ItaniumArchitecture;
+    if (a == "sh")
+        return ShArchitecture;
+    if (a == "stm8")
+        return Stm8Architecture;
+    if (a == "msp430")
+        return Msp430Architecture;
+    if (a == "rl78")
+        return Rl78Architecture;
+    if (a == "c166")
+        return C166Architecture;
+    if (a == "v850")
+        return V850Architecture;
+    if (a == "rh850")
+        return Rh850Architecture;
+    if (a == "rx")
+        return RxArchitecture;
+    if (a == "78k")
+        return K78Architecture;
+    if (a == "m68k")
+        return M68KArchitecture;
+    if (a == "m32c")
+        return M32CArchitecture;
+    if (a == "m16c")
+        return M16CArchitecture;
+    if (a == "m32r")
+        return M32RArchitecture;
+    if (a == "r32c")
+        return R32CArchitecture;
+    if (a == "cr16")
+        return CR16Architecture;
+    if (a == "riscv")
+        return RiscVArchitecture;
+    else if (a == "xtensa")
+        return XtensaArchitecture;
+    if (a == "asmjs")
+        return AsmJsArchitecture;
+
+    return UnknownArchitecture;
 }
 
 } // namespace ProjectExplorer

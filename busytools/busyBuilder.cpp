@@ -211,6 +211,8 @@ public:
                 break;
             case BS_msvc:
                 params << QString("/out:%1").arg(QString::fromUtf8(value));
+                if( op.op == BS_LinkDll)
+                    params << QString("/implib:%1.lib").arg(QString::fromUtf8(value));
                 break;
             }
             break;

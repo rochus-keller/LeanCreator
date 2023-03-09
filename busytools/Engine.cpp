@@ -892,35 +892,37 @@ QStringList Engine::getCFlags(int product) const
     return res;
 }
 
-bool Engine::isExecutable(int id) const
+bool Engine::isClass(int id, const char *clsName) const
 {
     if( !d_imp->ok() )
         return false;
+    const int top = lua_gettop(d_imp->L);
+    bool isClass = false;
     if( pushInst(id) )
     {
         const int inst = lua_gettop(d_imp->L);
         lua_getglobal(d_imp->L,"#builtins");
-        lua_getfield(d_imp->L,-1,"Executable");
-        lua_replace(d_imp->L,-2);
+        lua_getfield(d_imp->L,-1,clsName);
         const int cls = lua_gettop(d_imp->L);
 
         lua_getfield(d_imp->L,inst,"#kind");
         const int k = lua_tointeger(d_imp->L,-1);
-        lua_pop(d_imp->L,1);
-        lua_getfield(d_imp->L,inst,"#ctr");
-        const int hasBody = !lua_isnil(d_imp->L,-1);
-        lua_pop(d_imp->L,1);
-        bool isExe = false;
+        lua_pop(d_imp->L,1); // kind
         if( k == BS_VarDecl )
         {
-            lua_getfield(d_imp->L,-1,"#type");
-            isExe = bs_isa(d_imp->L,cls,-1);
-            lua_pop(d_imp->L,1);
+            lua_getfield(d_imp->L,inst,"#type");
+            isClass = bs_isa(d_imp->L,cls,-1);            
+            lua_pop(d_imp->L,1); // type
         }
-        lua_pop(d_imp->L,1);
-        return hasBody;
-    }else
-        return false;
+        lua_pop(d_imp->L,3); // inst, builtins, cls
+    }
+    Q_ASSERT( top == lua_gettop(d_imp->L) );
+    return isClass;
+}
+
+bool Engine::isExecutable(int id) const
+{
+    return isClass(id, "Executable");
 }
 
 bool Engine::isActive(int id) const

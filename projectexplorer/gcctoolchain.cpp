@@ -228,7 +228,8 @@ static QList<Abi> guessGccAbi(const FileName &path, const QStringList &env,
 
     QStringList arguments = extraArgs;
     arguments << QLatin1String("-dumpmachine");
-    QString machine = QString::fromLocal8Bit(runGcc(path, arguments, env)).trimmed();
+    QString machine = QString::fromLocal8Bit(runGcc(path, arguments, env)).trimmed().
+            section('\n', 0, 0, QString::SectionSkipEmpty);
     if (machine.isEmpty())
         return QList<Abi>(); // no need to continue if running failed once...
     return guessGccAbi(machine, macros);

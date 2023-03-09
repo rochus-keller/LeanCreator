@@ -47,6 +47,27 @@ public:
         MipsArchitecture,
         PowerPCArchitecture,
         ShArchitecture,
+        AvrArchitecture,
+        Avr32Architecture,
+        XtensaArchitecture,
+        Mcs51Architecture,
+        Mcs251Architecture,
+        AsmJsArchitecture,
+        Stm8Architecture,
+        Msp430Architecture,
+        Rl78Architecture,
+        C166Architecture,
+        V850Architecture,
+        Rh850Architecture,
+        RxArchitecture,
+        K78Architecture,
+        M68KArchitecture,
+        M32CArchitecture,
+        M16CArchitecture,
+        M32RArchitecture,
+        R32CArchitecture,
+        CR16Architecture,
+        RiscVArchitecture,
         UnknownArchitecture
     };
 
@@ -57,6 +78,7 @@ public:
         UnixOS,
         WindowsOS,
         VxWorks,
+        BareMetalOS,
         UnknownOS
     };
 
@@ -140,6 +162,8 @@ public:
 
     static Abi hostAbi();
     static QList<Abi> abisOfBinary(const Utils::FileName &path);
+
+    static Architecture architectureFromString(const QString &a);
 
 private:
     Architecture m_architecture;

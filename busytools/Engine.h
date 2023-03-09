@@ -82,8 +82,9 @@ public:
     QStringList getDefines(int product) const;
     QStringList getCppFlags(int product) const;
     QStringList getCFlags(int product) const;
-    bool isExecutable(int) const;
-    bool isActive(int) const;
+    bool isClass(int decl, const char* clsName) const;
+    bool isExecutable(int decl) const;
+    bool isActive(int decl) const;
     QByteArray getString(int def, const char* field, bool inst = false) const;
     QByteArray getDeclPath(int decl) const;
     int getInteger(int def, const char* field) const;

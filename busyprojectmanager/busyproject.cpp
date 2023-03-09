@@ -175,7 +175,7 @@ static void collectFilesForProject(const busy::Module &project, QSet<QString> &r
 {
     result.insert(project.busyFile());
     foreach (const busy::Product &prd, project.products()) {
-        foreach (const QString &file, prd.allFilePaths())
+        foreach (const QString &file, prd.allFilePaths(true))
             result.insert(file);
         result.insert(prd.location().filePath());
     }

@@ -43,7 +43,7 @@ let mtconf : Config {
     .cflags = [ "/O2", "/MT" ]
 }
 
-if HAVE_MT && (target_toolchain == `msvc) {
+if HAVE_MT && (build_mode == `optimized) && (target_toolchain == `msvc) {
     set_defaults(target_toolchain,mtconf)
 }
 
