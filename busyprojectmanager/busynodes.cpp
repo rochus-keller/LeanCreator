@@ -255,10 +255,13 @@ static QList<ProjectExplorer::ProjectAction> supportedNodeActions(ProjectExplore
         return actions;
     if (managesFiles)
         actions << ProjectExplorer::AddNewFile << ProjectExplorer::AddExistingFile;
+#if 0
+    // we don't support rename and remove on files in BUSY projects
     if (node->nodeType() == ProjectExplorer::FileNodeType
             && !project->busyProject().buildSystemFiles().contains(node->path().toString())) {
         actions << ProjectExplorer::RemoveFile << ProjectExplorer::Rename;
     }
+#endif
     return actions;
 }
 
@@ -616,7 +619,7 @@ bool BusyProductNode::addFiles(const QStringList &filePaths, QStringList *notAdd
         return false;
     }
 
-        return prjNode->project()->addFilesToProduct(this, filePaths, m_qbsProductData, notAdded);
+    return prjNode->project()->addFilesToProduct(this, filePaths, m_qbsProductData, notAdded);
 }
 
 bool BusyProductNode::removeFiles(const QStringList &filePaths, QStringList *notRemoved)

@@ -26,9 +26,7 @@
 
 #include <core/icore.h>
 #include <projectexplorer/projectexplorerconstants.h>
-#ifndef QT_NO_CUSTOMWIZZARD
-#include <projectexplorer/customwizard/customwizard.h>
-#endif
+#include <projectexplorer/projectexplorer.h>
 
 #include <utils/filewizardpage.h>
 #include <utils/mimetypes/mimedatabase.h>
@@ -201,11 +199,18 @@ bool GenericProjectWizard::postGenerateFiles(const QWizard *w, const Core::Gener
                                              QString *errorMessage) const
 {
     Q_UNUSED(w);
-#ifndef QT_NO_CUSTOMWIZZARD
-    return ProjectExplorer::CustomProjectWizard::postGenerateOpen(l, errorMessage);
-#else
-	return false;
-#endif
+    // copied from ProjectExplorer::CustomProjectWizard::postGenerateOpen(l, errorMessage);
+    foreach (const Core::GeneratedFile &file, l) {
+        if (file.attributes() & Core::GeneratedFile::OpenProjectAttribute) {
+            ProjectExplorer::ProjectExplorerPlugin::OpenProjectResult result
+                    = ProjectExplorer::ProjectExplorerPlugin::openProject(file.path());
+            if (!result) {
+                return false;
+                *errorMessage = result.errorMessage();
+            }
+        }
+    }
+    return BaseFileWizardFactory::postGenerateOpenEditors(l, errorMessage);
 }
 
 } // namespace Internal
