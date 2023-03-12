@@ -42,6 +42,8 @@ extern "C" {
 #include <core/vcsmanager.h>
 #include <core/messagemanager.h>
 #include <core/progressmanager/progressmanager.h>
+#include <core/editormanager/editormanager.h>
+#include <core/editormanager/ieditor.h>
 #include <cpptools/cppmodelmanager.h>
 #include <projectexplorer/buildenvironmentwidget.h>
 #include <projectexplorer/buildmanager.h>
@@ -250,28 +252,81 @@ bool BusyProject::ensureWriteableBusyFile(const QString &file)
     return true;
 }
 
+template<class T>
+static IDocument * findDoc( const T& docs, const QString& filePath )
+{
+    foreach( Core::IDocument* doc, docs )
+    {
+        if( doc->filePath().toString() == filePath )
+            return doc;
+    }
+    return 0;
+}
+
 bool BusyProject::addFilesToProduct(BusyBaseProjectNode *node, const QStringList &filePaths,
-        const busy::Product &productData, QStringList *notAdded)
+        const busy::Product &prd, QStringList *notAdded)
 {
     QTC_ASSERT(m_rootModule.isValid(), return false);
-    QStringList allPaths = productData.allFilePaths();
-    const QString productFilePath = productData.location().filePath();
-    ChangeExpector expector(productFilePath, m_busyDocuments);
-    ensureWriteableBusyFile(productFilePath);
-    foreach (const QString &path, filePaths) {
-        busy::ErrorInfo err = m_project.addFiles(productData, QStringList() << path);
-        if (err.hasError()) {
-            MessageManager::write(err.toString());
-            *notAdded += path;
-        } else {
-            allPaths += path;
+
+    const QString busyPath = prd.endLocation().filePath();
+    QTC_ASSERT(!busyPath.isEmpty(), return false);
+
+    QStringList allPaths = prd.allFilePaths(prd.isCompiled());
+
+    //ChangeExpector expector(busyPath, m_busyDocuments);
+    ensureWriteableBusyFile(busyPath);
+
+    // NOTE that for a specific path several IDocument exist, and we have apparently to consider them all here
+    IDocument* busyDoc = findDoc(m_busyDocuments,busyPath);
+    QTC_ASSERT( busyDoc != 0, return false);
+
+    QList<IDocument *> mods = Core::DocumentManager::modifiedDocuments();
+    foreach( IDocument* doc, mods )
+    {
+        if( doc->filePath() == busyDoc->filePath() && doc != busyDoc )
+        {
+            MessageManager::write("Cannot add files since the BUSY file has unsaved changes");
+            *notAdded = filePaths;
+            return false;
+            // This invalidates productData and may lead to a wrong insert position,
+            // Core::DocumentManager::saveDocument(doc);
         }
     }
+
+    // TODO: check if the document has parser errors and don't let files to be added to such docs
+
+    DocumentManager::expectFileChange(busyPath);
+    const bool addWatcher = Core::DocumentManager::removeDocument(busyDoc);
+    const busy::ErrorInfo err = m_project.addFiles(prd, filePaths);
+    Core::DocumentManager::addDocument(busyDoc, addWatcher);
+    DocumentManager::unexpectFileChange(busyPath);
+
+    if(err.hasError())
+    {
+        MessageManager::write(err.toString());
+        *notAdded = filePaths;
+    }else
+        allPaths += filePaths;
+
     if (notAdded->count() != filePaths.count()) {
-        BusyGroupNode::setupFiles(node, productData,
-                                 allPaths, QFileInfo(productFilePath).absolutePath(), true);
+        BusyGroupNode::setupFiles(node, prd,
+                                 allPaths, QFileInfo(busyPath).absolutePath(), true);
         m_rootProjectNode->update();
         emit fileListChanged();
+    }
+    if( !err.hasError() )
+    {
+        QString err;
+        if( !busyDoc->reload(&err, IDocument::FlagReload, IDocument::TypeContents) )
+            MessageManager::write(err);
+
+        QList<IEditor *> editors = Core::EditorManager::visibleEditors();
+        foreach( IEditor * ed, editors )
+        {
+            if( ed->document() && ed->document() != busyDoc && ed->document()->filePath() == busyDoc->filePath() )
+                if( !ed->document()->reload(&err, IDocument::FlagReload, IDocument::TypeContents) )
+                    MessageManager::write(err);
+        }
     }
     return notAdded->isEmpty();
 }
@@ -280,6 +335,10 @@ bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStrin
         const busy::Product &productData,
         QStringList *notRemoved)
 {
+    return false;
+
+#if 0
+    // TODO
     QTC_ASSERT(m_rootModule.isValid(), return false);
     QStringList allPaths = productData.allFilePaths();
     const QString productFilePath = productData.location().filePath();
@@ -302,11 +361,15 @@ bool BusyProject::removeFilesFromProduct(BusyBaseProjectNode *node, const QStrin
         emit fileListChanged();
     }
     return notRemoved->isEmpty();
+#endif
 }
 
 bool BusyProject::renameFileInProduct(BusyBaseProjectNode *node, const QString &oldPath,
         const QString &newPath, const busy::Product &productData)
 {
+    return false;
+#if 0
+    // TODO
     if (newPath.isEmpty())
         return false;
     QStringList dummy;
@@ -323,6 +386,7 @@ bool BusyProject::renameFileInProduct(BusyBaseProjectNode *node, const QString &
         return false;
 
     return addFilesToProduct(node, QStringList() << newPath, newProductData, &dummy);
+#endif
 }
 
 void BusyProject::invalidate()

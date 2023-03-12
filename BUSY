@@ -37,6 +37,7 @@ submod debugger -
 submod bineditor -
 submod busytools -
 submod busyprojectmanager -
+submod wizards -
 submod app
 
 let mtconf : Config {
@@ -49,3 +50,5 @@ if HAVE_MT && (build_mode == `optimized) && (target_toolchain == `msvc) {
 
 
 let leancreator ! = app.exe
+
+

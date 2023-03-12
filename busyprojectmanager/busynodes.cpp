@@ -29,6 +29,7 @@
 
 #include <core/fileiconprovider.h>
 #include <core/idocument.h>
+#include <core/documentmanager.h>
 #include <projectexplorer/projectexplorerconstants.h>
 #include <projectexplorer/target.h>
 //#include <qtsupport/qtsupportconstants.h>
@@ -254,7 +255,18 @@ static QList<ProjectExplorer::ProjectAction> supportedNodeActions(ProjectExplore
     if (!project->isProjectEditable())
         return actions;
     if (managesFiles)
+    {
+#if 0
+        // doesn't work since this function is not called everytime when the menu is opened
+        QList<Core::IDocument *> mods = Core::DocumentManager::modifiedDocuments();
+        foreach( Core::IDocument * doc, mods )
+        {
+            if( doc->filePath() == node->path() )
+                return actions; // don't allow this on BUSY files with changes in editor
+        }
+#endif
         actions << ProjectExplorer::AddNewFile << ProjectExplorer::AddExistingFile;
+    }
 #if 0
     // we don't support rename and remove on files in BUSY projects
     if (node->nodeType() == ProjectExplorer::FileNodeType
@@ -448,130 +460,6 @@ ProjectExplorer::FileType BusyGroupNode::fileType(const busy::Product &product,
         return ProjectExplorer::SourceType;
 }
 
-#if 0
-BusyGroupNode::BusyGroupNode(const busy::GroupData &grp, const QString &productPath) :
-    BusyBaseProjectNode(Utils::FileName())
-{
-    if (m_groupIcon.isNull())
-        m_groupIcon = QIcon(QString::fromLatin1(Constants::BUSY_GROUP_ICON));
-
-    setIcon(m_groupIcon);
-
-    BusyFileNode *idx = new BusyFileNode(Utils::FileName::fromString(grp.location().filePath()),
-                                       ProjectExplorer::ProjectFileType, false,
-                                       grp.location().line());
-    addFileNodes(QList<ProjectExplorer::FileNode *>() << idx);
-
-    updateBusyGroupData(grp, productPath, true, true);
-}
-
-bool BusyGroupNode::isEnabled() const
-{
-    if (!parentFolderNode() || !m_qbsGroupData.isValid())
-        return false;
-    return static_cast<BusyProductNode *>(parentFolderNode())->isEnabled()
-            && m_qbsGroupData.isEnabled();
-}
-
-QList<ProjectExplorer::ProjectAction> BusyGroupNode::supportedActions(ProjectExplorer::Node *node) const
-{
-    return supportedNodeActions(node, true);
-}
-
-bool BusyGroupNode::addFiles(const QStringList &filePaths, QStringList *notAdded)
-{
-    QStringList notAddedDummy;
-    if (!notAdded)
-        notAdded = &notAddedDummy;
-
-    BusyProjectNode *prjNode = parentBusyProjectNode(this);
-    if (!prjNode || !prjNode->busyProject().isValid()) {
-        *notAdded += filePaths;
-        return false;
-    }
-
-    BusyProductNode *prdNode = parentBusyProductNode(this);
-    if (!prdNode || !prdNode->busyProductData().isValid()) {
-        *notAdded += filePaths;
-        return false;
-    }
-
-    return prjNode->project()->addFilesToProduct(this, filePaths, prdNode->busyProductData(),
-                                                 m_qbsGroupData, notAdded);
-}
-
-bool BusyGroupNode::removeFiles(const QStringList &filePaths, QStringList *notRemoved)
-{
-    QStringList notRemovedDummy;
-    if (!notRemoved)
-        notRemoved = &notRemovedDummy;
-
-    BusyProjectNode *prjNode = parentBusyProjectNode(this);
-    if (!prjNode || !prjNode->busyProject().isValid()) {
-        *notRemoved += filePaths;
-        return false;
-    }
-
-    BusyProductNode *prdNode = parentBusyProductNode(this);
-    if (!prdNode || !prdNode->busyProductData().isValid()) {
-        *notRemoved += filePaths;
-        return false;
-    }
-
-    return prjNode->project()->removeFilesFromProduct(this, filePaths, prdNode->busyProductData(),
-                                                      m_qbsGroupData, notRemoved);
-}
-
-bool BusyGroupNode::renameFile(const QString &filePath, const QString &newFilePath)
-{
-    BusyProjectNode * const prjNode = parentBusyProjectNode(this);
-    if (!prjNode || !prjNode->busyProject().isValid())
-        return false;
-    BusyProductNode * const prdNode = parentBusyProductNode(this);
-    if (!prdNode || !prdNode->busyProductData().isValid())
-        return false;
-
-    return prjNode->project()->renameFileInProduct(this, filePath, newFilePath,
-                                                   prdNode->busyProductData(), m_qbsGroupData);
-}
-
-void BusyGroupNode::updateBusyGroupData(const busy::GroupData &grp, const QString &productPath,
-                                      bool productWasEnabled, bool productIsEnabled)
-{
-    QTC_ASSERT(grp.isValid(), return);
-
-    if (grp == m_qbsGroupData && productPath == m_productPath)
-        return;
-
-    bool groupWasEnabled = productWasEnabled && m_qbsGroupData.isValid()
-            && m_qbsGroupData.isEnabled();
-    bool groupIsEnabled = productIsEnabled && grp.isEnabled();
-    bool updateExisting = groupWasEnabled != groupIsEnabled;
-
-    m_productPath = productPath;
-    m_qbsGroupData = grp;
-
-    setPath(Utils::FileName::fromString(grp.location().filePath()));
-    setDisplayName(grp.name());
-
-    BusyFileNode *idx = 0;
-    foreach (ProjectExplorer::FileNode *fn, fileNodes()) {
-        idx = dynamic_cast<BusyFileNode *>(fn);
-        if (idx)
-            break;
-    }
-    QTC_ASSERT(idx, return);
-    idx->setPathAndLine(Utils::FileName::fromString(grp.location().filePath()),
-                        grp.location().line());
-
-    setupFiles(this, grp, grp.allFilePaths(), productPath, updateExisting);
-
-    if (updateExisting)
-        emitNodeUpdated();
-}
-
-#endif
-
 // --------------------------------------------------------------------
 // BusyProductNode:
 // --------------------------------------------------------------------
@@ -604,7 +492,7 @@ bool BusyProductNode::showInSimpleTree() const
 
 QList<ProjectExplorer::ProjectAction> BusyProductNode::supportedActions(ProjectExplorer::Node *node) const
 {
-    return supportedNodeActions(node, true);
+    return supportedNodeActions(node, true); // too restricitve: m_qbsProductData.isCompiled()
 }
 
 bool BusyProductNode::addFiles(const QStringList &filePaths, QStringList *notAdded)
@@ -647,8 +535,8 @@ bool BusyProductNode::renameFile(const QString &filePath, const QString &newFile
 
 void BusyProductNode::setBusyProductData(const busy::Project& project, const busy::Product prd)
 {
-    if (m_qbsProductData == prd)
-        return;
+    //if (m_qbsProductData == prd)
+    //    return;
 
     bool productWasEnabled = m_qbsProductData.isValid() && m_qbsProductData.isEnabled();
     bool productIsEnabled = prd.isEnabled();

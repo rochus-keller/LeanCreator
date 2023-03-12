@@ -94,41 +94,6 @@ private:
                                               const FileTreeNode &fileNode);
 };
 
-#if 0
-class BusyGroupNode : public BusyBaseProjectNode
-{
-public:
-    BusyGroupNode(const busy::GroupData &grp, const QString &productPath);
-
-    bool isEnabled() const;
-    QList<ProjectExplorer::ProjectAction> supportedActions(Node *node) const;
-    bool addFiles(const QStringList &filePaths, QStringList *notAdded = 0);
-    bool removeFiles(const QStringList &filePaths, QStringList *notRemoved = 0);
-    bool renameFile(const QString &filePath, const QString &newFilePath);
-    void updateBusyGroupData(const busy::GroupData &grp, const QString &productPath,
-                            bool productWasEnabled, bool productIsEnabled);
-
-    busy::GroupData busyGroupData() const { return m_qbsGroupData; }
-
-    QString productPath() const;
-
-    // group can be invalid
-    static void setupFiles(FolderNode *root, const busy::GroupData &group, const QStringList &files,
-                           const QString &productPath, bool updateExisting);
-
-private:
-    static void setupFolder(ProjectExplorer::FolderNode *folder, const busy::GroupData &group,
-            const FileTreeNode *subFileTree, const QString &baseDir, bool updateExisting);
-    static ProjectExplorer::FileType fileType(const busy::GroupData &group,
-                                              const FileTreeNode &fileNode);
-
-    busy::GroupData m_qbsGroupData;
-    QString m_productPath;
-
-    static QIcon m_groupIcon;
-};
-#endif
-
 // --------------------------------------------------------------------
 // BusyProductNode:
 // --------------------------------------------------------------------

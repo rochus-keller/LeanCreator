@@ -1,0 +1,34 @@
+# Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+    .defines += [ "QT_STATICPLUGIN" ]
+    .include_dirs += ..
+    .configs += ^cpp11conf
+}
+
+let run_moc : Moc {
+	.sources += [
+        ./wizardsplugin.h
+        ./classwizard.h
+        ./qrcwizard.h
+        ./busyprowizard.h
+	]
+}
+
+let run_rcc : Rcc {
+    .sources += ./wizards.qrc
+}
+
+let lib * : Library {
+    .name = "wizards"
+    .sources = [
+        ./wizardsplugin.cpp
+        ./classwizard.cpp
+        ./qrcwizard.cpp
+        ./busyprowizard.cpp
+    ]
+    .deps += [ run_moc run_rcc ]
+	.include_dirs += build_dir()
+    .configs += [ ^qt.qt_client_config lib_conf ]
+}

@@ -6,10 +6,10 @@
     <comment>LeanCreator BUSY Project file</comment>
     <glob pattern="BUSY"/>
     <glob pattern="BUSY.busy"/>
- </mime-type>
+  </mime-type>
   <mime-type type="text/x-busy-file">
     <sub-class-of type="text/plain"/>
     <comment>BUSY include file</comment>
     <glob pattern="*.busy"/>
- </mime-type>
+  </mime-type>
 </mime-info>

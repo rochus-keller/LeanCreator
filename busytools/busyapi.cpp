@@ -24,6 +24,9 @@ extern "C" {
 #include <QFileInfo>
 #include <QDir>
 #include <QtDebug>
+#include <QTextDocument>
+#include <QTextCursor>
+#include <QTextBlock>
 using namespace busy;
 
 class Internal::ModuleImp : public QSharedData
@@ -449,6 +452,21 @@ CodeLocation Product::location() const
     return res;
 }
 
+CodeLocation Product::endLocation() const
+{
+    CodeLocation res;
+    if( !isValid() )
+        return res;
+    const int ctx = d_imp->d_eng->getObject(d_imp->d_id, "#ctr");
+    if( ctx )
+    {
+        res.d_path = d_imp->d_eng->getPath(ctx,"#file");
+        res.d_col = d_imp->d_eng->getInteger(ctx,"#endcol");
+        res.d_row = d_imp->d_eng->getInteger(ctx,"#endrow");
+    }
+    return res;
+}
+
 QList<TargetArtifact> Product::targetArtifacts() const
 {
     QList<TargetArtifact> res;
@@ -624,6 +642,66 @@ CleanJob*Project::cleanAllProducts(const CleanOptions& options, QObject* jobOwne
 InstallJob*Project::installAllProducts(const InstallOptions& options, QObject* jobOwner)
 {
     return 0;
+}
+
+static QString relativePath( const QDir& dir, const QString& path )
+{
+    QString res = dir.relativeFilePath(QFileInfo(path).canonicalFilePath());
+    if( !res.startsWith(".") )
+        res = "./" + res;
+    return res;
+}
+
+ErrorInfo Project::addFiles(const Product &product, const QStringList &filePaths)
+{
+    ErrorInfo res;
+    const CodeLocation loc = product.endLocation();
+    QTextDocument doc;
+    QFile f(loc.d_path);
+    if( !f.open(QIODevice::ReadOnly) )
+    {
+        ErrorItem e;
+        e.d_loc = loc;
+        e.d_msg = "cannot open BUSY file for reading";
+        res.d_errs << e;
+        return res;
+    }
+    doc.setPlainText( QString::fromUtf8( f.readAll() ));
+    f.close();
+
+    QFileInfo info(loc.d_path);
+    QDir module = info.absoluteDir();
+
+    QTextCursor cur(&doc);
+    const QTextBlock block = doc.findBlockByNumber(loc.d_row-1);
+    cur.setPosition( block.position() + loc.d_col-1 );
+    cur.insertText("    .sources += ");
+    if( filePaths.size() > 1 )
+    {
+        cur.insertText( "[\n" );
+        foreach( const QString& path, filePaths )
+        {
+            cur.insertText("        ");
+            cur.insertText(relativePath(module,path));
+            cur.insertText("\n");
+        }
+        cur.insertText(QString(loc.d_col-1, QChar(' ') ) );
+        cur.insertText( "    ]" );
+    }else
+        cur.insertText(relativePath(module,filePaths.first()));
+
+    cur.insertText(QString("\n%1").arg(QString(loc.d_col-1, QChar(' ') ) ) );
+
+    if( !f.open(QIODevice::WriteOnly) )
+    {
+        ErrorItem e;
+        e.d_loc = loc;
+        e.d_msg = "cannot open BUSY file for writing";
+        res.d_errs << e;
+        return res;
+    }
+    f.write( doc.toPlainText().toUtf8() );
+    return res;
 }
 
 static void walkAllProducts(Engine* eng, int module, QList<int>& res, Engine::ProductFilter filter, bool onlyActives )

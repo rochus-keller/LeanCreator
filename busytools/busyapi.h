@@ -265,6 +265,7 @@ public:
     QString name(bool altName = false) const;
     QString qualident() const;
     CodeLocation location() const;
+    CodeLocation endLocation() const;
     QList<TargetArtifact> targetArtifacts() const;
     QVariantMap properties() const;
     bool isEnabled() const;
@@ -373,7 +374,7 @@ public:
     RuleCommandList ruleCommands(const Product &product, const QString &inputFilePath,
                          const QString &outputFileTag, ErrorInfo *error = 0) const { return RuleCommandList(); }
 
-    ErrorInfo addFiles(const Product &product, const QStringList &filePaths) { return ErrorInfo(); }
+    ErrorInfo addFiles(const Product &product, const QStringList &filePaths);
     ErrorInfo removeFiles(const Product &product, const QStringList &filePaths) { return ErrorInfo(); }
 private:
     friend class Internal::ProjectImp;

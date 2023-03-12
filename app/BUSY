@@ -32,7 +32,7 @@ let exe * : Executable {
 	}
 	.deps += [ ^qt.libqt ^utils.lib ^extensionsystem.lib ^core.lib ^texteditor.lib ^projectexplorer.lib
 				^resourceeditor.lib ^genericprojectmanager.lib ^cplusplus.lib ^cpptools.lib ^cppeditor.lib
-				^classview.lib ^debugger.lib ^bineditor.lib ^busytools.lib ^busyprojectmanager.lib 
+                ^classview.lib ^debugger.lib ^bineditor.lib ^busytools.lib ^busyprojectmanager.lib ^wizards.lib
 				run_moc run_rcc 
 	]
 	if target_os == `win32 {
