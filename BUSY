@@ -38,6 +38,7 @@ submod bineditor -
 submod busytools -
 submod busyprojectmanager -
 submod wizards -
+submod help -
 submod app
 
 let mtconf : Config {

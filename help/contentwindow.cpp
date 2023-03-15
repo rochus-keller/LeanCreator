@@ -1,0 +1,147 @@
+/****************************************************************************
+**
+** Copyright (C) 2015 The Qt Company Ltd.
+** Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+**
+** This file is part of LeanCreator.
+**
+** $QT_BEGIN_LICENSE:LGPL21$
+** GNU Lesser General Public License Usage
+** This file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, The Qt Company gives you certain additional
+** rights.  These rights are described in The Qt Company LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+****************************************************************************/
+
+#include "contentwindow.h"
+
+#include <help/centralwidget.h>
+#include <help/helpviewer.h>
+#include <help/localhelpmanager.h>
+#include <help/openpagesmanager.h>
+
+#include <utils/navigationtreeview.h>
+
+#include <QLayout>
+#include <QFocusEvent>
+#include <QMenu>
+
+#include <help/qhelpengine.h>
+
+#include <help/qhelpcontentwidget.h>
+
+using namespace Help::Internal;
+
+ContentWindow::ContentWindow()
+    : m_contentWidget(0)
+    , m_expandDepth(-2)
+    , m_isOpenInNewPageActionVisible(true)
+{
+    m_contentModel = (&LocalHelpManager::helpEngine())->contentModel();
+    m_contentWidget = new Utils::NavigationTreeView;
+    m_contentWidget->setModel(m_contentModel);
+    m_contentWidget->setActivationMode(Utils::SingleClickActivation);
+    m_contentWidget->installEventFilter(this);
+    m_contentWidget->viewport()->installEventFilter(this);
+    m_contentWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    setFocusProxy(m_contentWidget);
+
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->setMargin(0);
+    layout->addWidget(m_contentWidget);
+
+    connect(m_contentWidget, &QWidget::customContextMenuRequested,
+            this, &ContentWindow::showContextMenu);
+    connect(m_contentWidget, &QTreeView::activated,
+            this, &ContentWindow::itemActivated);
+
+    connect(m_contentModel, &QHelpContentModel::contentsCreated,
+            this, &ContentWindow::expandTOC);
+}
+
+ContentWindow::~ContentWindow()
+{
+}
+
+void ContentWindow::setOpenInNewPageActionVisible(bool visible)
+{
+    m_isOpenInNewPageActionVisible = visible;
+}
+
+void ContentWindow::expandTOC()
+{
+    if (m_expandDepth > -2) {
+        expandToDepth(m_expandDepth);
+        m_expandDepth = -2;
+    }
+}
+
+void ContentWindow::expandToDepth(int depth)
+{
+    m_expandDepth = depth;
+    if (depth == -1)
+        m_contentWidget->expandAll();
+    else
+        m_contentWidget->expandToDepth(depth);
+}
+
+bool ContentWindow::eventFilter(QObject *o, QEvent *e)
+{
+    if (m_isOpenInNewPageActionVisible && m_contentWidget && o == m_contentWidget->viewport()
+        && e->type() == QEvent::MouseButtonRelease) {
+        QMouseEvent *me = static_cast<QMouseEvent*>(e);
+        QItemSelectionModel *sm = m_contentWidget->selectionModel();
+        if (!sm)
+            return QWidget::eventFilter(o, e);
+
+        Qt::MouseButtons button = me->button();
+        const QModelIndex &index = m_contentWidget->indexAt(me->pos());
+
+        if (index.isValid() && sm->isSelected(index)) {
+            if ((button == Qt::LeftButton && (me->modifiers() & Qt::ControlModifier))
+                    || (button == Qt::MidButton)) {
+                QHelpContentItem *itm = m_contentModel->contentItemAt(index);
+                if (itm)
+                    emit linkActivated(itm->url(), true/*newPage*/);
+            }
+        }
+    }
+    return QWidget::eventFilter(o, e);
+}
+
+void ContentWindow::showContextMenu(const QPoint &pos)
+{
+    if (!m_contentWidget->indexAt(pos).isValid())
+        return;
+
+    QHelpContentModel *contentModel =
+        qobject_cast<QHelpContentModel*>(m_contentWidget->model());
+    QHelpContentItem *itm =
+        contentModel->contentItemAt(m_contentWidget->currentIndex());
+
+    QMenu menu;
+    QAction *curTab = menu.addAction(tr("Open Link"));
+    QAction *newTab = 0;
+    if (m_isOpenInNewPageActionVisible)
+        newTab = menu.addAction(tr("Open Link as New Page"));
+
+    QAction *action = menu.exec(m_contentWidget->mapToGlobal(pos));
+    if (curTab == action)
+        emit linkActivated(itm->url(), false/*newPage*/);
+    else if (newTab && newTab == action)
+        emit linkActivated(itm->url(), true/*newPage*/);
+}
+
+void ContentWindow::itemActivated(const QModelIndex &index)
+{
+    if (QHelpContentItem *itm = m_contentModel->contentItemAt(index))
+        emit linkActivated(itm->url(), false/*newPage*/);
+}

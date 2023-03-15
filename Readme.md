@@ -39,8 +39,8 @@ The new multi-core BUSY builder is extremely fast. Building LeanCreator on the e
 - [x] BUSY builds with header dependency tracking
 - [x] Other convenience features
 - [x] Wizards for project and code file creation
+- [x] Stripped-down help integration
 - [ ] Debugging with newer LLDB versions on Mac
-- [ ] Stripped-down help integration
 
 ### Long term plan
 

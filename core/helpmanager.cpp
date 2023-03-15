@@ -36,10 +36,7 @@
 
 #include <QUrl>
 
-// TODO RK
-#ifndef QT_NO_HELP
-#include <QHelpEngineCore>
-#endif
+#include <help/qhelpenginecore.h>
 
 #ifndef QT_NO_SQL
 #include <QSqlDatabase>
@@ -56,9 +53,7 @@ struct HelpManagerPrivate
 {
     HelpManagerPrivate() :
        m_needsSetup(true),
-   #ifndef QT_NO_HELP
        m_helpEngine(0),
-   #endif
        m_collectionWatcher(0)
     {}
 
@@ -68,9 +63,7 @@ struct HelpManagerPrivate
     void cleanUpDocumentation();
 
     bool m_needsSetup;
-#ifndef QT_NO_HELP
     QHelpEngineCore *m_helpEngine;
-#endif
     Utils::FileSystemWatcher *m_collectionWatcher;
 
     // data for delayed initialization
@@ -113,10 +106,8 @@ HelpManager::HelpManager(QObject *parent) :
 HelpManager::~HelpManager()
 {
     d->writeSettings();
-#ifndef QT_NO_HELP
     delete d->m_helpEngine;
     d->m_helpEngine = 0;
-#endif
     m_instance = 0;
     delete d;
 }
@@ -142,7 +133,6 @@ void HelpManager::registerDocumentation(const QStringList &files)
     }
 
     bool docsChanged = false;
-#ifndef QT_NO_HELP
     foreach (const QString &file, files) {
         const QString &nameSpace = d->m_helpEngine->namespaceName(file);
         if (nameSpace.isEmpty())
@@ -168,7 +158,6 @@ void HelpManager::registerDocumentation(const QStringList &files)
             }
         }
     }
-#endif
     if (docsChanged)
         emit m_instance->documentationChanged();
 }
@@ -182,7 +171,6 @@ void HelpManager::unregisterDocumentation(const QStringList &nameSpaces)
     }
 
     bool docsChanged = false;
-#ifndef QT_NO_HELP
     foreach (const QString &nameSpace, nameSpaces) {
         const QString filePath = d->m_helpEngine->documentationFileName(nameSpace);
         if (d->m_helpEngine->unregisterDocumentation(nameSpace)) {
@@ -194,7 +182,6 @@ void HelpManager::unregisterDocumentation(const QStringList &nameSpaces)
                 << "': " << d->m_helpEngine->error();
         }
     }
-#endif
     if (docsChanged)
         emit m_instance->documentationChanged();
 }
@@ -232,7 +219,7 @@ QMap<QString, QUrl> HelpManager::linksForKeyword(const QString &key)
     const QLatin1String name("HelpManager::linksForKeyword");
 
     DbCleaner cleaner(name);
-#if !defined QT_NO_SQL && !defined QT_NO_HELP
+#if !defined QT_NO_SQL
     QSqlDatabase db = QSqlDatabase::addDatabase(sqlite, name);
     if (db.driver() && db.driver()->lastError().type() == QSqlError::NoError) {
         const QStringList &registeredDocs = d->m_helpEngine->registeredDocumentations();
@@ -261,31 +248,19 @@ QMap<QString, QUrl> HelpManager::linksForIdentifier(const QString &id)
 {
     QMap<QString, QUrl> empty;
     QTC_ASSERT(!d->m_needsSetup, return empty);
-#ifndef QT_NO_HELP
     return d->m_helpEngine->linksForIdentifier(id);
-#else
-    return QMap<QString, QUrl>();
-#endif
 }
 
 QUrl HelpManager::findFile(const QUrl &url)
 {
     QTC_ASSERT(!d->m_needsSetup, return QUrl());
-#ifndef QT_NO_HELP
     return d->m_helpEngine->findFile(url);
-#else
-    return QUrl();
-#endif
 }
 
 QByteArray HelpManager::fileData(const QUrl &url)
 {
     QTC_ASSERT(!d->m_needsSetup, return QByteArray());
-#ifndef QT_NO_HELP
     return d->m_helpEngine->fileData(url);
-#else
-    return QByteArray();
-#endif
 }
 
 void HelpManager::handleHelpRequest(const QUrl &url, HelpManager::HelpViewerLocation location)
@@ -301,31 +276,19 @@ void HelpManager::handleHelpRequest(const QString &url, HelpViewerLocation locat
 QStringList HelpManager::registeredNamespaces()
 {
     QTC_ASSERT(!d->m_needsSetup, return QStringList());
-#ifndef QT_NO_HELP
     return d->m_helpEngine->registeredDocumentations();
-#else
-    return QStringList();
-#endif
 }
 
 QString HelpManager::namespaceFromFile(const QString &file)
 {
     QTC_ASSERT(!d->m_needsSetup, return QString());
-#ifndef QT_NO_HELP
     return d->m_helpEngine->namespaceName(file);
-#else
-    return QString();
-#endif
 }
 
 QString HelpManager::fileFromNamespace(const QString &nameSpace)
 {
     QTC_ASSERT(!d->m_needsSetup, return QString());
-#ifndef QT_NO_HELP
     return d->m_helpEngine->documentationFileName(nameSpace);
-#else
-    return QString();
-#endif
 }
 
 void HelpManager::setCustomValue(const QString &key, const QVariant &value)
@@ -334,20 +297,14 @@ void HelpManager::setCustomValue(const QString &key, const QVariant &value)
         d->m_customValues.insert(key, value);
         return;
     }
-#ifndef QT_NO_HELP
     if (d->m_helpEngine->setCustomValue(key, value))
         emit m_instance->collectionFileChanged();
-#endif
 }
 
 QVariant HelpManager::customValue(const QString &key, const QVariant &value)
 {
     QTC_ASSERT(!d->m_needsSetup, return QVariant());
-#ifndef QT_NO_HELP
     return d->m_helpEngine->customValue(key, value);
-#else
-    return QVariant();
-#endif
 }
 
 HelpManager::Filters HelpManager::filters()
@@ -355,11 +312,9 @@ HelpManager::Filters HelpManager::filters()
     QTC_ASSERT(!d->m_needsSetup, return Filters());
 
     Filters filters;
-#ifndef QT_NO_HELP
     const QStringList &customFilters = d->m_helpEngine->customFilters();
     foreach (const QString &filter, customFilters)
         filters.insert(filter, d->m_helpEngine->filterAttributes(filter));
-#endif
     return filters;
 }
 
@@ -372,7 +327,7 @@ HelpManager::Filters HelpManager::fixedFilters()
     const QLatin1String name("HelpManager::fixedCustomFilters");
 
     DbCleaner cleaner(name);
-#if !defined QT_NO_SQL && !defined QT_NO_HELP
+#if !defined QT_NO_SQL
     QSqlDatabase db = QSqlDatabase::addDatabase(sqlite, name);
     if (db.driver() && db.driver()->lastError().type() == QSqlError::NoError) {
         const QStringList &registeredDocs = d->m_helpEngine->registeredDocumentations();
@@ -408,20 +363,16 @@ void HelpManager::removeUserDefinedFilter(const QString &filter)
 {
     QTC_ASSERT(!d->m_needsSetup, return);
 
-#ifndef QT_NO_HELP
     if (d->m_helpEngine->removeCustomFilter(filter))
         emit m_instance->collectionFileChanged();
-#endif
 }
 
 void HelpManager::addUserDefinedFilter(const QString &filter, const QStringList &attr)
 {
     QTC_ASSERT(!d->m_needsSetup, return);
 
-#ifndef QT_NO_HELP
     if (d->m_helpEngine->addCustomFilter(filter, attr))
         emit m_instance->collectionFileChanged();
-#endif
 }
 
 // -- private slots
@@ -435,12 +386,10 @@ void HelpManager::setupHelpManager()
     d->readSettings();
 
     // create the help engine
-#ifndef QT_NO_HELP
     d->m_helpEngine = new QHelpEngineCore(collectionFilePath(), m_instance);
     d->m_helpEngine->setAutoSaveFilter(false);
     d->m_helpEngine->setCurrentFilter(tr("Unfiltered"));
     d->m_helpEngine->setupData();
-#endif
 
     foreach (const QString &filePath, d->documentationFromInstaller())
         d->m_filesToRegister.insert(filePath);
@@ -470,7 +419,6 @@ void HelpManagerPrivate::cleanUpDocumentation()
 {
     // mark documentation for removal for which there is no documentation file anymore
     // mark documentation for removal that is neither user registered, nor marked for registration
-#ifndef QT_NO_HELP
     const QStringList &registeredDocs = m_helpEngine->registeredDocumentations();
     foreach (const QString &nameSpace, registeredDocs) {
         const QString filePath = m_helpEngine->documentationFileName(nameSpace);
@@ -480,7 +428,6 @@ void HelpManagerPrivate::cleanUpDocumentation()
             m_nameSpacesToUnregister.insert(nameSpace);
         }
     }
-#endif
 }
 
 QStringList HelpManagerPrivate::documentationFromInstaller()

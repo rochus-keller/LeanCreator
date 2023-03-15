@@ -1,0 +1,106 @@
+# Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+# licensed under GPL/LGPL
+
+let lib_conf : Config {
+    .defines += [ "QT_STATICPLUGIN" "QT_NO_WEBKIT" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP_SEARCH" ]
+    .include_dirs += ..
+    .configs += ^cpp11conf
+}
+
+let run_moc : Moc {
+	.sources += [
+        ./filternamedialog.h
+        ./helpviewer.h
+        ./qhelpcontentwidget.h
+        ./qhelpcollectionhandler_p.h
+        ./topicchooser.h
+        ./qhelpcontentwidget.cpp
+        ./generalsettingspage.h
+        ./helpfindsupport.h
+        ./openpagesswitcher.h
+        ./filtersettingspage.h
+        ./contentwindow.h
+        ./textbrowserhelpviewer.h
+        ./qhelpenginecore.h
+        ./openpagesmanager.h
+        ./openpagesmodel.h
+        ./remotehelpfilter.h
+        ./qhelpindexwidget.h
+        ./localhelpmanager.h
+        ./openpageswidget.h
+        ./centralwidget.h
+        ./qhelpengine_p.h
+        ./helpwidget.h
+        ./indexwindow.h
+        ./helpplugin.h
+        ./qhelpengine.h
+        ./qhelpdbreader_p.h
+        ./docsettingspage.h
+        ./helpindexfilter.h
+    ]
+}
+
+let run_rcc : Rcc {
+    .sources += ./help.qrc
+}
+
+let run_uic : Uic {
+	.sources += [
+		./docsettingspage.ui
+    	./filtersettingspage.ui
+    	./generalsettingspage.ui
+    	./remotehelpfilter.ui
+
+        ./filternamedialog.ui
+        ./topicchooser.ui
+    ]
+}
+
+let sqlite : SourceSet {
+    .sources += ./sqlite3.c
+    .defines += [ "SQLITE_OMIT_LOAD_EXTENSION" "SQLITE_OMIT_COMPLETE"
+                    "SQLITE_ENABLE_FTS3" "SQLITE_ENABLE_FTS3_PARENTHESIS"
+                    "SQLITE_ENABLE_RTREE"
+                ]
+}
+
+let lib * : Library {
+    .name = "help"
+    .sources = [
+		./centralwidget.cpp
+		./docsettingspage.cpp
+		./filtersettingspage.cpp
+		./generalsettingspage.cpp
+		./helpfindsupport.cpp
+		./helpindexfilter.cpp
+		./localhelpmanager.cpp
+		./helpmode.cpp
+		./helpplugin.cpp
+		./helpviewer.cpp
+		./openpagesmanager.cpp
+		./openpagesmodel.cpp
+		./openpagesswitcher.cpp
+		./openpageswidget.cpp
+		./remotehelpfilter.cpp
+        ./textbrowserhelpviewer.cpp
+        ./helpwidget.cpp
+
+        ./filternamedialog.cpp
+        ./topicchooser.cpp
+        ./contentwindow.cpp
+        ./indexwindow.cpp
+
+        ./qhelpcollectionhandler.cpp
+        ./qhelpprojectdata.cpp
+        ./qhelpcontentwidget.cpp
+        ./qhelpdatainterface.cpp
+        ./qhelpdbreader.cpp
+        ./qhelpenginecore.cpp
+        ./qhelpengine.cpp
+        ./qhelp_global.cpp
+        ./qhelpindexwidget.cpp
+    ]
+    .deps += [ run_moc run_rcc run_uic sqlite ]
+	.include_dirs += build_dir()
+    .configs += [ ^qt.qt_client_config lib_conf ]
+}

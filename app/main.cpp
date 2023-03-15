@@ -305,6 +305,7 @@ Q_IMPORT_PLUGIN(DebuggerPlugin)
 Q_IMPORT_PLUGIN(BinEditorPlugin)
 Q_IMPORT_PLUGIN(BusyProjectManagerPlugin)
 Q_IMPORT_PLUGIN(WizardsPlugin)
+Q_IMPORT_PLUGIN(HelpPlugin)
 
 int main(int argc, char **argv)
 {
@@ -362,6 +363,7 @@ int main(int argc, char **argv)
     Q_INIT_RESOURCE(busyprojectmanager);
     Q_INIT_RESOURCE(busy);
     Q_INIT_RESOURCE(wizards);
+    Q_INIT_RESOURCE(help);
 
     CrashHandlerSetup setupCrashHandler; // Display a backtrace once a serious signal is delivered.
 
