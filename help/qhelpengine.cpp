@@ -30,7 +30,6 @@
 #include "qhelpindexwidget.h"
 //#include "qhelpsearchengine.h"
 #include "qhelpcollectionhandler_p.h"
-#include "sqlite3.h"
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
@@ -133,7 +132,6 @@ void QHelpEnginePrivate::stopDataCollection()
 QHelpEngine::QHelpEngine(const QString &collectionFile, QObject *parent)
     : QHelpEngineCore(d = new QHelpEnginePrivate(), parent)
 {
-    sqlite3_initialize();
     d->init(collectionFile, this);
 }
 
@@ -143,7 +141,6 @@ QHelpEngine::QHelpEngine(const QString &collectionFile, QObject *parent)
 QHelpEngine::~QHelpEngine()
 {
     d->stopDataCollection();
-    sqlite3_shutdown();
 }
 
 /*!

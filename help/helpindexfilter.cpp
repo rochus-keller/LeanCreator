@@ -31,9 +31,9 @@
 #include <core/icore.h>
 #include <core/helpmanager.h>
 #include <utils/algorithm.h>
+#include <utils/db/database.h>
 
 #include <QIcon>
-#include "sqlite3.h"
 
 
 using namespace Core;
@@ -144,27 +144,19 @@ void HelpIndexFilter::refresh(QFutureInterface<void> &future)
 QSet<QString> HelpIndexFilter::searchMatches(const QString &databaseFilePath,
                                            const QString &term, int limit)
 {
-    static const QLatin1String sqlite("QSQLITE");
-    static const QLatin1String name("HelpManager::findKeywords");
-
     QSet<QString> keywords;
 
-    { // make sure db is destroyed before removeDatabase call
-        sqlite3* db = 0;
-        if( sqlite3_open_v2( databaseFilePath.toUtf8().constData(), &db, SQLITE_OPEN_READONLY, 0) == SQLITE_OK )
-        {
-            sqlite3_stmt* s;
-            const QByteArray sql = QString::fromLatin1("SELECT DISTINCT Name FROM IndexTable WHERE Name LIKE "
-                                                       "'%%1%' LIMIT %2").arg(term, QString::number(limit)).toUtf8();
-            sqlite3_prepare( db, sql.constData(), sql.size(), &s, 0 );
-            while (sqlite3_step(s) == SQLITE_ROW) {
-                const QString keyValue = QString::fromUtf8((const char*)sqlite3_column_text(s, 0));
-                if (!keyValue.isEmpty())
-                    keywords.insert(keyValue);
-            }
-            sqlite3_finalize(s);
+    Utils::Database db;
+    if( db.open( databaseFilePath, true) )
+    {
+        const QByteArray sql = QString::fromLatin1("SELECT DISTINCT Name FROM IndexTable WHERE Name LIKE "
+                                                   "'%%1%' LIMIT %2").arg(term, QString::number(limit)).toUtf8();
+        Utils::Query s( &db, sql );
+        while ( s.next() ) {
+            const QString keyValue = s.text(0);
+            if (!keyValue.isEmpty())
+                keywords.insert(keyValue);
         }
-        sqlite3_close(db);
     }
     return keywords;
 }

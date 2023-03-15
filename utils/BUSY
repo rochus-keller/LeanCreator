@@ -86,6 +86,14 @@ let run_uic : Uic {
 	]
 }
 
+let sqlite : SourceSet {
+    .sources += ./db/sqlite3.c
+    .defines += [ "SQLITE_OMIT_LOAD_EXTENSION" "SQLITE_OMIT_COMPLETE"
+                    "SQLITE_ENABLE_FTS3" "SQLITE_ENABLE_FTS3_PARENTHESIS"
+                    "SQLITE_ENABLE_RTREE"
+                ]
+}
+
 let lib * : Library {
 	.name = "utils"
 	.sources = [
@@ -182,7 +190,8 @@ let lib * : Library {
         ./mimetypes/mimemagicrule.cpp
         ./mimetypes/mimeglobpattern.cpp
         ./mimetypes/mimeprovider.cpp
-   	]
+        ./db/database.cpp
+    ]
 	if target_os == `win32 {
 		.sources += ./consoleprocess_win.cpp
 	}else{
@@ -193,7 +202,7 @@ let lib * : Library {
 	}
 	
 	
-	.deps += [ run_rcc run_moc run_uic ]
+    .deps += [ run_rcc run_moc run_uic sqlite ]
 	.include_dirs += build_dir()
 	.configs += [ ^qt.qt_client_config lib_conf ]
 }

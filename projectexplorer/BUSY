@@ -3,7 +3,7 @@
 
 let lib_conf : Config {
 	.include_dirs += ..
-    .defines += [ "PROJECTEXPLORER_LIBRARY" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_QML"
+    .defines += [ "PROJECTEXPLORER_LIBRARY" "QT_NO_PRINTER" "QT_NO_QML"
 				  "QT_NO_CUSTOMWIZZARD" "QT_NO_JSONWIZZARD" "QT_NO_SSH" "QT_NO_JSENGINE"
 				  "QT_STATICPLUGIN" # enable static load when compiling plugin, so Q_IMPORT_PLUGIN can see it
 	 ]

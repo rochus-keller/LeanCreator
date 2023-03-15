@@ -2,7 +2,7 @@
 # licensed under GPL/LGPL
 
 let lib_conf : Config {
-    .defines += [ "QT_STATICPLUGIN" "QT_NO_WEBKIT" "QT_NO_PRINTER" "QT_NO_SQL" "QT_NO_HELP_SEARCH" ]
+    .defines += [ "QT_STATICPLUGIN" "QT_NO_WEBKIT" "QT_NO_PRINTER" "QT_NO_HELP_SEARCH" ]
     .include_dirs += ..
     .configs += ^cpp11conf
 }
@@ -56,14 +56,6 @@ let run_uic : Uic {
     ]
 }
 
-let sqlite : SourceSet {
-    .sources += ./sqlite3.c
-    .defines += [ "SQLITE_OMIT_LOAD_EXTENSION" "SQLITE_OMIT_COMPLETE"
-                    "SQLITE_ENABLE_FTS3" "SQLITE_ENABLE_FTS3_PARENTHESIS"
-                    "SQLITE_ENABLE_RTREE"
-                ]
-}
-
 let lib * : Library {
     .name = "help"
     .sources = [
@@ -100,7 +92,7 @@ let lib * : Library {
         ./qhelp_global.cpp
         ./qhelpindexwidget.cpp
     ]
-    .deps += [ run_moc run_rcc run_uic sqlite ]
+    .deps += [ run_moc run_rcc run_uic ]
 	.include_dirs += build_dir()
     .configs += [ ^qt.qt_client_config lib_conf ]
 }

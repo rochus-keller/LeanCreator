@@ -45,6 +45,8 @@
 
 QT_BEGIN_NAMESPACE
 
+namespace Utils { class Database; }
+
 class QHelpCollectionHandler : public QObject
 {
     Q_OBJECT
@@ -92,11 +94,10 @@ signals:
     void error(const QString &msg);
 
 private:
-    class Db;
-    Db* d_db;
+    Utils::Database* d_db;
 
     bool isDBOpened();
-    bool createTables(Db *db);
+    bool createTables(Utils::Database *db);
 
     bool m_dbOpened;
     QString m_collectionFile;

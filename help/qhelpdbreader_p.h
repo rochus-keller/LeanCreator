@@ -45,7 +45,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QSqlQuery;
+namespace Utils { class Database; }
 
 class QHelpDBReader : public QObject
 {
@@ -104,8 +104,7 @@ private:
     QSet<QString> m_viewAttributes;
     bool m_useAttributesCache;
     QSet<int> m_indicesCache;
-    class Db;
-    Db* d_db;
+    Utils::Database* d_db;
 };
 
 QT_END_NAMESPACE

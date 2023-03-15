@@ -80,6 +80,8 @@ On Mac the terminal opens when LeanCreator is run, and the menus are only active
 
 NOTE that the Windows versions are compiled with MT using a statically linked C/C++ runtime, so no Microsoft runtime has to be installed. The executable runs even on Windows 7.
 
+For convenience here are the [pre-built Qt 5.6.3 help files (*.qch)](http://software.rochus-keller.ch/Qt-5.6.3-qch.zip) compatible with LeanCreator and LeanQt (download, unpack and reference with LeanCreator/Options/Documentation).
+
 ### How to build LeanCreator
 
 To build LeanCreator using LeanQt and the BUSY build system (with no other dependencies than a C++11 compiler), do the following:

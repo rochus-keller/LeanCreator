@@ -27,6 +27,7 @@
 #include <utils/algorithm.h>
 #include <utils/filesystemwatcher.h>
 #include <utils/qtcassert.h>
+#include <utils/db/database.h>
 
 #include <QDateTime>
 #include <QDebug>
@@ -38,12 +39,6 @@
 
 #include <help/qhelpenginecore.h>
 
-#ifndef QT_NO_SQL
-#include <QSqlDatabase>
-#include <QSqlDriver>
-#include <QSqlError>
-#include <QSqlQuery>
-#endif
 
 static const char kUserDocumentationKey[] = "Help/UserDocumentation";
 
@@ -77,21 +72,6 @@ struct HelpManagerPrivate
 static HelpManager *m_instance = 0;
 static HelpManagerPrivate *d;
 
-static const char linksForKeyQuery[] = "SELECT d.Title, f.Name, e.Name, "
-    "d.Name, a.Anchor FROM IndexTable a, FileNameTable d, FolderTable e, "
-    "NamespaceTable f WHERE a.FileId=d.FileId AND d.FolderId=e.Id AND "
-    "a.NamespaceId=f.Id AND a.Name='%1'";
-
-// -- DbCleaner
-
-struct DbCleaner
-{
-    DbCleaner(const QString &dbName) : name(dbName) {}
-#ifndef QT_NO_SQL
-    ~DbCleaner() { QSqlDatabase::removeDatabase(name); }
-#endif
-    QString name;
-};
 
 // -- HelpManager
 
@@ -209,38 +189,30 @@ static QUrl buildQUrl(const QString &ns, const QString &folder,
     return url;
 }
 
-// This should go into Qt 4.8 once we start using it for LeanCreator
 QMap<QString, QUrl> HelpManager::linksForKeyword(const QString &key)
 {
     QMap<QString, QUrl> links;
     QTC_ASSERT(!d->m_needsSetup, return links);
 
-    const QLatin1String sqlite("QSQLITE");
-    const QLatin1String name("HelpManager::linksForKeyword");
-
-    DbCleaner cleaner(name);
-#if !defined QT_NO_SQL
-    QSqlDatabase db = QSqlDatabase::addDatabase(sqlite, name);
-    if (db.driver() && db.driver()->lastError().type() == QSqlError::NoError) {
-        const QStringList &registeredDocs = d->m_helpEngine->registeredDocumentations();
-        foreach (const QString &nameSpace, registeredDocs) {
-            db.setDatabaseName(d->m_helpEngine->documentationFileName(nameSpace));
-            if (db.open()) {
-                QSqlQuery query = QSqlQuery(db);
-                query.setForwardOnly(true);
-                query.exec(QString::fromLatin1(linksForKeyQuery).arg(key));
-                while (query.next()) {
-                    QString title = query.value(0).toString();
-                    if (title.isEmpty()) // generate a title + corresponding path
-                        title = key + QLatin1String(" : ") + query.value(3).toString();
-                    links.insertMulti(title, buildQUrl(query.value(1).toString(),
-                        query.value(2).toString(), query.value(3).toString(),
-                        query.value(4).toString()));
-                }
+    const QStringList &registeredDocs = d->m_helpEngine->registeredDocumentations();
+    foreach (const QString &nameSpace, registeredDocs) {
+        Utils::Database db;
+        if (db.open(d->m_helpEngine->documentationFileName(nameSpace),true)) {
+            const QString sql = QString("SELECT d.Title, f.Name, e.Name, "
+                                        "d.Name, a.Anchor FROM IndexTable a, FileNameTable d, FolderTable e, "
+                                        "NamespaceTable f WHERE a.FileId=d.FileId AND d.FolderId=e.Id AND "
+                                        "a.NamespaceId=f.Id AND a.Name='%1'").arg(key);
+            Utils::Query query(&db, sql.toUtf8());
+            while (query.next()) {
+                QString title = query.text(0);
+                if (title.isEmpty()) // generate a title + corresponding path
+                    title = key + QLatin1String(" : ") + query.text(3);
+                links.insertMulti(title, buildQUrl(query.text(1),
+                    query.text(2), query.text(3), query.text(4)));
             }
         }
     }
-#endif
+
     return links;
 }
 
@@ -323,28 +295,17 @@ HelpManager::Filters HelpManager::fixedFilters()
     Filters fixedFilters;
     QTC_ASSERT(!d->m_needsSetup, return fixedFilters);
 
-    const QLatin1String sqlite("QSQLITE");
-    const QLatin1String name("HelpManager::fixedCustomFilters");
-
-    DbCleaner cleaner(name);
-#if !defined QT_NO_SQL
-    QSqlDatabase db = QSqlDatabase::addDatabase(sqlite, name);
-    if (db.driver() && db.driver()->lastError().type() == QSqlError::NoError) {
-        const QStringList &registeredDocs = d->m_helpEngine->registeredDocumentations();
-        foreach (const QString &nameSpace, registeredDocs) {
-            db.setDatabaseName(d->m_helpEngine->documentationFileName(nameSpace));
-            if (db.open()) {
-                QSqlQuery query = QSqlQuery(db);
-                query.setForwardOnly(true);
-                query.exec(QLatin1String("SELECT Name FROM FilterNameTable"));
-                while (query.next()) {
-                    const QString &filter = query.value(0).toString();
-                    fixedFilters.insert(filter, d->m_helpEngine->filterAttributes(filter));
-                }
+    const QStringList &registeredDocs = d->m_helpEngine->registeredDocumentations();
+    foreach (const QString &nameSpace, registeredDocs) {
+        Utils::Database db;
+        if (db.open(d->m_helpEngine->documentationFileName(nameSpace), true)) {
+            Utils::Query query(&db, "SELECT Name FROM FilterNameTable");
+            while (query.next()) {
+                const QString &filter = query.text(0);
+                fixedFilters.insert(filter, d->m_helpEngine->filterAttributes(filter));
             }
         }
     }
-#endif
     return fixedFilters;
 }
 

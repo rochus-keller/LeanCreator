@@ -26,93 +26,23 @@
 #include "qhelpcollectionhandler_p.h"
 #include "qhelp_global.h"
 #include "qhelpdbreader_p.h"
+#include <utils/db/database.h>
 
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QDebug>
 
-#include "sqlite3.h"
+using namespace Utils;
 
 QT_BEGIN_NAMESPACE
-
-class QHelpCollectionHandler::Db {
-public:
-    Db():db(0){}
-    ~Db()
-    {
-        sqlite3_close(db);
-    }
-
-    sqlite3* db;
-
-    bool exec( const QByteArray& sql )
-    {
-        return sqlite3_exec(db, sql.constData(), 0, 0, 0 ) == SQLITE_OK;
-    }
-    int lastId()
-    {
-        return sqlite3_last_insert_rowid(db);
-    }
-
-    struct Stm
-    {
-        sqlite3_stmt* s;
-        Stm( Db* db, const QByteArray& sql):s(0)
-        {
-            sqlite3_prepare( db->db, sql.constData(), sql.size(), &s, 0 );
-        }
-        ~Stm()
-        {
-            sqlite3_finalize(s);
-        }
-        bool next()
-        {
-            return sqlite3_step(s) == SQLITE_ROW;
-        }
-        bool exec()
-        {
-            const int res = sqlite3_step(s);
-            return res == SQLITE_ROW || res == SQLITE_DONE;
-        }
-        QString text(int col) const
-        {
-            const char* str = (const char*)sqlite3_column_text(s, col);
-            const int len = sqlite3_column_bytes(s, col);
-            return QString::fromUtf8(str,len);
-        }
-        int toInt(int col) const
-        {
-            return sqlite3_column_int(s,col);
-        }
-        QByteArray byteArray(int col) const
-        {
-            const void* data = sqlite3_column_blob(s, col);
-            const int len = sqlite3_column_bytes(s, col);
-            return QByteArray((const char*)data,len);
-        }
-        void bind(int col, const QString& str)
-        {
-            const QByteArray tmp = str.toUtf8();
-            sqlite3_bind_text(s, col + 1, tmp.constData(), tmp.size(), SQLITE_TRANSIENT);
-        }
-        void bind(int col, const QByteArray& str)
-        {
-            sqlite3_bind_blob(s, col + 1, str.constData(), str.size(), SQLITE_TRANSIENT);
-        }
-        void bind(int col, int i)
-        {
-            sqlite3_bind_int(s, col + 1, i);
-        }
-   };
-};
 
 QHelpCollectionHandler::QHelpCollectionHandler(const QString &collectionFile, QObject *parent)
     : QObject(parent)
     , m_dbOpened(false)
     , m_collectionFile(collectionFile)
     , m_connectionName(QString())
-    , d_db( new Db() )
+    , d_db( new Database() )
 {
     QFileInfo fi(m_collectionFile);
     if (!fi.isAbsolute())
@@ -146,9 +76,8 @@ bool QHelpCollectionHandler::openCollectionFile()
 
     m_connectionName = QHelpGlobal::uniquifyConnectionName(
         QLatin1String("QHelpCollectionHandler"), this);
-    bool openingOk = sqlite3_open( collectionFile().toUtf8().constData(), &d_db->db) == SQLITE_OK;
+    const bool openingOk = d_db->open( collectionFile() );
     if (!openingOk) {
-        sqlite3_close(d_db->db);
         emit error(tr("Cannot open collection file: %1").arg(collectionFile()));
         return false;
     }
@@ -156,9 +85,9 @@ bool QHelpCollectionHandler::openCollectionFile()
     d_db->exec("PRAGMA synchronous=OFF");
     d_db->exec("PRAGMA cache_size=3000");
 
-    Db::Stm s(d_db, "SELECT COUNT(*) FROM sqlite_master WHERE TYPE=\'table\'"
+    Query s(d_db, "SELECT COUNT(*) FROM sqlite_master WHERE TYPE=\'table\'"
                                "AND Name=\'NamespaceTable\'");
-    if ( s.next() && s.toInt(0) < 1) {
+    if ( s.next() && s.number(0) < 1) {
         if (!createTables(d_db)) {
             emit error(tr("Cannot create tables in file %1.").arg(collectionFile()));
             return false;
@@ -188,10 +117,9 @@ bool QHelpCollectionHandler::copyCollectionFile(const QString &fileName)
     QString colFile = fi.absoluteFilePath();
     QString connectionName = QHelpGlobal::uniquifyConnectionName(
         QLatin1String("QHelpCollectionHandlerCopy"), this);
-    Db db2;
-    bool openingOk = sqlite3_open( colFile.toUtf8().constData(), &db2.db) == SQLITE_OK;
+    Database db2;
+    bool openingOk = db2.open( colFile );
     if (!openingOk) {
-        sqlite3_close(db2.db);
         emit error(tr("Cannot open collection file: %1").arg(colFile));
         return false;
     }
@@ -208,9 +136,9 @@ bool QHelpCollectionHandler::copyCollectionFile(const QString &fileName)
     QString oldFilePath;
     QFileInfo newColFi(colFile);
 
-    Db::Stm s1( d_db, "SELECT Name, FilePath FROM NamespaceTable");
+    Query s1( d_db, "SELECT Name, FilePath FROM NamespaceTable");
     while (s1.next()) {
-        Db::Stm s(&db2,"INSERT INTO NamespaceTable VALUES(NULL, ?, ?)");
+        Query s(&db2,"INSERT INTO NamespaceTable VALUES(NULL, ?, ?)");
         s.bind(0, s1.text(0) );
         oldFilePath = s1.text(1);
         if (!QDir::isAbsolutePath(oldFilePath))
@@ -219,51 +147,51 @@ bool QHelpCollectionHandler::copyCollectionFile(const QString &fileName)
         s.next();
     }
 
-    Db::Stm s2( d_db, "SELECT NamespaceId, Name FROM FolderTable");
+    Query s2( d_db, "SELECT NamespaceId, Name FROM FolderTable");
     while (s2.next()) {
-        Db::Stm s(&db2,"INSERT INTO FolderTable VALUES(NULL, ?, ?)");
+        Query s(&db2,"INSERT INTO FolderTable VALUES(NULL, ?, ?)");
         s.bind(0, s2.text(0));
         s.bind(1, s2.text(1));
         s.next();
     }
 
-    Db::Stm s3( d_db, "SELECT Name FROM FilterAttributeTable");
+    Query s3( d_db, "SELECT Name FROM FilterAttributeTable");
     while (s3.next()) {
-        Db::Stm s(&db2,"INSERT INTO FilterAttributeTable VALUES(NULL, ?)");
+        Query s(&db2,"INSERT INTO FilterAttributeTable VALUES(NULL, ?)");
         s.bind(0, s3.text(0));
         s.next();
     }
 
-    Db::Stm s4( d_db, "SELECT Name FROM FilterNameTable");
+    Query s4( d_db, "SELECT Name FROM FilterNameTable");
     while (s4.next()) {
-        Db::Stm s(&db2,"INSERT INTO FilterNameTable VALUES(NULL, ?)");
+        Query s(&db2,"INSERT INTO FilterNameTable VALUES(NULL, ?)");
         s.bind(0, s4.text(0));
         s.next();
     }
 
-    Db::Stm s5( d_db, "SELECT NameId, FilterAttributeId FROM FilterTable");
+    Query s5( d_db, "SELECT NameId, FilterAttributeId FROM FilterTable");
     while (s5.next()) {
-        Db::Stm s(&db2,"INSERT INTO FilterTable VALUES(?, ?)");
-        s.bind(0, s5.toInt(0));
-        s.bind(1, s5.toInt(1));
+        Query s(&db2,"INSERT INTO FilterTable VALUES(?, ?)");
+        s.bind(0, s5.number(0));
+        s.bind(1, s5.number(1));
         s.next();
     }
 
-    Db::Stm s6( d_db, "SELECT Key, Value FROM SettingsTable");
+    Query s6( d_db, "SELECT Key, Value FROM SettingsTable");
     while (s6.next()) {
         const QString tmp = s6.text(0);
         if (tmp == QLatin1String("CluceneSearchNamespaces"))
             continue;
-        Db::Stm s(&db2,"INSERT INTO SettingsTable VALUES(?, ?)");
+        Query s(&db2,"INSERT INTO SettingsTable VALUES(?, ?)");
         s.bind(0, tmp);
-        s.bind(1, s6.byteArray(1));
+        s.bind(1, s6.bytes(1));
         s.next();
     }
 
     return true;
 }
 
-bool QHelpCollectionHandler::createTables(Db* db)
+bool QHelpCollectionHandler::createTables(Database* db)
 {
     QStringList tables;
     tables << QLatin1String("CREATE TABLE NamespaceTable ("
@@ -298,7 +226,7 @@ QStringList QHelpCollectionHandler::customFilters() const
 {
     QStringList list;
     if (m_dbOpened) {
-        Db::Stm s(d_db, "SELECT Name FROM FilterNameTable");
+        Query s(d_db, "SELECT Name FROM FilterNameTable");
         while (s.next())
             list.append(s.text(0));
     }
@@ -311,21 +239,21 @@ bool QHelpCollectionHandler::removeCustomFilter(const QString &filterName)
         return false;
 
     int filterNameId = -1;
-    Db::Stm s1(d_db, "SELECT Id FROM FilterNameTable WHERE Name=?");
+    Query s1(d_db, "SELECT Id FROM FilterNameTable WHERE Name=?");
     s1.bind(0, filterName);
     if (s1.next())
-        filterNameId = s1.toInt(0);
+        filterNameId = s1.number(0);
 
     if (filterNameId < 0) {
         emit error(tr("Unknown filter '%1'.").arg(filterName));
         return false;
     }
 
-    Db::Stm s2(d_db, "DELETE FROM FilterTable WHERE NameId=?");
+    Query s2(d_db, "DELETE FROM FilterTable WHERE NameId=?");
     s2.bind(0, filterNameId);
     s2.next();
 
-    Db::Stm s3(d_db, "DELETE FROM FilterNameTable WHERE Id=?");
+    Query s3(d_db, "DELETE FROM FilterNameTable WHERE Id=?");
     s3.bind(0, filterNameId);
     s3.next();
     return true;
@@ -338,30 +266,30 @@ bool QHelpCollectionHandler::addCustomFilter(const QString &filterName,
         return false;
 
     int nameId = -1;
-    Db::Stm s1(d_db, "SELECT Id FROM FilterNameTable WHERE Name=?");
+    Query s1(d_db, "SELECT Id FROM FilterNameTable WHERE Name=?");
     s1.bind(0, filterName);
     if (s1.next())
-        nameId = s1.toInt(0);
+        nameId = s1.number(0);
 
-    Db::Stm s2(d_db, "SELECT Id, Name FROM FilterAttributeTable");
+    Query s2(d_db, "SELECT Id, Name FROM FilterAttributeTable");
     QStringList idsToInsert = attributes;
     QMap<QString, int> attributeMap;
     while (s2.next()) {
         const QString tmp = s2.text(1);
-        attributeMap.insert(tmp,s2.toInt(0));
+        attributeMap.insert(tmp,s2.number(0));
         if (idsToInsert.contains(tmp))
             idsToInsert.removeAll(tmp);
     }
 
     foreach (const QString &id, idsToInsert) {
-        Db::Stm s3(d_db, "INSERT INTO FilterAttributeTable VALUES(NULL, ?)");
+        Query s3(d_db, "INSERT INTO FilterAttributeTable VALUES(NULL, ?)");
         s3.bind(0, id);
         s3.next();
         attributeMap.insert(id, d_db->lastId());
     }
 
     if (nameId < 0) {
-        Db::Stm s4(d_db, "INSERT INTO FilterNameTable VALUES(NULL, ?)");
+        Query s4(d_db, "INSERT INTO FilterNameTable VALUES(NULL, ?)");
         s4.bind(0, filterName);
         if (s4.exec())
             nameId = d_db->lastId();
@@ -372,12 +300,12 @@ bool QHelpCollectionHandler::addCustomFilter(const QString &filterName,
         return false;
     }
 
-    Db::Stm s5(d_db, "DELETE FROM FilterTable WHERE NameId=?");
+    Query s5(d_db, "DELETE FROM FilterTable WHERE NameId=?");
     s5.bind(0, nameId);
     s5.next();
 
     foreach (const QString &att, attributes) {
-        Db::Stm s6(d_db, "INSERT INTO FilterTable VALUES(?, ?)");
+        Query s6(d_db, "INSERT INTO FilterTable VALUES(?, ?)");
         s6.bind(0, nameId);
         s6.bind(1, attributeMap[att]);
         if( !s6.exec() )
@@ -390,7 +318,7 @@ QHelpCollectionHandler::DocInfoList QHelpCollectionHandler::registeredDocumentat
 {
     DocInfoList list;
     if (m_dbOpened) {
-        Db::Stm s(d_db, "SELECT a.Name, a.FilePath, b.Name "
+        Query s(d_db, "SELECT a.Name, a.FilePath, b.Name "
             "FROM NamespaceTable a, FolderTable b WHERE a.Id=b.NamespaceId");
 
         while (s.next()) {
@@ -443,23 +371,23 @@ bool QHelpCollectionHandler::unregisterDocumentation(const QString &namespaceNam
     if (!isDBOpened())
         return false;
 
-    Db::Stm s1(d_db, "SELECT Id FROM NamespaceTable WHERE Name=?");
+    Query s1(d_db, "SELECT Id FROM NamespaceTable WHERE Name=?");
     s1.bind(0, namespaceName);
 
     int nsId = -1;
     if (s1.next())
-        nsId = s1.toInt(0);
+        nsId = s1.number(0);
 
     if (nsId < 0) {
         emit error(tr("The namespace %1 was not registered.").arg(namespaceName));
         return false;
     }
 
-    Db::Stm s2(d_db, "DELETE FROM NamespaceTable WHERE Id=?");
+    Query s2(d_db, "DELETE FROM NamespaceTable WHERE Id=?");
     s2.bind(0, nsId);
     s2.exec();
 
-    Db::Stm s3(d_db, "DELETE FROM FolderTable WHERE NamespaceId=?");
+    Query s3(d_db, "DELETE FROM FolderTable WHERE NamespaceId=?");
     s3.bind(0, nsId);
     return s3.exec();
 }
@@ -469,7 +397,7 @@ bool QHelpCollectionHandler::removeCustomValue(const QString &key)
     if (!isDBOpened())
         return false;
 
-    Db::Stm s1(d_db, "DELETE FROM SettingsTable WHERE Key=?");
+    Query s1(d_db, "DELETE FROM SettingsTable WHERE Key=?");
     s1.bind(0, key);
     return s1.exec();
 }
@@ -479,16 +407,16 @@ QVariant QHelpCollectionHandler::customValue(const QString &key,
 {
     QVariant value = defaultValue;
     if (m_dbOpened) {
-        Db::Stm s1(d_db, "SELECT COUNT(Key) FROM SettingsTable WHERE Key=?");
+        Query s1(d_db, "SELECT COUNT(Key) FROM SettingsTable WHERE Key=?");
         s1.bind(0, key);
-        if (!s1.next() || !s1.toInt(0)) {
+        if (!s1.next() || !s1.number(0)) {
             return defaultValue;
         }
 
-        Db::Stm s2(d_db, "SELECT Value FROM SettingsTable WHERE Key=?");
+        Query s2(d_db, "SELECT Value FROM SettingsTable WHERE Key=?");
         s2.bind(0, key);
         if (s2.next())
-            value = s2.byteArray(0);
+            value = s2.bytes(0);
     }
     return value;
 }
@@ -499,16 +427,16 @@ bool QHelpCollectionHandler::setCustomValue(const QString &key,
     if (!isDBOpened())
         return false;
 
-    Db::Stm s1(d_db, "SELECT Value FROM SettingsTable WHERE Key=?");
+    Query s1(d_db, "SELECT Value FROM SettingsTable WHERE Key=?");
     s1.bind(0, key);
     if (s1.next()) {
-        Db::Stm s2(d_db, "UPDATE SettingsTable SET Value=? where Key=?");
+        Query s2(d_db, "UPDATE SettingsTable SET Value=? where Key=?");
         s2.bind(0, value.toByteArray());
         s2.bind(1, key);
         return s2.exec();
     }
     else {
-        Db::Stm s3(d_db, "INSERT INTO SettingsTable VALUES(?, ?)");
+        Query s3(d_db, "INSERT INTO SettingsTable VALUES(?, ?)");
         s3.bind(0, key);
         s3.bind(1, value.toByteArray());
         return s3.exec();
@@ -521,14 +449,14 @@ bool QHelpCollectionHandler::addFilterAttributes(const QStringList &attributes)
     if (!isDBOpened())
         return false;
 
-    Db::Stm s1(d_db, "SELECT Name FROM FilterAttributeTable");
+    Query s1(d_db, "SELECT Name FROM FilterAttributeTable");
     QSet<QString> atts;
     while (s1.next())
         atts.insert(s1.text(0));
 
     foreach (const QString &s, attributes) {
         if (!atts.contains(s)) {
-            Db::Stm s2(d_db, "INSERT INTO FilterAttributeTable VALUES(NULL, ?)");
+            Query s2(d_db, "INSERT INTO FilterAttributeTable VALUES(NULL, ?)");
             s2.bind(0, s);
             s2.exec();
         }
@@ -540,7 +468,7 @@ QStringList QHelpCollectionHandler::filterAttributes() const
 {
     QStringList list;
     if (m_dbOpened) {
-        Db::Stm s1(d_db, "SELECT Name FROM FilterAttributeTable");
+        Query s1(d_db, "SELECT Name FROM FilterAttributeTable");
         while (s1.next())
             list.append(s1.text(0));
     }
@@ -551,7 +479,7 @@ QStringList QHelpCollectionHandler::filterAttributes(const QString &filterName) 
 {
     QStringList list;
     if (m_dbOpened) {
-        Db::Stm s1(d_db, "SELECT a.Name FROM FilterAttributeTable a, "
+        Query s1(d_db, "SELECT a.Name FROM FilterAttributeTable a, "
             "FilterTable b, FilterNameTable c WHERE a.Id=b.FilterAttributeId "
             "AND b.NameId=c.Id AND c.Name=?");
         s1.bind(0, filterName);
@@ -563,17 +491,17 @@ QStringList QHelpCollectionHandler::filterAttributes(const QString &filterName) 
 
 int QHelpCollectionHandler::registerNamespace(const QString &nspace, const QString &fileName)
 {
-    Db::Stm s1(d_db, "SELECT COUNT(Id) FROM NamespaceTable WHERE Name=?");
+    Query s1(d_db, "SELECT COUNT(Id) FROM NamespaceTable WHERE Name=?");
     s1.bind(0, nspace);
     while (s1.next()) {
-        if (s1.toInt(0) > 0) {
+        if (s1.number(0) > 0) {
             emit error(tr("Namespace %1 already exists.").arg(nspace));
             return -1;
         }
     }
 
     QFileInfo fi(m_collectionFile);
-    Db::Stm s2(d_db, "INSERT INTO NamespaceTable VALUES(NULL, ?, ?)");
+    Query s2(d_db, "INSERT INTO NamespaceTable VALUES(NULL, ?, ?)");
     s2.bind(0, nspace);
     s2.bind(1, fi.absoluteDir().relativeFilePath(fileName));
     int namespaceId = -1;
@@ -588,7 +516,7 @@ int QHelpCollectionHandler::registerNamespace(const QString &nspace, const QStri
 
 bool QHelpCollectionHandler::registerVirtualFolder(const QString &folderName, int namespaceId)
 {
-    Db::Stm s1(d_db, "INSERT INTO FolderTable VALUES(NULL, ?, ?)");
+    Query s1(d_db, "INSERT INTO FolderTable VALUES(NULL, ?, ?)");
     s1.bind(0, namespaceId);
     s1.bind(1, folderName);
     return s1.exec();
@@ -599,10 +527,9 @@ void QHelpCollectionHandler::optimizeDatabase(const QString &fileName)
     if (!QFile::exists(fileName))
         return;
 
-    Db db2;
-    bool openingOk = sqlite3_open( fileName.toUtf8(), &db2.db) == SQLITE_OK;
+    Database db2;
+    bool openingOk = db2.open( fileName );
     if (!openingOk) {
-        sqlite3_close(db2.db);
         emit error(tr("Cannot open database '%1' to optimize.").arg(fileName));
         return;
     }

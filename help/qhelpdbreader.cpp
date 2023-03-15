@@ -25,63 +25,15 @@
 
 #include "qhelpdbreader_p.h"
 #include "qhelp_global.h"
+#include <utils/db/database.h>
 
 #include <QtCore/QVariant>
 #include <QtCore/QFile>
 #include <QtDebug>
 
-#include "sqlite3.h"
+using namespace Utils;
 
 QT_BEGIN_NAMESPACE
-
-class QHelpDBReader::Db {
-public:
-    Db():db(0){}
-    ~Db()
-    {
-        sqlite3_close(db);
-    }
-
-    sqlite3* db;
-
-    struct Stm
-    {
-        sqlite3_stmt* s;
-        Stm( Db* db, const QByteArray& sql):s(0)
-        {
-            sqlite3_prepare( db->db, sql.constData(), sql.size(), &s, 0 );
-        }
-        ~Stm()
-        {
-            sqlite3_finalize(s);
-        }
-        bool next()
-        {
-            return sqlite3_step(s) == SQLITE_ROW;
-        }
-        QString text(int col) const
-        {
-            const char* str = (const char*)sqlite3_column_text(s, col);
-            const int len = sqlite3_column_bytes(s, col);
-            return QString::fromUtf8(str,len);
-        }
-        int toInt(int col) const
-        {
-            return sqlite3_column_int(s,col);
-        }
-        QByteArray byteArray(int col) const
-        {
-            const void* data = sqlite3_column_blob(s, col);
-            const int len = sqlite3_column_bytes(s, col);
-            return QByteArray((const char*)data,len);
-        }
-        void bind(int col, const QString& str)
-        {
-            const QByteArray tmp = str.toUtf8();
-            sqlite3_bind_text(s, col + 1, tmp.constData(), tmp.size(), SQLITE_TRANSIENT);
-        }
-    };
-};
 
 QHelpDBReader::QHelpDBReader(const QString &dbName)
     : QObject(0),d_db(0)
@@ -104,7 +56,7 @@ void QHelpDBReader::initObject(const QString &dbName, const QString &uniqueId)
     m_uniqueId = uniqueId;
     m_initDone = false;
     m_useAttributesCache = false;
-    d_db = new Db;
+    d_db = new Database;
 }
 
 QHelpDBReader::~QHelpDBReader()
@@ -121,12 +73,11 @@ bool QHelpDBReader::init()
     if (!QFile::exists(m_dbName))
         return false;
 
-    if( sqlite3_open_v2( m_dbName.toUtf8().constData(), &d_db->db, SQLITE_OPEN_READONLY, 0) != SQLITE_OK )
+    if( !d_db->open( m_dbName, true) )
     {
         /*: The placeholders are: %1 - The name of the database which cannot be opened
                                   %2 - The unique id for the connection */
         m_error = tr("Cannot open database '%1' '%2'").arg(m_dbName, m_uniqueId);
-        sqlite3_close(d_db->db);
         return false;
     }
     m_initDone = true;
@@ -148,8 +99,8 @@ QString QHelpDBReader::namespaceName() const
 {
     if (!m_namespace.isEmpty())
         return m_namespace;
-    if (d_db->db) {
-        Db::Stm s(d_db, "SELECT Name FROM NamespaceTable");
+    if (d_db->ok()) {
+        Query s(d_db, "SELECT Name FROM NamespaceTable");
         if( s.next() )
             m_namespace = s.text(0);
     }
@@ -158,8 +109,8 @@ QString QHelpDBReader::namespaceName() const
 
 QString QHelpDBReader::virtualFolder() const
 {
-    if (d_db->db) {
-        Db::Stm s(d_db, "SELECT Name FROM FolderTable WHERE Id=1");
+    if (d_db->ok()) {
+        Query s(d_db, "SELECT Name FROM FolderTable WHERE Id=1");
         if( s.next() )
             return s.text(0);
     }
@@ -169,12 +120,12 @@ QString QHelpDBReader::virtualFolder() const
 QList<QStringList> QHelpDBReader::filterAttributeSets() const
 {
     QList<QStringList> result;
-    if (d_db->db) {
-        Db::Stm s(d_db,"SELECT a.Id, b.Name FROM FileAttributeSetTable a, "
+    if (d_db->ok()) {
+        Query s(d_db,"SELECT a.Id, b.Name FROM FileAttributeSetTable a, "
             "FilterAttributeTable b WHERE a.FilterAttributeId=b.Id ORDER BY a.Id");
         int oldId = -1;
         while (s.next()) {
-            int id = s.toInt(0);
+            int id = s.number(0);
             if (id != oldId) {
                 result.append(QStringList());
                 oldId = id;
@@ -189,7 +140,7 @@ bool QHelpDBReader::fileExists(const QString &virtualFolder,
                                const QString &filePath,
                                const QStringList &filterAttributes) const
 {
-    if (virtualFolder.isEmpty() || filePath.isEmpty() || !d_db->db)
+    if (virtualFolder.isEmpty() || filePath.isEmpty() || !d_db->ok())
         return false;
 
 //SELECT COUNT(a.Name) FROM FileNameTable a, FolderTable b, FileFilterTable c, FilterAttributeTable d WHERE a.FolderId=b.Id AND b.Name='qtdoc' AND a.Name='qstring.html' AND a.FileId=c.FileId AND c.FilterAttributeId=d.Id AND d.Name='qtrefdoc'
@@ -215,8 +166,8 @@ bool QHelpDBReader::fileExists(const QString &virtualFolder,
                 .arg(quote(filterAttributes.at(i))));
         }
     }
-    Db::Stm s(d_db, query.toUtf8());
-    if (s.next() && s.toInt(0))
+    Query s(d_db, query.toUtf8());
+    if (s.next() && s.number(0))
         return true;
     return false;
 }
@@ -225,11 +176,11 @@ QByteArray QHelpDBReader::fileData(const QString &virtualFolder,
                                    const QString &filePath) const
 {
     QByteArray ba;
-    if (virtualFolder.isEmpty() || filePath.isEmpty() || !d_db->db)
+    if (virtualFolder.isEmpty() || filePath.isEmpty() || !d_db->ok())
         return ba;
 
     namespaceName();
-    Db::Stm s(d_db, "SELECT a.Data FROM FileDataTable a, FileNameTable b, FolderTable c, "
+    Query s(d_db, "SELECT a.Data FROM FileDataTable a, FileNameTable b, FolderTable c, "
         "NamespaceTable d WHERE a.Id=b.FileId AND (b.Name=? OR b.Name=?) AND b.FolderId=c.Id "
         "AND c.Name=? AND c.NamespaceId=d.Id AND d.Name=?");
     s.bind(0, filePath);
@@ -237,15 +188,15 @@ QByteArray QHelpDBReader::fileData(const QString &virtualFolder,
     s.bind(2, virtualFolder);
     s.bind(3, m_namespace);
     if (s.next() )
-        ba = qUncompress(s.byteArray(0));
+        ba = qUncompress(s.bytes(0));
     return ba;
 }
 
 QStringList QHelpDBReader::customFilters() const
 {
     QStringList lst;
-    if (d_db->db) {
-        Db::Stm s(d_db,"SELECT Name FROM FilterNameTable");
+    if (d_db->ok()) {
+        Query s(d_db,"SELECT Name FROM FilterNameTable");
         while (s.next())
             lst.append(s.text(0));
     }
@@ -255,7 +206,7 @@ QStringList QHelpDBReader::customFilters() const
 QStringList QHelpDBReader::filterAttributes(const QString &filterName) const
 {
     QStringList lst;
-    if (d_db->db) {
+    if (d_db->ok()) {
         QByteArray sql;
         if (filterName.isEmpty()) {
             sql = "SELECT Name FROM FilterAttributeTable";
@@ -264,7 +215,7 @@ QStringList QHelpDBReader::filterAttributes(const QString &filterName) const
                 "FilterTable b, FilterNameTable c WHERE c.Name=? "
                 "AND c.Id=b.NameId AND b.FilterAttributeId=a.Id";
         }
-        Db::Stm s(d_db,sql);
+        Query s(d_db,sql);
         if( !filterName.isEmpty() )
             s.bind(0, filterName);
         while (s.next())
@@ -276,7 +227,7 @@ QStringList QHelpDBReader::filterAttributes(const QString &filterName) const
 QStringList QHelpDBReader::indicesForFilter(const QStringList &filterAttributes) const
 {
     QStringList indices;
-    if (!d_db->db)
+    if (!d_db->ok())
         return indices;
 
     //SELECT DISTINCT a.Name FROM IndexTable a, IndexFilterTable b, FilterAttributeTable c WHERE a.Id=b.IndexId AND b.FilterAttributeId=c.Id AND c.Name in ('4.2.3', 'qt')
@@ -296,7 +247,7 @@ QStringList QHelpDBReader::indicesForFilter(const QStringList &filterAttributes)
         }
     }
 
-    Db::Stm s(d_db,query.toUtf8());
+    Query s(d_db,query.toUtf8());
     while (s.next()) {
         const QString tmp = s.text(0);
         if (!tmp.isEmpty())
@@ -308,7 +259,7 @@ QStringList QHelpDBReader::indicesForFilter(const QStringList &filterAttributes)
 void QHelpDBReader::linksForKeyword(const QString &keyword, const QStringList &filterAttributes,
                                     QMap<QString, QUrl> &linkMap) const
 {
-    if (!d_db->db)
+    if (!d_db->ok())
         return;
 
     QString query;
@@ -325,9 +276,9 @@ void QHelpDBReader::linksForKeyword(const QString &keyword, const QStringList &f
             "a.FileId=d.FileId AND d.FolderId=e.Id "
             "AND a.NamespaceId=f.Id AND a.Name='%1'"))
             .arg(quote(keyword));
-        Db::Stm s(d_db, query.toUtf8());
+        Query s(d_db, query.toUtf8());
         while (s.next()) {
-            const int tmp = s.toInt(5);
+            const int tmp = s.number(5);
             if (m_indicesCache.contains(tmp)) {
                 linkMap.insertMulti(s.text(0), buildQUrl(s.text(1),
                     s.text(2), s.text(3), s.text(4)));
@@ -354,7 +305,7 @@ void QHelpDBReader::linksForKeyword(const QString &keyword, const QStringList &f
     }
 
     QString title;
-    Db::Stm s(d_db, query.toUtf8());
+    Query s(d_db, query.toUtf8());
     while (s.next()) {
         title = s.text(0);
         if (title.isEmpty()) // generate a title + corresponding path
@@ -368,7 +319,7 @@ void QHelpDBReader::linksForIdentifier(const QString &id,
                                        const QStringList &filterAttributes,
                                        QMap<QString, QUrl> &linkMap) const
 {
-    if (!d_db->db)
+    if (!d_db->ok())
         return;
 
     QString query;
@@ -385,9 +336,9 @@ void QHelpDBReader::linksForIdentifier(const QString &id,
             "a.FileId=d.FileId AND d.FolderId=e.Id "
             "AND a.NamespaceId=f.Id AND a.Identifier='%1'"))
             .arg(quote(id));
-        Db::Stm s(d_db,query.toUtf8());
+        Query s(d_db,query.toUtf8());
         while (s.next()) {
-            if (m_indicesCache.contains(s.toInt(5))) {
+            if (m_indicesCache.contains(s.number(5))) {
                 linkMap.insertMulti(s.text(0), buildQUrl(s.text(1),
                     s.text(2), s.text(3),s.text(4)));
             }
@@ -413,7 +364,7 @@ void QHelpDBReader::linksForIdentifier(const QString &id,
         }
     }
 
-    Db::Stm s(d_db,query.toUtf8());
+    Query s(d_db,query.toUtf8());
     while (s.next()) {
         linkMap.insertMulti(s.text(0), buildQUrl(s.text(1),
             s.text(2), s.text(3),s.text(4)));
@@ -434,7 +385,7 @@ QUrl QHelpDBReader::buildQUrl(const QString &ns, const QString &folder,
 QList<QByteArray> QHelpDBReader::contentsForFilter(const QStringList &filterAttributes) const
 {
     QList<QByteArray> contents;
-    if (!d_db->db)
+    if (!d_db->ok())
         return contents;
 
     //SELECT DISTINCT a.Data FROM ContentsTable a, ContentsFilterTable b, FilterAttributeTable c WHERE a.Id=b.ContentsId AND b.FilterAttributeId=c.Id AND c.Name='qt' INTERSECT SELECT DISTINCT a.Data FROM ContentsTable a, ContentsFilterTable b, FilterAttributeTable c WHERE a.Id=b.ContentsId AND b.FilterAttributeId=c.Id AND c.Name='3.3.8';
@@ -455,9 +406,9 @@ QList<QByteArray> QHelpDBReader::contentsForFilter(const QStringList &filterAttr
         }
     }
 
-    Db::Stm s(d_db,query.toUtf8());
+    Query s(d_db,query.toUtf8());
     while (s.next()) {
-        contents.append(s.byteArray(0));
+        contents.append(s.bytes(0));
     }
     return contents;
 }
@@ -465,10 +416,10 @@ QList<QByteArray> QHelpDBReader::contentsForFilter(const QStringList &filterAttr
 QUrl QHelpDBReader::urlOfPath(const QString &relativePath) const
 {
     QUrl url;
-    if (!d_db->db)
+    if (!d_db->ok())
         return url;
 
-    Db::Stm s(d_db, "SELECT a.Name, b.Name FROM NamespaceTable a, "
+    Query s(d_db, "SELECT a.Name, b.Name FROM NamespaceTable a, "
         "FolderTable b WHERE a.id=b.NamespaceId and a.Id=1");
     if (s.next()) {
         QString rp = relativePath;
@@ -487,7 +438,7 @@ QStringList QHelpDBReader::files(const QStringList &filterAttributes,
                                  const QString &extensionFilter) const
 {
     QStringList lst;
-    if (!d_db->db)
+    if (!d_db->ok())
         return lst;
 
     QString query;
@@ -514,7 +465,7 @@ QStringList QHelpDBReader::files(const QStringList &filterAttributes,
                 .arg(extension));
         }
     }
-    Db::Stm s(d_db,query.toUtf8());
+    Query s(d_db,query.toUtf8());
     while (s.next()) {
         lst.append(s.text(0) + QLatin1Char('/')
             + s.text(1));
@@ -525,14 +476,14 @@ QStringList QHelpDBReader::files(const QStringList &filterAttributes,
 QVariant QHelpDBReader::metaData(const QString &name) const
 {
     QVariant v;
-    if (!d_db->db)
+    if (!d_db->ok())
         return v;
 
-    Db::Stm s(d_db, "SELECT COUNT(Value), Value FROM MetaDataTable "
+    Query s(d_db, "SELECT COUNT(Value), Value FROM MetaDataTable "
         "WHERE Name=?");
     s.bind(0, name);
     if (s.next()
-        && s.toInt(0) == 1)
+        && s.number(0) == 1)
         v = s.text(1);
     return v;
 }
@@ -571,10 +522,10 @@ QSet<int> QHelpDBReader::indexIds(const QStringList &attributes) const
             .arg(attributes.at(i)));
     }
 
-    Db::Stm s(d_db, query.toUtf8());
+    Query s(d_db, query.toUtf8());
 
     while (s.next())
-        ids.insert(s.toInt(0));
+        ids.insert(s.number(0));
 
     return ids;
 }
