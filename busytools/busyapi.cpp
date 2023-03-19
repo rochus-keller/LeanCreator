@@ -279,10 +279,15 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
     if( d_imp->params.toolchain_prefix.endsWith(".exe") )
         d_imp->params.toolchain_prefix.chop(4);
     if( in.toolchain == "gcc" )
+        // gcc or g++
         d_imp->params.toolchain_prefix.chop(3);
     else if( in.toolchain == "clang" )
-        d_imp->params.toolchain_prefix.chop(5);
-    else if( in.toolchain == "msvc" )
+    {
+        if( d_imp->params.toolchain_prefix.endsWith("clang++") )
+            d_imp->params.toolchain_prefix.chop(7);
+        else
+            d_imp->params.toolchain_prefix.chop(5);
+    }else if( in.toolchain == "msvc" )
         d_imp->params.toolchain_prefix.chop(2); // cl
 
     switch(in.abi.architecture())
