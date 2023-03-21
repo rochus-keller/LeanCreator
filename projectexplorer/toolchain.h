@@ -66,6 +66,7 @@ public:
 
     QString displayName() const;
     void setDisplayName(const QString &name);
+    virtual QString version() const { return QString(); }
 
     inline bool isAutoDetected() const { return detection() != ManualDetection; }
     Detection detection() const;

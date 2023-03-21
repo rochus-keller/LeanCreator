@@ -56,10 +56,12 @@ public:
         QByteArray toolchain_prefix;
         QByteArray os;
         QByteArray toolchain; // gcc, msvc, clang
+        quint32 tcver;
         QByteArray cpu;
         QByteArray wordsize;
         QList<QPair<QByteArray,QByteArray> > params;
         QByteArrayList targets;
+        ParseParams():tcver(0){}
     };
 
     bool parse( const ParseParams& params, bool checkTargets = true );

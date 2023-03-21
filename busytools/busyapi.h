@@ -327,6 +327,7 @@ public:
     QString buildVariant;
     QString compilerCommand;
     QString toolchain;
+    QString version;
     ProjectExplorer::Abi abi;
 };
 

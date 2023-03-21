@@ -27,6 +27,7 @@ extern "C" {
 #include <QTextDocument>
 #include <QTextCursor>
 #include <QTextBlock>
+#include <math.h>
 using namespace busy;
 
 class Internal::ModuleImp : public QSharedData
@@ -246,6 +247,22 @@ Engine*Project::getEngine() const
     return d_imp->d_eng.data();
 }
 
+static quint32 parseVersion( const QString& str )
+{
+    QList<quint16> numbers;
+    const QStringList parts = str.split('.');
+    for( int i = 0; i < parts.size(); i++ )
+    {
+        numbers.push_back( parts[i].toInt() );
+    }
+    quint32 res = 0;
+    for( int i = 0; i < numbers.size(); i++ )
+    {
+        res += ::pow( 100, numbers.size() - i - 1 ) * numbers[i];
+    }
+    return res;
+}
+
 bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
 {
     if( !isValid() )
@@ -271,7 +288,10 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
         d_imp->d_errs.d_errs.append(err);
         return false;
     }else
+    {
         d_imp->params.toolchain = in.toolchain.toUtf8();
+        d_imp->params.tcver = parseVersion(in.version);
+    }
 
     QFileInfo info(in.compilerCommand);
     d_imp->params.toolchain_path = info.absolutePath().toUtf8();

@@ -212,6 +212,11 @@ bool Engine::parse(const ParseParams& params, bool checkTargets)
     lua_setfield(d_imp->L,builtins,"host_toolchain");
     lua_setfield(d_imp->L,builtins,"target_toolchain");
 
+    lua_pushnumber(d_imp->L,params.tcver);
+    lua_pushvalue(d_imp->L,-1);
+    lua_setfield(d_imp->L,builtins,"host_toolchain_ver");
+    lua_setfield(d_imp->L,builtins,"target_toolchain_ver");
+
     if( bs_normalize_path2(params.toolchain_path) != BS_OK )
         d_imp->error(params.root_source_dir,0,0,"error normalizing toolchain path %s", params.toolchain_path.constData() );
     lua_pushstring(d_imp->L,bs_global_buffer());
@@ -226,12 +231,8 @@ bool Engine::parse(const ParseParams& params, bool checkTargets)
 
     lua_pushinteger(d_imp->L,0);
     lua_pushvalue(d_imp->L,-1);
-    lua_pushvalue(d_imp->L,-1);
-    lua_pushvalue(d_imp->L,-1);
     lua_setfield(d_imp->L,builtins,"host_cpu_ver");
-    lua_setfield(d_imp->L,builtins,"host_toolchain_ver");
     lua_setfield(d_imp->L,builtins,"target_cpu_ver");
-    lua_setfield(d_imp->L,builtins,"target_toolchain_ver");
 
     lua_pushcfunction(d_imp->L, bs_compile);
     lua_pushstring(d_imp->L,params.root_source_dir.constData());

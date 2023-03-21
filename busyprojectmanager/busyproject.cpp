@@ -659,6 +659,7 @@ bool BusyProject::parse(const QVariantMap &config, const Environment &env, const
             params.toolchain = "gcc";
         params.compilerCommand = tc->compilerCommand().toString();
         params.abi = tc->targetAbi();
+        params.version = tc->version();
         Environment tmp = env;
         tc->addToEnvironment(tmp);
         params.env = tmp.toProcessEnvironment();
