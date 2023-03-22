@@ -237,7 +237,10 @@ static QList<Abi> guessGccAbi(const FileName &path, const QStringList &env,
 
 static QString gccVersion(const FileName &path, const QStringList &env)
 {
-    QStringList arguments(QLatin1String("-dumpversion"));
+    // we need both args, exactly in this order; see also
+    // https://stackoverflow.com/questions/45168516/gcc-7-1-1-on-fedora-26-dumpversion-now-only-includes-major-version-by-default
+    QStringList arguments(QLatin1String("-dumpfullversion"));
+    arguments << QLatin1String("-dumpversion");
     return QString::fromLocal8Bit(runGcc(path, arguments, env)).trimmed();
 }
 

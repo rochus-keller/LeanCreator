@@ -1,0 +1,2 @@
+GDB apparently uses Python 2.6, see https://support.xilinx.com/s/article/67945
+
