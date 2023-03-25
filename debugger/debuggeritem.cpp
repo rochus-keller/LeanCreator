@@ -115,7 +115,8 @@ void DebuggerItem::reinitializeFromFile()
     // happy with both -version and --version. So use the "working" -version
     // except for the experimental LLDB-MI which insists on --version.
     const char *version = "-version";
-    if (m_command.toFileInfo().baseName().toLower().contains(QLatin1String("lldb-mi")))
+    const QString baseName = m_command.toFileInfo().baseName().toLower();
+    if (baseName.contains("lldb-mi") || baseName == "lldbmi2" )
         version = "--version";
 
     QProcess proc;
