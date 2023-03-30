@@ -129,19 +129,28 @@ protected:
 
     void notifyEngineRemoteSetupFinished(const RemoteSetupResult &result) override;
 
+protected:
+    void timerEvent(QTimerEvent *event);
+    void updateProcStat(QByteArrayList &data);
+    void updateBreakpoint(QByteArrayList &data);
+
 private slots:
     void handleResponse(const QByteArray& data);
     void handleLldbError(QProcess::ProcessError);
     void handleLldbFinished(int,QProcess::ExitStatus);
     void readLldbStandardOutput();
     void readLldbStandardError();
+    void fetchFullBacktrace();
+    void stdoutReady();
+    void stderrReady();
 
 private:
     DebuggerCommand m_lastDebuggableCommand;
 
     Utils::QtcProcess m_lldb;
     QString m_lldbCmd;
-
+    QFile* d_out;
+    QFile* d_err;
 
 };
 

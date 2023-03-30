@@ -33,6 +33,7 @@
 #include <debugger/debuggerstringutils.h>
 #include <debugger/debuggertooltipmanager.h>
 #include <debugger/debuggeritemmanager.h>
+#include <debugger/procinterrupt.h>
 
 #include <debugger/breakhandler.h>
 #include <debugger/disassemblerlines.h>
@@ -61,6 +62,7 @@
 #include <QToolTip>
 #include <QVariant>
 #include <QJsonArray>
+#include <QTemporaryFile>
 
 using namespace Core;
 using namespace Utils;
@@ -68,64 +70,67 @@ using namespace Utils;
 namespace Debugger {
 namespace Internal {
 
+#if 1
 DebuggerEngine *createLldbEngine(const DebuggerRunParameters &startParameters)
 {
     return new LldbEngine2(startParameters);
 }
+#endif
 
 LldbEngine2::LldbEngine2(const DebuggerRunParameters &startParameters)
-    : DebuggerEngine(startParameters)
+    : DebuggerEngine(startParameters),d_out(0), d_err(0)
 {
     setObjectName(QLatin1String("LldbEngine2"));
 
 
 
-    /* TODO
     connect(action(AutoDerefPointers), &SavedAction::valueChanged,
-            this, &LldbEngine::updateLocals);
-    connect(action(CreateFullBacktrace), &QAction::triggered,
-            this, &LldbEngine::fetchFullBacktrace);
+            this, &LldbEngine2::updateLocals);
     connect(action(UseDebuggingHelpers), &SavedAction::valueChanged,
-            this, &LldbEngine::updateLocals);
+            this, &LldbEngine2::updateLocals);
     connect(action(UseDynamicType), &SavedAction::valueChanged,
-            this, &LldbEngine::updateLocals);
+            this, &LldbEngine2::updateLocals);
     connect(action(IntelFlavor), &SavedAction::valueChanged,
-            this, &LldbEngine::updateAll);
-            */
+            this, &LldbEngine2::updateAll);
+    connect(action(CreateFullBacktrace), &QAction::triggered,
+            this, &LldbEngine2::fetchFullBacktrace);
+
+    startTimer(200);
 }
 
 LldbEngine2::~LldbEngine2()
 {
+    m_lldb.disconnect();
 }
 
 bool LldbEngine2::hasCapability(unsigned cap) const
 {
     if (cap &
         ( 0
-        //| ReverseSteppingCapability
-        //| AutoDerefPointersCapability
-        //| DisassemblerCapability
-        //| RegisterCapability
-        //| ShowMemoryCapability
-        //| JumpToLineCapability
-        //| ReloadModuleCapability
-        //| ReloadModuleSymbolsCapability
-        //| BreakOnThrowAndCatchCapability
-        //| BreakConditionCapability
-        //| TracePointCapability
-        //| ReturnFromFunctionCapability
-        //| CreateFullBacktraceCapability
-        //| WatchpointByAddressCapability
-        //| WatchpointByExpressionCapability
-        //| AddWatcherCapability
-        //| WatchWidgetsCapability
-        //| ShowModuleSymbolsCapability
-        //| ShowModuleSectionsCapability
-        //| CatchCapability
-        //| OperateByInstructionCapability
-        //| RunToLineCapability
-        //| WatchComplexExpressionsCapability
-        //| MemoryAddressCapability
+//        | ReverseSteppingCapability
+//        | AutoDerefPointersCapability
+//        | DisassemblerCapability
+//        | RegisterCapability
+//        | ShowMemoryCapability
+//        | JumpToLineCapability
+//        | ReloadModuleCapability
+//        | ReloadModuleSymbolsCapability
+//        | BreakOnThrowAndCatchCapability
+//        | BreakConditionCapability
+//        | TracePointCapability
+//        | ReturnFromFunctionCapability
+//        | CreateFullBacktraceCapability
+//        | WatchpointByAddressCapability
+//        | WatchpointByExpressionCapability
+//        | AddWatcherCapability
+//        | WatchWidgetsCapability
+//        | ShowModuleSymbolsCapability
+//        | ShowModuleSectionsCapability
+//        | CatchCapability
+//        | OperateByInstructionCapability
+//        | RunToLineCapability
+//        | WatchComplexExpressionsCapability
+//        | MemoryAddressCapability
           ))
         return true;
 
@@ -145,9 +150,16 @@ bool LldbEngine2::canHandleToolTip(const DebuggerToolTipContext &) const
     return false; // TODO
 }
 
-void LldbEngine2::activateFrame(int index)
+void LldbEngine2::activateFrame(int frameIndex)
 {
-    // TODO
+    if (state() != InferiorStopOk && state() != InferiorUnrunnable)
+        return;
+
+    StackHandler *handler = stackHandler();
+    QTC_ASSERT(frameIndex < handler->stackSize(), return);
+    handler->setCurrentIndex(frameIndex);
+    gotoLocation(handler->currentFrame());
+    updateLocals();
 }
 
 void LldbEngine2::selectThread(ThreadId threadId)
@@ -157,18 +169,48 @@ void LldbEngine2::selectThread(ThreadId threadId)
 
 bool LldbEngine2::stateAcceptsBreakpointChanges() const
 {
-    // TODO
+    switch (state()) {
+    case InferiorSetupRequested:
+    case InferiorSetupOk:
+    case EngineRunRequested:
+    case InferiorRunRequested:
+    case InferiorRunOk:
+    case InferiorStopRequested:
+    case InferiorStopOk:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool LldbEngine2::acceptsBreakpoint(Breakpoint bp) const
 {
-    // TODO
-    return true;
+    if (runParameters().startMode == AttachCore)
+        return false;
+    return bp.parameters().isCppBreakpoint();
 }
 
 void LldbEngine2::insertBreakpoint(Breakpoint bp)
 {
+    const BreakpointParameters & p = bp.parameters();
+    if( p.type != BreakpointByFileAndLine )
+    {
+        showMessage("breakpoint type not yet supported");
+        bp.notifyBreakpointInsertFailed();
+        return;
+    }
+    bp.notifyBreakpointInsertProceeding();
+    QByteArray cmd = "breakpoint set --file ";
+    cmd += p.fileName.toUtf8();
+    cmd += " --line ";
+    cmd += QByteArray::number(p.lineNumber);
+    cmd += " --breakpoint-name BP";
+    cmd += bp.id().toByteArray();
+    m_lldb.write(cmd + "\n");
+    // bp.notifyBreakpointInsertOk();
+
     // TODO
+
 }
 
 void LldbEngine2::removeBreakpoint(Breakpoint bp)
@@ -249,6 +291,7 @@ void LldbEngine2::changeMemory(MemoryAgent *, QObject *, quint64 addr, const QBy
 void LldbEngine2::updateAll()
 {
     // TODO
+    updateLocals();
 }
 
 void LldbEngine2::runCommand(const DebuggerCommand &cmd)
@@ -326,112 +369,161 @@ void LldbEngine2::setupInferior()
     QtcProcess::prepareCommand(QFileInfo(rp.executable).absoluteFilePath(),
                                rp.processArgs, &executable, &args);
 
-    m_lldb.write( "file " + executable.toUtf8() + "\n" );
-
     // TODO: set breakpoints
 
-    notifyInferiorSetupOk(); // causes runEngine
+    // m_lldb.write("settings set echo-commands = true\n");
+
+    m_lldb.write( "file " + executable.toUtf8() + "\n" );
+    // stdout:
+    // Current executable set to
 }
 
 void LldbEngine2::runEngine()
 {
-    // TODO
+    attemptBreakpointSynchronization();
 
-    const DebuggerRunParameters& rp = runParameters();
+    QByteArray cmd = "process launch ";
 
-    QByteArray cmd;
-    if( rp.breakOnMain )
-        cmd = "process launch --stop-at-entry";
-    else
-        cmd = "process launch";
+    d_out = new QTemporaryFile(this);
+    d_out->open(QIODevice::ReadOnly);
+    cmd += "--stdout " + d_out->fileName().toUtf8();
+
+    d_err = new QTemporaryFile(this);
+    d_err->open(QIODevice::ReadOnly);
+    cmd += " --stderr " + d_err->fileName().toUtf8();
+
+    if( runParameters().breakOnMain )
+        cmd = " --stop-at-entry";
     m_lldb.write( cmd + "\n" );
 
-    // we come here as reaction to notifyInferiorSetupOk
-    notifyEngineRunAndInferiorRunOk();
+    notifyInferiorRunRequested();
 
-    if( rp.breakOnMain )
-        notifyInferiorStopOk();
+    // we come here as reaction to notifyInferiorSetupOk
 }
 
 void LldbEngine2::shutdownInferior()
 {
     // called after interruptInferior in case of Debug/Stop
-    // TODO
     m_lldb.write( "process kill\n" );
-    notifyInferiorShutdownOk();
 }
 
 void LldbEngine2::shutdownEngine()
 {
     // called after shutdownInferior in case of Debug/Stop
-    // TODO
     if( m_lldb.state() == QProcess::Running )
         m_lldb.write( "quit\n" );
         //m_lldb.terminate();
     notifyEngineShutdownOk();
+    if( d_out )
+    {
+        d_out->deleteLater();
+        d_out = 0;
+    }
+    if( d_err )
+    {
+        d_err->deleteLater();
+        d_err = 0;
+    }
 }
 
 void LldbEngine2::continueInferior()
 {
     // happens if Debug/contiue (Continue button)
+    notifyInferiorRunRequested();
     m_lldb.write( "thread continue\n" );
-    notifyInferiorRunOk();
+    // stdout
+    // "Resuming thread 0x2b56 in process 11094\n
+    //  Process 11094 resuming\n"
 }
 
 void LldbEngine2::interruptInferior()
 {
     // happens if Debug/interrupt (Pause button) or Debug/stop
-    // TODO
-    notifyInferiorStopOk();
-    // notifyInferiorSpontaneousStop();
+    QString error;
+    interruptProcess(m_lldb.pid(), LldbEngineType, &error);
+
+    // stdout:
+    // "Process 11094 stopped\n
+    //  * thread #1, name = 'hello', stop reason = signal SIGSTOP\n
+    //      frame #0: 0x000000000040243a hello`main(argc=1, argv=0x00007fffffffe8f8) at hello.cpp:55:5\n
+    //     52  \t\tl << \"alpha\" << \"beta\" << \"gamma\";\n
+    //     53  \t\tqDebug() << hello << QDateTime::currentDateTime().toString(Qt::ISODate) << str << l; // << v;\n
+    //     54  \t    std::cout << str.toUtf8().constData() << \" Hello World \" << hello.constData() << std::endl;\n
+    //  -> 55  \t    while(1)\n    \t    ^\n
+    //     56  \t    {\n
+    //     57  \t\n
+    //     58  \t    }\n"
 }
 
 void LldbEngine2::executeStep()
 {
+    notifyInferiorRunRequested();
     m_lldb.write( "thread step-in\n" );
-    notifyInferiorStopOk();
+    notifyInferiorRunOk();
+    // TODO setState(InferiorStopRequested);
 }
 
 void LldbEngine2::executeStepOut()
 {
+    notifyInferiorRunRequested();
     m_lldb.write( "thread step-out\n" );
-    notifyInferiorStopOk();
+    notifyInferiorRunOk();
+    // TODO setState(InferiorStopRequested);
 }
 
 void LldbEngine2::executeNext()
 {
+    notifyInferiorRunRequested();
     m_lldb.write( "thread step-over\n" );
-    notifyInferiorStopOk();
+    notifyInferiorRunOk();
+    // TODO setState(InferiorStopRequested);
+    // stdout
+    // "(lldb) thread step-over\n"
+
+    // stdout
+    // "Process 11094 stopped\n
+    //  * thread #1, name = 'hello', stop reason = signal SIGSTOP\n
+
 }
 
 void LldbEngine2::executeStepI()
 {
     // TODO
-    notifyInferiorStopOk();
+    notifyInferiorRunRequested();
+    notifyInferiorRunOk();
+    // TODO setState(InferiorStopRequested);
 }
 
 void LldbEngine2::executeNextI()
 {
     // TODO
-    notifyInferiorStopOk();
+    notifyInferiorRunRequested();
+    notifyInferiorRunOk();
+    // TODO setState(InferiorStopRequested);
 }
 
 void LldbEngine2::executeRunToLine(const ContextData &data)
 {
     // TODO
-    notifyInferiorStopOk();
+    notifyInferiorRunRequested();
+    notifyInferiorRunOk();
+    // TODO setState(InferiorStopRequested);
 }
 
 void LldbEngine2::executeRunToFunction(const QString &functionName)
 {
     // TODO
-    notifyInferiorStopOk();
+    notifyInferiorRunRequested();
+    notifyInferiorRunOk();
+   // TODO  setState(InferiorStopRequested);
 }
 
 void LldbEngine2::executeJumpToLine(const ContextData &data)
 {
     // TODO
-    notifyInferiorStopOk();
+    notifyInferiorRunRequested();
+    notifyInferiorRunOk();
+    // TODO setState(InferiorStopRequested);
 }
 
 void LldbEngine2::doUpdateLocals(const UpdateParameters &params)
@@ -444,9 +536,69 @@ void LldbEngine2::notifyEngineRemoteSetupFinished(const RemoteSetupResult &resul
     // TODO
 }
 
+void LldbEngine2::timerEvent(QTimerEvent *event)
+{
+    stdoutReady();
+    stderrReady();
+}
+
+void LldbEngine2::updateProcStat(QByteArrayList &data)
+{
+    const QByteArrayList parts = data.first().split(' ');
+    if( parts.size() > 2 )
+    {
+        if( parts[2].startsWith("launched") )
+        {
+            if( runParameters().breakOnMain )
+            {
+                notifyEngineRunAndInferiorStopOk();
+                updateAll();
+            }else
+                notifyEngineRunAndInferiorRunOk();
+        }else if( parts[2] == "stopped" )
+        {
+            notifyInferiorStopOk();
+            updateAll();
+        }else if( parts[2] == "exited" )
+            notifyInferiorShutdownOk();
+        else if( parts[2] == "resuming" )
+            notifyInferiorRunOk();
+    }
+    data.clear();
+}
+
+void LldbEngine2::updateBreakpoint(QByteArrayList &data)
+{
+    const QByteArray line = data.first();
+    data.pop_front();
+}
+
 void LldbEngine2::handleResponse(const QByteArray &data)
 {
+    QByteArrayList lines = data.split('\n');
 
+    while( !lines.isEmpty() )
+    {
+        if( lines.first().isEmpty() )
+            lines.pop_front();
+        else if( lines.first().startsWith("Process ") )
+            updateProcStat(lines);
+        else if( lines.first().startsWith("Breakpoint ") )
+            updateBreakpoint(lines);
+        else if( lines.first().startsWith("Resuming thread") )
+            lines.pop_front();
+        else if( lines.first().startsWith("Current executable set to") )
+        {
+            notifyInferiorSetupOk(); // causes runEngine
+            lines.pop_front();
+        }else if( lines.first().startsWith("(lldb)") )
+            lines.pop_front();
+        else
+        {
+            qDebug() << "*** LLDB stdout unhandled:" << data;
+            lines.pop_front();
+        }
+    }
 }
 
 static QString errorMessage(QProcess::ProcessError error, const QString& cmd)
@@ -503,8 +655,23 @@ void LldbEngine2::readLldbStandardOutput()
 {
     QByteArray out = m_lldb.readAllStandardOutput();
     out.replace("\r\n", "\n");
-    qDebug() << "*** LLDB stdout:" << out;
     showMessage(QString::fromUtf8(out), LogOutput);
+
+    switch( state() )
+    {
+    case InferiorSetupRequested:
+    case InferiorSetupOk:
+    case InferiorRunRequested:
+    case InferiorRunOk:
+    case InferiorStopRequested:
+    case InferiorStopOk:
+    case InferiorShutdownRequested:
+        break;
+    default:
+        qDebug() << "*** LLDB stdout ignored:" << out;
+        return;
+    }
+
     emit outputReady(out);
 }
 
@@ -513,6 +680,31 @@ void LldbEngine2::readLldbStandardError()
     QByteArray err = m_lldb.readAllStandardError();
     qDebug() << "*** LLDB stderr:" << err;
     showMessage("Lldb stderr: " + QString::fromUtf8(err), LogError);
+}
+
+void LldbEngine2::fetchFullBacktrace()
+{
+    // TODO
+}
+
+void LldbEngine2::stdoutReady()
+{
+    if( d_out == 0 )
+        return;
+    const QByteArray str = d_out->readAll();
+    if( str.isEmpty() )
+        return;
+    showMessage(QString::fromUtf8(str), AppOutput);
+}
+
+void LldbEngine2::stderrReady()
+{
+    if( d_err == 0 )
+        return;
+    const QByteArray str = d_err->readAll();
+    if( str.isEmpty() )
+        return;
+    showMessage(QString::fromUtf8(str), AppError);
 }
 
 
