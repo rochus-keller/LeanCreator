@@ -1,7 +1,7 @@
 /****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
-** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+** Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
 ** This file is part of LeanCreator.
 **
@@ -125,6 +125,7 @@ protected:
     void executeRunToFunction(const QString &functionName) override;
     void executeJumpToLine(const ContextData &data) override;
 
+    void updateLocals() override;
     void doUpdateLocals(const UpdateParameters &params) override;
 
     void notifyEngineRemoteSetupFinished(const RemoteSetupResult &result) override;
@@ -133,6 +134,11 @@ protected:
     void timerEvent(QTimerEvent *event);
     void updateProcStat(QByteArrayList &data);
     void updateBreakpoint(QByteArrayList &data);
+    void updateStack(QByteArrayList &data);
+    void updateVar(QByteArrayList &data);
+    QByteArray fetchQByteArray(const QByteArray& desig);
+    QString fetchQString(const QByteArray& desig);
+    QByteArray fetchCString(const QByteArray& desig);
 
 private slots:
     void handleResponse(const QByteArray& data);

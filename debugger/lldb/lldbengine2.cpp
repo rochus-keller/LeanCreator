@@ -1,7 +1,7 @@
 /****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
-** Copyright (C) 2022 Rochus Keller (me@rochus-keller.ch) for LeanCreator
+** Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
 ** This file is part of LeanCreator.
 **
@@ -145,7 +145,7 @@ void LldbEngine2::abortDebugger()
     // TODO
 }
 
-bool LldbEngine2::canHandleToolTip(const DebuggerToolTipContext &) const
+bool LldbEngine2::canHandleToolTip(const DebuggerToolTipContext & ctx) const
 {
     return false; // TODO
 }
@@ -155,6 +155,7 @@ void LldbEngine2::activateFrame(int frameIndex)
     if (state() != InferiorStopOk && state() != InferiorUnrunnable)
         return;
 
+    m_lldb.write("frame select " + QByteArray::number(frameIndex) + "\n");
     StackHandler *handler = stackHandler();
     QTC_ASSERT(frameIndex < handler->stackSize(), return);
     handler->setCurrentIndex(frameIndex);
@@ -207,7 +208,7 @@ void LldbEngine2::insertBreakpoint(Breakpoint bp)
     cmd += " --breakpoint-name BP";
     cmd += bp.id().toByteArray();
     m_lldb.write(cmd + "\n");
-    // bp.notifyBreakpointInsertOk();
+    bp.notifyBreakpointInsertOk();
 
     // TODO
 
@@ -215,7 +216,11 @@ void LldbEngine2::insertBreakpoint(Breakpoint bp)
 
 void LldbEngine2::removeBreakpoint(Breakpoint bp)
 {
-    // TODOs
+    bp.notifyBreakpointRemoveProceeding();
+    QByteArray cmd = "breakpoint delete BP";
+    cmd += bp.id().toByteArray();
+    m_lldb.write(cmd + "\n");
+    bp.notifyBreakpointRemoveOk();
 }
 
 void LldbEngine2::changeBreakpoint(Breakpoint bp)
@@ -290,7 +295,8 @@ void LldbEngine2::changeMemory(MemoryAgent *, QObject *, quint64 addr, const QBy
 
 void LldbEngine2::updateAll()
 {
-    // TODO
+    m_lldb.write("thread backtrace\n");
+    watchHandler()->resetValueCache();
     updateLocals();
 }
 
@@ -361,6 +367,12 @@ void LldbEngine2::setupInferior()
             cmd = "settings set target.env-vars " + item.name.toUtf8() + '=' + item.value.toUtf8();
         m_lldb.write(cmd + "\n");
     }
+
+    m_lldb.write("settings set frame-format \""
+                    "frame ${frame.index}"
+                    "{ #mod ${module.file.fullpath}{:${function.name}}}##"
+                    "{ #src ${line.file.fullpath}:${line.number}}##"
+                 "\\n\"\n" );
 
     const DebuggerRunParameters &rp = runParameters();
 
@@ -526,9 +538,40 @@ void LldbEngine2::executeJumpToLine(const ContextData &data)
     // TODO setState(InferiorStopRequested);
 }
 
+void LldbEngine2::updateLocals()
+{
+    //watchHandler()->notifyUpdateStarted();
+    doUpdateLocals(UpdateParameters());
+}
+
 void LldbEngine2::doUpdateLocals(const UpdateParameters &params)
 {
-    // TODO
+    if( params.partialVariable.isEmpty() )
+    {
+        watchHandler()->cleanup();
+
+        /* Just a top-level list of variables without any members:
+            (lldb) frame variable -T -D0 -R
+            (int) argc = 1
+            (char **) argv = 0x00007fffffffe2f8{...}
+            (QByteArray) hello ={...}
+            (const char *) tmp = 0x00000000004f7a25{...}
+            (QString) str ={...}
+            (const ushort *) tmp2 = 0x0000000000402079{...}
+            (QByteArrayList) l ={...}
+           Add -L for address
+           add -g for global and static vars
+        */
+        m_lldb.write("frame variable -T -D0 -R\n");
+
+    }else
+    {
+        QByteArray desig = params.partialVariable;
+        if( desig.startsWith("local.") )
+            desig = desig.mid(6);
+        desig.replace(".>", "->");
+        m_lldb.write("frame variable " + desig + " -F -T -R -P2\n");
+    }
 }
 
 void LldbEngine2::notifyEngineRemoteSetupFinished(const RemoteSetupResult &result)
@@ -564,7 +607,7 @@ void LldbEngine2::updateProcStat(QByteArrayList &data)
         else if( parts[2] == "resuming" )
             notifyInferiorRunOk();
     }
-    data.clear();
+    data.pop_front();
 }
 
 void LldbEngine2::updateBreakpoint(QByteArrayList &data)
@@ -573,26 +616,338 @@ void LldbEngine2::updateBreakpoint(QByteArrayList &data)
     data.pop_front();
 }
 
+void LldbEngine2::updateStack(QByteArrayList &data)
+{
+    StackHandler *handler = stackHandler();
+    StackFrames frames;
+    int i = 0;
+    for( i = 1; i < data.size(); i++ )
+    {
+        int pos = data[i].indexOf(" frame ");
+        if( pos == -1 )
+            break;
+
+        StackFrame frame;
+
+        //"frame ${frame.index}"
+        //"{ #mod ${module.file.fullpath}{:${function.name}}}##"
+        //"{ #src ${line.file.fullpath}:${line.number}}##"
+
+        const int mod = data[i].indexOf("#mod");
+        const int src = data[i].indexOf("#src");
+
+        int to = data[i].size();
+        if( mod != -1 )
+            to = mod;
+        else if( src != -1 )
+            to = src;
+
+        frame.level = data[i].mid(pos+7,to - pos - 7).trimmed();
+
+        if( src != -1 )
+        {
+            pos = data[i].indexOf("##", src+4);
+            frame.file = data[i].mid(src+4, pos - src -4).trimmed();
+            pos = frame.file.indexOf(':');
+            if( pos != -1 )
+            {
+                frame.line = frame.file.mid(pos+1).trimmed().toInt();
+                frame.file = frame.file.left(pos);
+            }
+            frame.usable = QFileInfo(frame.file).isReadable();
+        }
+        if( mod != -1 )
+        {
+            pos = data[i].indexOf("##", mod+4);
+            frame.module = data[i].mid(mod+4, pos - mod -4).trimmed();
+            pos = frame.module.indexOf(':');
+            if( pos != -1 )
+            {
+                frame.function = frame.module.mid(pos+1).trimmed();
+                frame.module = frame.module.left(pos);
+            }
+            // TODO frame.address = item["address"].toAddress();
+        }
+        frames.append(frame);
+    }
+    data = data.mid(i);
+    handler->setFrames(frames, false);
+
+    const int pos = stackHandler()->firstUsableIndex();
+    handler->setCurrentIndex(pos);
+    if (pos >= 0 && pos < handler->stackSize())
+        gotoLocation(handler->frameAt(pos));
+}
+
+void LldbEngine2::updateVar(QByteArrayList &data)
+{
+    const QByteArray line = data.takeFirst();
+
+    /*
+    (int) argc = 1
+    (char **) argv = 0x00007fffffffe2f8{...}
+    (QByteArray) hello ={...}
+    (const char *) tmp = 0x00000000004f7a25{...}
+    (QString) str ={...}
+    (const ushort *) tmp2 = 0x0000000000402079{...}
+    (QByteArrayList) l ={...}
+    */
+    const int rpar = line.indexOf(')');
+    if( rpar == -1 )
+        return;
+
+    WatchData v;
+    v.setType(line.mid(1,rpar-1).trimmed(),false);
+
+    const int eq = line.indexOf('=',rpar);
+    if( eq == -1 )
+        return;
+
+    const QByteArray name = line.mid(rpar+1, eq - rpar -1).trimmed();
+    v.iname = "local." + name;
+    v.iname.replace('-','.'); // convert a.b->c to a.b.>c
+    v.name = v.iname.split('.').last();
+    if(v.name.startsWith('>') )
+        v.name = v.name.mid(1);
+    v.value = line.mid(eq+1).trimmed();
+
+    if( v.type == "QByteArray" )
+    {
+        v.editvalue = fetchQByteArray(name);
+        v.value = QString("\"%1\"").arg(QString::fromLatin1(v.editvalue));
+        //v.editformat = DisplayLatin1String;
+        //v.editencoding = Unencoded8Bit;
+    }else if( v.type == "QString" )
+    {
+        const QString str = fetchQString(name);
+        v.value = QString("\"%1\"").arg(str);
+        v.editvalue = str.toUtf8();
+        // TODO v.editencoding =
+    }else if( v.type == "char *")
+    {
+        v.editvalue = fetchCString(name);
+        v.value = QString::fromLatin1(v.editvalue);
+    }
+    else
+        v.wantsChildren = line.endsWith("{...}") && !v.type.endsWith('*');
+
+    WatchHandler* h = watchHandler();
+    h->notifyUpdateStarted(QByteArrayList() << v.iname);
+
+    WatchItem* wi = new WatchItem(v);
+    h->insertItem(wi);
+
+    if( v.type == "QByteArray" )
+    {
+        WatchData vv;
+        vv.type = "char";
+        for( int i = 0; i < v.editvalue.size(); i++ )
+        {
+            vv.name = QString("[%1]").arg(i);
+            vv.iname = v.iname + vv.name.toUtf8();
+            vv.value = QByteArray::number((quint8)v.editvalue[i]);
+            const QChar ch = QChar::fromLatin1(v.editvalue[i]);
+            if( ch.isPrint() )
+                vv.value += QString(" '%1'").arg(ch);
+            wi->appendChild( new WatchItem(vv) );
+        }
+    }
+
+    h->notifyUpdateFinished();
+
+    // DebuggerToolTipManager::updateEngine(this);
+
+}
+
+QByteArray LldbEngine2::fetchQByteArray(const QByteArray &desig)
+{
+    disconnect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
+    m_lldb.write("frame variable " + desig + " -F -T -R -P1\n");
+    m_lldb.write("version\n");
+    QByteArray data;
+    while( true )
+    {
+        if( !m_lldb.waitForReadyRead() )
+            break;
+        const QByteArray out = m_lldb.readAllStandardOutput();
+        data += out;
+        if( out.contains("lldb version") )
+            break;
+    }
+    data.replace("\r\n", "\n");
+    QByteArray addr, off, size;
+    QByteArrayList lines = data.split('\n');
+
+    /*
+    (QByteArray::Data *) hello.d = 0x00000000005d9ee0
+    (QAtomicOps<int>::Type) hello.d->ref.atomic._q_value = 1
+    (int) hello.d->size = 5
+    (uint:31) hello.d->alloc = 6
+    (uint:1) hello.d->capacityReserved = 0
+    (qptrdiff) hello.d->offset = 24
+    */
+    foreach( const QByteArray& line, lines )
+    {
+        if( line.startsWith("(QByteArray::Data *)") )
+            addr = line.mid(line.indexOf('=') + 1).trimmed();
+        else if( line.startsWith("(qptrdiff)") )
+            off = line.mid(line.indexOf('=') + 1).trimmed();
+        else if( line.startsWith("(int)") )
+            size = line.mid(line.indexOf('=') + 1).trimmed();
+    }
+
+    data.clear();
+
+    if( size.toInt() > 0 )
+    {
+        // read memory:
+        m_lldb.write("memory read -s1 -fy -c " + size + " -l " + size + " " + addr + "+" + off + " --force\n");
+        m_lldb.write("version\n");
+        while( true )
+        {
+            if( !m_lldb.waitForReadyRead() )
+                break;
+            const QByteArray out = m_lldb.readAllStandardOutput();
+            const int colon = out.indexOf(':');
+            if( colon != -1 )
+            {
+                const int nl = out.indexOf('\n',colon+1);
+                data = out.mid(colon+1, nl - colon - 1);
+            }
+            if( out.contains("lldb version") )
+                break;
+        }
+        data = QByteArray::fromHex(data);
+    }
+
+    connect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
+    return data;
+}
+
+QString LldbEngine2::fetchQString(const QByteArray &desig)
+{
+    disconnect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
+    m_lldb.write("frame variable " + desig + " -F -T -R -P1\n");
+    m_lldb.write("version\n");
+    QByteArray data;
+    while( true )
+    {
+        if( !m_lldb.waitForReadyRead() )
+            break;
+        const QByteArray out = m_lldb.readAllStandardOutput();
+        data += out;
+        if( out.contains("lldb version") )
+            break;
+    }
+    data.replace("\r\n", "\n");
+    QByteArray addr, off, size;
+    QByteArrayList lines = data.split('\n');
+
+    /*
+        (QString::Data *) str.d = 0x00000000005d9f10
+        (QAtomicOps<int>::Type) str.d->ref.atomic._q_value = 1
+        (int) str.d->size = 6
+        (uint:31) str.d->alloc = 13
+        (uint:1) str.d->capacityReserved = 0
+        (qptrdiff) str.d->offset = 24
+    */
+    foreach( const QByteArray& line, lines )
+    {
+        if( line.startsWith("(QString::Data *)") )
+            addr = line.mid(line.indexOf('=') + 1).trimmed();
+        else if( line.startsWith("(qptrdiff)") )
+            off = line.mid(line.indexOf('=') + 1).trimmed();
+        else if( line.startsWith("(int)") )
+            size = line.mid(line.indexOf('=') + 1).trimmed();
+    }
+
+    data.clear();
+
+    const int s = size.toInt();
+    if( s > 0 )
+    {
+        const QByteArray s2 = QByteArray::number(s*2);
+        // read memory:
+        m_lldb.write("memory read -s1 -fy -c " + s2 + " -l " + s2 + " " + addr + "+" + off + " --force\n");
+        m_lldb.write("version\n");
+        while( true )
+        {
+            if( !m_lldb.waitForReadyRead() )
+                break;
+            const QByteArray out = m_lldb.readAllStandardOutput();
+            const int colon = out.indexOf(':');
+            if( colon != -1 )
+            {
+                const int nl = out.indexOf('\n',colon+1);
+                data = out.mid(colon+1, nl - colon - 1);
+            }
+            if( out.contains("lldb version") )
+                break;
+        }
+        data = QByteArray::fromHex(data);
+    }
+
+    connect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
+    return QString::fromUtf16((const ushort*)data.constData(),s);
+}
+
+QByteArray LldbEngine2::fetchCString(const QByteArray &desig)
+{
+    disconnect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
+    m_lldb.write("frame variable " + desig + "\n");
+    m_lldb.write("version\n");
+    QByteArray data;
+    while( true )
+    {
+        if( !m_lldb.waitForReadyRead() )
+            break;
+        const QByteArray out = m_lldb.readAllStandardOutput();
+        data += out;
+        if( out.contains("lldb version") )
+            break;
+    }
+    data.replace("\r\n", "\n");
+    QByteArrayList lines = data.split('\n');
+
+    QByteArray res;
+    foreach( const QByteArray& line, lines )
+    {
+        if( line.startsWith("(const char *)") || line.startsWith("(char *)") )
+        {
+            const int quote = line.indexOf('\"');
+            res = line.mid(quote);
+        }
+    }
+
+    connect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
+    return res;
+}
+
 void LldbEngine2::handleResponse(const QByteArray &data)
 {
     QByteArrayList lines = data.split('\n');
 
     while( !lines.isEmpty() )
     {
-        if( lines.first().isEmpty() )
+        const QByteArray first = lines.first().trimmed();
+        if( first.isEmpty() )
             lines.pop_front();
-        else if( lines.first().startsWith("Process ") )
+        else if( first.startsWith("Process ") )
             updateProcStat(lines);
-        else if( lines.first().startsWith("Breakpoint ") )
+        else if( first.startsWith("Breakpoint ") )
             updateBreakpoint(lines);
-        else if( lines.first().startsWith("Resuming thread") )
+        else if( first.startsWith("Resuming thread") )
             lines.pop_front();
-        else if( lines.first().startsWith("Current executable set to") )
+        else if( first.startsWith("* thread") )
+            updateStack(lines);
+        else if( first.startsWith("Current executable set to") )
         {
             notifyInferiorSetupOk(); // causes runEngine
             lines.pop_front();
-        }else if( lines.first().startsWith("(lldb)") )
+        }else if( first.startsWith("(lldb)") )
             lines.pop_front();
+        else if( first.startsWith('(') )
+            updateVar(lines);
         else
         {
             qDebug() << "*** LLDB stdout unhandled:" << data;
