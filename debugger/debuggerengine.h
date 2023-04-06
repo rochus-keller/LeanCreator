@@ -91,6 +91,7 @@ public:
     bool multiProcess = false; // Whether to set detach-on-fork off.
 
     QString debuggerCommand;
+    QString debuggerVersion;
     QString coreFile;
     QString overrideStartScript; // Used in attach to core and remote debugging
     QString startMessage; // First status message shown.

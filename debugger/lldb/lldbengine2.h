@@ -128,8 +128,6 @@ protected:
     void updateLocals() override;
     void doUpdateLocals(const UpdateParameters &params) override;
 
-    void notifyEngineRemoteSetupFinished(const RemoteSetupResult &result) override;
-
 protected:
     void timerEvent(QTimerEvent *event);
     void updateProcStat(QByteArrayList &data);
@@ -157,7 +155,7 @@ private:
     QString m_lldbCmd;
     QFile* d_out;
     QFile* d_err;
-
+    QByteArray d_curDesig;
 };
 
 } // namespace Internal

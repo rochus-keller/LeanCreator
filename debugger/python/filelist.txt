@@ -8,3 +8,4 @@
 :/debugger/python/misctypes.py
 :/debugger/python/personaltypes.py
 :/debugger/python/stdtypes.py
+:/debugger/python/lldbformatter.py

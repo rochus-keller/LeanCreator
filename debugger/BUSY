@@ -23,8 +23,9 @@ let run_moc : Moc {
 	.sources += [
 		./outputcollector.h
 		./debuggertooltipmanager.h
-		./lldb/lldbengine.h
-		./debuggerkitconfigwidget.h
+        ./lldb/lldbengine2.h
+        ./lldb/lldbengine.h
+        ./debuggerkitconfigwidget.h
 		./stackhandler.h
 		./debuggerdialogs.h
 		./disassembleragent.h
@@ -159,7 +160,8 @@ let lib * : Library {
 		./gdb/gdbplainengine.cpp 
 		./gdb/startgdbserverdialog.cpp
 		
-		./lldb/lldbengine.cpp
+        ./lldb/lldbengine.cpp
+        ./lldb/lldbengine2.cpp
 		
 		./pdb/pdbengine.cpp
 		

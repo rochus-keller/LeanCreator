@@ -40,13 +40,14 @@ The new multi-core BUSY builder is extremely fast. Building LeanCreator on the e
 - [x] Other convenience features
 - [x] Wizards for project and code file creation
 - [x] Stripped-down help integration
-- [ ] Debugging with newer LLDB versions on Mac
+- [x] Support current LLDB versions (minimal support)
 
 ### Long term plan
 
 - [ ] Display BUSY file calculated values, gray-out inactives
 - [ ] Lua automation
 - [ ] Designer integration
+- [ ] Support current LLDB versions (full support)
 - [ ] Oberon+, Verilog and Lola integration
 - [ ] Ninja builds
 

@@ -1120,10 +1120,12 @@ bool LldbEngine::hasCapability(unsigned cap) const
     return false;
 }
 
+#if 0
 DebuggerEngine *createLldbEngine(const DebuggerRunParameters &startParameters)
 {
     return new LldbEngine(startParameters);
 }
+#endif
 
 void LldbEngine::notifyEngineRemoteSetupFinished(const RemoteSetupResult &result)
 {

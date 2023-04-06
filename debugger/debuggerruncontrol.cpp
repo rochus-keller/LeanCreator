@@ -445,6 +445,7 @@ void DebuggerRunControlCreator::enrich(const RunConfiguration *runConfig, const 
     m_rp.cppEngineType = DebuggerKitInformation::engineType(m_kit);
     m_rp.sysRoot = SysRootKitInformation::sysRoot(m_kit).toString();
     m_rp.debuggerCommand = DebuggerKitInformation::debuggerCommand(m_kit).toString();
+    m_rp.debuggerVersion = DebuggerKitInformation::version(m_kit);
     m_rp.device = DeviceKitInformation::device(m_kit);
 
     if (m_project) {

@@ -50,5 +50,6 @@
         <file>python/creatortypes.py</file>
         <file>python/boosttypes.py</file>
         <file>python/filelist.txt</file>
+        <file>python/lldbformatter.py</file>
     </qresource>
 </RCC>

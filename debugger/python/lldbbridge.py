@@ -660,11 +660,13 @@ class Dumper(DumperBase):
         self.startMode_ = args.get('startmode', 1)
         self.breakOnMain_ = args.get('breakonmain', 0)
         self.useTerminal_ = args.get('useterminal', 0)
+        #pargs = self.hexdecode(args.get('processargs', ''))
+        #self.processArgs_ = pargs.split('\0') if len(pargs) else []
         self.processArgs_ = args.get('processargs', [])
         self.dyldImageSuffix = args.get('dyldimagesuffix', '')
         self.dyldLibraryPath = args.get('dyldlibrarypath', '')
         self.dyldFrameworkPath = args.get('dyldframeworkpath', '')
-        self.processArgs_ = map(lambda x: self.hexdecode(x), self.processArgs_)
+        #self.processArgs_ = list(map(lambda x: self.hexdecode(x), self.processArgs_))
         self.attachPid_ = args.get('attachpid', 0)
         self.sysRoot_ = args.get('sysroot', '')
         self.remoteChannel_ = args.get('remotechannel', '')
@@ -765,10 +767,9 @@ class Dumper(DumperBase):
         event = lldb.SBEvent()
         listener = self.debugger.GetListener()
         while True:
-            if listener.WaitForEvent(10000000, event):
+            while listener.GetNextEvent(event):
                 self.handleEvent(event)
-            else:
-                warn('TIMEOUT')
+            time.sleep(0.25)
 
     def describeError(self, error):
         desc = lldb.SBStream()
@@ -1405,12 +1406,12 @@ class Dumper(DumperBase):
         elif eventType == lldb.SBProcess.eBroadcastBitSTDOUT:
             # FIXME: Size?
             msg = self.process.GetSTDOUT(1024)
-            self.report('output={channel="stdout",data="%s"}'
-                % self.hexencode(msg))
+            if msg is not None:
+                self.report('output={channel="stdout",data="%s"}' % self.hexencode(msg))
         elif eventType == lldb.SBProcess.eBroadcastBitSTDERR:
             msg = self.process.GetSTDERR(1024)
-            self.report('output={channel="stderr",data="%s"}'
-                % self.hexencode(msg))
+            if msg is not None:
+                self.report('output={channel="stderr",data="%s"}' % self.hexencode(msg))
         elif eventType == lldb.SBProcess.eBroadcastBitProfileData:
             pass
 
