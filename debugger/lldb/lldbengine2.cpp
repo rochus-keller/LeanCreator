@@ -80,7 +80,10 @@ DebuggerEngine *createLldbEngine(const DebuggerRunParameters &startParameters)
         v = v.left(nl);
     const QStringList parts = v.split('.');
     const int maj = parts.first().toInt();
-    if( maj == 0 || ( maj < 100 && maj >= 4) || maj >= 400 ) // TODO: verify
+    const QByteArray env = qgetenv("FORCE_LLDBENGINE");
+    if( env == "1" )
+        return new LldbEngine(startParameters);
+    if( maj == 0 || ( maj < 100 && maj >= 4) || maj >= 400 || env == "2"  ) // TODO: verify
         return new LldbEngine2(startParameters);
     else
         return new LldbEngine(startParameters);
