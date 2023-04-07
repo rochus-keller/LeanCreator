@@ -44,6 +44,7 @@ NOTE:
 
 - Tests with LLDB 1316 on Mac M1, LLDB 350 on Mac x86_64 and LLDB 11 on Linux Debian 11 x86_64 were successful.
 - On Mac x86_64 and on Linux you can force the old LldbEngine1 or the new LldbEngine2 to be used by setting the environment variable to either "1" or "2"; please tell me with which LLDB version and engine combinations on which platform you were successful or not.
+- See https://github.com/rochus-keller/LeanCreator/issues/1#issuecomment-1500319214 for more information.
 - No tests were successful with LLDB on Windows so far; Python has to be in the path so that LeanCreator recognizes the LLDB version at all; but then there are still strange LLDB error messages I didn't see on Linux or Mac and most features don't work (e.g. breakpoints, break on start, etc.).
 
 
