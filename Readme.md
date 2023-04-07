@@ -21,9 +21,7 @@ Here is a screenshot:
 
 The current version was successfully compiled and tested on Linux x86 & x86_64 (GCC), macOS x86_64 & M1 (CLANG), and Windows x86 & AMD64 (MSVC & MinGW). The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
 
-Note that there is an issue with LLDB on Mac M1 (see https://github.com/rochus-keller/LeanCreator/issues/1).
-
-On Windows LeanCreator was successfully tested with MSVC 2013, 2015 and 2022 (with CDB), and also with [MinGW 12.2.0 i686](https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/i686-12.2.0-release-win32-dwarf-msvcrt-rt_v10-rev2.7z) (with GDB). Debugging seems to even work better than with MSVC, where CDB is very slow on symbol load. But no success yet with Clang or LLDB on Windows.
+On Windows LeanCreator was successfully tested with MSVC 2013, 2015 and 2022 (with CDB), and also with [MinGW 12.2.0 i686](https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/i686-12.2.0-release-win32-dwarf-msvcrt-rt_v10-rev2.7z) (with GDB). Debugging seems to even work better than with MSVC, where CDB is very slow on symbol load. Clang on Windows seems to work, but there are tons of compiler errors when compiling LeanQt. Lldb on Windows seems not to work however.
 
 The new multi-core BUSY builder is extremely fast. Building LeanCreator on the eight cores of Mac M1 takes less than 10 minutes. Also finding out whether something has to be recompiled is only a split second (compared to several minutes with Qt Creator and make). Also the header dependency tracking is very fast; it is based on the built-in C++ parser used for code indexing. All in all LeanCreator builds much faster than Qt Creator with qmake or cmake even without the Ninja backend; the latter is therefore no longer a top priority.
 
@@ -40,7 +38,14 @@ The new multi-core BUSY builder is extremely fast. Building LeanCreator on the e
 - [x] Other convenience features
 - [x] Wizards for project and code file creation
 - [x] Stripped-down help integration
-- [x] Support current LLDB versions (minimal support)
+- [x] Support current LLDB versions (minimal support), see NOTE
+
+NOTE: 
+
+- Tests with LLDB 1316 on Mac M1, LLDB 350 on Mac x86_64 and LLDB 11 on Linux Debian 11 x86_64 were successful.
+- On Mac x86_64 and on Linux you can force the old LldbEngine1 or the new LldbEngine2 to be used by setting the environment variable to either "1" or "2"; please tell me with which LLDB version and engine combinations on which platform you were successful or not.
+- No tests were successful with LLDB on Windows so far; Python has to be in the path so that LeanCreator recognizes the LLDB version at all; but then there are still strange LLDB error messages I didn't see on Linux or Mac and most features don't work (e.g. breakpoints, break on start, etc.).
+
 
 ### Long term plan
 
