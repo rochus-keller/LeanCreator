@@ -156,6 +156,7 @@ private:
     QFile* d_out;
     QFile* d_err;
     QByteArray d_curDesig;
+    QByteArray d_frameVar;
 };
 
 } // namespace Internal

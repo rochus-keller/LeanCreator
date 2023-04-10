@@ -6,7 +6,7 @@ LeanCreator is a stripped-down version of Qt Creator, which includes the essenti
 
 LeanCreator uses [LeanQt](https://github.com/rochus-keller/LeanQt) instead of the original Qt toolkit, and is built with and uses the [BUSY build system](https://github.com/rochus-keller/BUSY) instead of qmake.
 
-In contrast to QtCreator, LeanCreator is a single file application, easy to download and install; there are no separate shared libraries or support files or directories. Precompiled binaries are available (see below), but it's also easy to build LeanCreator from scratch with no other requirements than a C++11 compatible compiler.
+In contrast to QtCreator, LeanCreator is a single file application, easy to download and install; there are no separate shared libraries or support files or directories. Precompiled binaries are available (see below), but it's also easy to build LeanCreator from scratch with no system requirements other than a C++11 compatible compiler.
 
 LeanCreator is based on the code of [Qt Creator 3.6.1](https://download.qt.io/archive/qtcreator/3.6/3.6.1/qt-creator-opensource-src-3.6.1.tar.gz), mostly because I already know the internals due to [VerilogCreator](https://github.com/rochus-keller/VerilogCreator/) and it's [QtcVerilog](https://github.com/rochus-keller/QtcVerilog/) IDE, and because I'm still using Qt Creator 3.4 most of the time which does everything I need and is even faster than later versions.
 
@@ -19,7 +19,7 @@ Here is a screenshot:
 
 ### Planned or work-in-progress features
 
-The current version was successfully compiled and tested on Linux x86 & x86_64 (GCC), macOS x86_64 & M1 (CLANG), and Windows x86 & AMD64 (MSVC & MinGW). The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
+The current version was successfully compiled and tested on Linux x86 & x86_64 (GCC), macOS x86_64 & M1 (Clang), and Windows x86 & AMD64 (MSVC & MinGW). The tests included navigating the LeanQt source tree with different parameter settings, and running some of the examples in the debugger with breakpoints and value inspections. 
 
 On Windows LeanCreator was successfully tested with MSVC 2013, 2015 and 2022 (with CDB), and also with [MinGW 12.2.0 i686](https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/i686-12.2.0-release-win32-dwarf-msvcrt-rt_v10-rev2.7z) (with GDB). Debugging seems to even work better than with MSVC, where CDB is very slow on symbol load. Clang on Windows seems to work, but there are tons of compiler errors when compiling LeanQt. Lldb on Windows seems not to work however.
 
@@ -97,7 +97,7 @@ To build LeanCreator using LeanQt and the BUSY build system (with no other depen
 1. Download https://github.com/rochus-keller/LeanQt/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "LeanQt".
 1. Download https://github.com/rochus-keller/LeanCreator/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "LeanCreator".
 1. Download https://github.com/rochus-keller/BUSY/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "BUSY".
-1. Open a command line in the build directory and type `cc *.c -O2 -lm -O2 -o lua` or `cl /O2 /MD /Fe:lua.exe *.c` depending on whether you are on a Unix or Windows machine; wait a few seconds until the Lua executable is built.
+1. Open a command line in the BUSY directory and type `cc *.c -O2 -lm -O2 -o lua` or `cl /O2 /MD /Fe:lua.exe *.c` depending on whether you are on a Unix or Windows machine; wait a few seconds until the Lua executable is built.
 1. Now type `./lua build.lua ../LeanCreator` (or `lua build.lua ../LeanCreator` on Windows); wait until the LeanCreator executable is built (about an hour); you find it in the output/app subdirectory.
 
 NOTE that if you build on Windows you have to first open a console and run vcvars32.bat or vcvars64.bat provided e.g. by VisualStudio (see e.g. [here](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-170) for more information).

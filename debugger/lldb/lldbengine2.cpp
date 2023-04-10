@@ -587,8 +587,8 @@ void LldbEngine2::doUpdateLocals(const UpdateParameters &params)
            Add -L for address
            add -g for global and static vars
         */
+        d_frameVar.clear();
         m_lldb.write("frame variable -T -D0\n");
-
     }else
     {
         QByteArray desig = params.partialVariable;
@@ -596,7 +596,7 @@ void LldbEngine2::doUpdateLocals(const UpdateParameters &params)
             desig = desig.mid(6);
         desig.replace(".>", "->");
         desig.replace(".[", "[");
-        //m_lldb.write("frame variable " + desig + " -F -T -P1\n");
+        d_frameVar = desig;
         m_lldb.write("frame variable " + desig + " -T -D1 -P1\n");
     }
 }
@@ -642,11 +642,36 @@ void LldbEngine2::updateStack(QByteArrayList &data)
 {
     StackHandler *handler = stackHandler();
     StackFrames frames;
-    int i = 0;
-    for( i = 1; i < data.size(); i++ )
+    int i = 1;
+    bool inReturn = false;
+    for( ; i < data.size(); i++ )
     {
-        int pos = data[i].indexOf(" frame ");
-        if( pos == -1 )
+        QByteArray line = data[i].trimmed();
+
+        if( inReturn )
+        {
+            if( line.startsWith('}') )
+                inReturn = false;
+            continue;
+        }
+
+        if( line.startsWith("* ") )
+            line = line.mid(2);
+
+        /* first line can be
+        >Return value: ...
+        even with {
+        xyz
+        }
+        */
+        if( line.startsWith("Return value:"))
+        {
+            if( line.endsWith('{') )
+                inReturn = true;
+            continue;
+        }else if( line.isEmpty() )
+            continue;
+        else if( !line.startsWith("frame") )
             break;
 
         StackFrame frame;
@@ -655,21 +680,21 @@ void LldbEngine2::updateStack(QByteArrayList &data)
         //"{ #mod ${module.file.fullpath}{:${function.name}}}##"
         //"{ #src ${line.file.fullpath}:${line.number}}##"
 
-        const int mod = data[i].indexOf("#mod");
-        const int src = data[i].indexOf("#src");
+        const int mod = line.indexOf("#mod");
+        const int src = line.indexOf("#src");
 
-        int to = data[i].size();
+        int to = line.size();
         if( mod != -1 )
             to = mod;
         else if( src != -1 )
             to = src;
 
-        frame.level = data[i].mid(pos+7,to - pos - 7).trimmed();
+        frame.level = line.mid(6,to - 6).trimmed();
 
         if( src != -1 )
         {
-            pos = data[i].indexOf("##", src+4);
-            frame.file = data[i].mid(src+4, pos - src -4).trimmed();
+            int pos = line.indexOf("##", src+4);
+            frame.file = line.mid(src+4, pos - src -4).trimmed();
             pos = frame.file.indexOf(':');
             if( pos != -1 )
             {
@@ -680,8 +705,8 @@ void LldbEngine2::updateStack(QByteArrayList &data)
         }
         if( mod != -1 )
         {
-            pos = data[i].indexOf("##", mod+4);
-            frame.module = data[i].mid(mod+4, pos - mod -4).trimmed();
+            int pos = line.indexOf("##", mod+4);
+            frame.module = line.mid(mod+4, pos - mod -4).trimmed();
             pos = frame.module.indexOf(':');
             if( pos != -1 )
             {
@@ -727,26 +752,69 @@ void LldbEngine2::updateVar(QByteArrayList &data)
         return; // This is again a protocol error
 
     QByteArray name = line.mid(rpar+1, eq - rpar -1).trimmed();
+
+    // name usually repeats the whole desig from "frame variable <desig>", unless
+    // desig was e.g. name[n], in which case name is just "[n]", so we use the original <desig> instead
+    if( d_frameVar.endsWith(']') && d_curDesig.isEmpty() )
+        name = d_frameVar;
+
     if( !name.startsWith("[") )
         name.replace("[", ".[");
+    name.replace("->", ".>"); // convert a.b->c to a.b.>c
+
+    v.iname = "local.";
+    if( !d_curDesig.isEmpty() )
+        v.iname += d_curDesig;
+    v.iname += name;
 
     if( line.endsWith('{'))
     {
         d_curDesig = name;
+        if( v.type.endsWith('*') )
+            d_curDesig += ".>";
+        else
+            d_curDesig += ".";
         return;
     }
 
+    // TODO: variables of the superclass currently are represented by
+    // (superclass) superclass ={...}
+    // and further expanding doesn't seem to be supported by LLDB (superclass is not a valid member)
+    // instead frame variable should be called with -D2, but then we get nested {}
+    // possibly use -F and -D2
+    // unfortunately superclasses are nested, so the superclass of the superclasss would appear the same way nested in the {} body;
+    // to resolve these we would have to increase -Dn with n > 2; the max value unfortunately has to be calculated; unfotunately
+    // even the syntax changes for more nested superclasses (like "superclass = ( member = value )").
+    /* example
+        > frame variable map[1] -T -D1 -P1
+        (QMapNode<QByteArray, int>) [1] = {
+          (QMapNodeBase) QMapNodeBase ={...}
+          (QByteArray) key = $62657461${...}
+          (int) value = 44
+        }
+        > frame variable map[1] -T -D2 -P1
+        (QMapNode<QByteArray, int>) [1] = {
+          (QMapNodeBase) QMapNodeBase = {
+            (quintptr) p = 6144384
+            (QMapNodeBase *) left = 0x0000000000000000{...}
+            (QMapNodeBase *) right = 0x0000000000000000{...}
+          }
+          (QByteArray) key = $62657461$
+          (int) value = 44
+        }
+        > frame variable map[1] -T -D2 -P1 -F
+        (quintptr) [1].p = 6144384
+        (QMapNodeBase *) [1].left = 0x0000000000000000{...}
+        (QMapNodeBase *) [1].right = 0x0000000000000000{...}
+        (QByteArray::Data *) [1].key.d = 0x00000000005dc1b0{...}
+        (int) [1].value = 44
+    */
+    // how the hell can we just get the members of QMapNodeBase resolved without introducing an additional nesting level?
 
-    v.iname = "local.";
-    if( !d_curDesig.isEmpty() )
-        v.iname += d_curDesig + ".";
-    v.iname += name;
-    v.name = name;
 
-    //v.iname.replace('-','.'); // convert a.b->c to a.b.>c
-    //v.name = v.iname.split('.').last();
-    //if(v.name.startsWith('>') )
-    //    v.name = v.name.mid(1);
+    v.name = v.iname.split('.').last();
+    if(v.name.startsWith('>') )
+        v.name = v.name.mid(1);
 
     v.editvalue = line.mid(eq+1).trimmed();
     v.value = v.editvalue;
@@ -1026,9 +1094,13 @@ void LldbEngine2::handleResponse(const QByteArray &data)
             updateVar(lines);
         else if( first.startsWith('}') )
         {
+            /*
             QByteArrayList parts = d_curDesig.split('.');
             parts.pop_back();
+            parts.pop_back();
             d_curDesig = parts.join('.');
+            */
+            d_curDesig.clear();
             lines.pop_front();
         }
         else
