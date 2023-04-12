@@ -156,12 +156,12 @@ bool LldbEngine2::hasCapability(unsigned cap) const
 void LldbEngine2::abortDebugger()
 {
     // TODO
-    qWarning() << "LldbEngine2::abortDebugger not yet implemented";
+    showMessage( "LldbEngine2::abortDebugger not yet implemented", LogWarning );
 }
 
 bool LldbEngine2::canHandleToolTip(const DebuggerToolTipContext & ctx) const
 {
-    qWarning() << "LldbEngine2::canHandleToolTip not yet implemented";
+    showMessage( "LldbEngine2::canHandleToolTip not yet implemented", LogWarning );
     return false; // TODO
 }
 
@@ -180,7 +180,7 @@ void LldbEngine2::activateFrame(int frameIndex)
 
 void LldbEngine2::selectThread(ThreadId threadId)
 {
-    qWarning() << "LldbEngine2::selectThread not yet implemented";
+    showMessage( "LldbEngine2::selectThread not yet implemented", LogWarning );
     // TODO
 }
 
@@ -239,13 +239,13 @@ void LldbEngine2::removeBreakpoint(Breakpoint bp)
 void LldbEngine2::changeBreakpoint(Breakpoint bp)
 {
     // TODO
-    qWarning() << "LldbEngine2::changeBreakpoint not yet implemented";
+    showMessage( "LldbEngine2::changeBreakpoint not yet implemented", LogWarning );
 }
 
 void LldbEngine2::assignValueInDebugger(WatchItem *item, const QString &expr, const QVariant &value)
 {
     // TODO
-    qWarning() << "LldbEngine2::assignValueInDebugger not yet implemented";
+    showMessage( "LldbEngine2::assignValueInDebugger not yet implemented", LogWarning );
 }
 
 void LldbEngine2::executeDebuggerCommand(const QString &command, DebuggerLanguages languages)
@@ -257,67 +257,67 @@ void LldbEngine2::executeDebuggerCommand(const QString &command, DebuggerLanguag
 void LldbEngine2::loadSymbols(const QString &moduleName)
 {
     // TODO
-    qWarning() << "LldbEngine2::loadSymbols not yet implemented";
+    showMessage( "LldbEngine2::loadSymbols not yet implemented", LogWarning );
 }
 
 void LldbEngine2::loadAllSymbols()
 {
     // TODO
-    qWarning() << "LldbEngine2::loadAllSymbols not yet implemented";
+    showMessage( "LldbEngine2::loadAllSymbols not yet implemented", LogWarning );
 }
 
 void LldbEngine2::requestModuleSymbols(const QString &moduleName)
 {
     // TODO
-    qWarning() << "LldbEngine2::requestModuleSymbols not yet implemented";
+    showMessage( "LldbEngine2::requestModuleSymbols not yet implemented", LogWarning );
 }
 
 void LldbEngine2::reloadModules()
 {
     // TODO
-    qWarning() << "LldbEngine2::reloadModules not yet implemented";
+    showMessage( "LldbEngine2::reloadModules not yet implemented", LogWarning );
 }
 
 void LldbEngine2::reloadRegisters()
 {
     // TODO
-    qWarning() << "LldbEngine2::reloadRegisters not yet implemented";
+    showMessage( "LldbEngine2::reloadRegisters not yet implemented", LogWarning );
 }
 
 void LldbEngine2::reloadFullStack()
 {
     // TODO
-    qWarning() << "LldbEngine2::reloadFullStack not yet implemented";
+    showMessage( "LldbEngine2::reloadFullStack not yet implemented", LogWarning );
 }
 
 void LldbEngine2::reloadDebuggingHelpers()
 {
     // TODO
-    qWarning() << "LldbEngine2::reloadDebuggingHelpers not yet implemented";
+    showMessage( "LldbEngine2::reloadDebuggingHelpers not yet implemented", LogWarning );
 }
 
 void LldbEngine2::fetchDisassembler(DisassemblerAgent *)
 {
     // TODO
-    qWarning() << "LldbEngine2::fetchDisassembler not yet implemented";
+    showMessage( "LldbEngine2::fetchDisassembler not yet implemented", LogWarning );
 }
 
 void LldbEngine2::setRegisterValue(const QByteArray &name, const QString &value)
 {
     // TODO
-    qWarning() << "LldbEngine2::setRegisterValue not yet implemented";
+    showMessage( "LldbEngine2::setRegisterValue not yet implemented", LogWarning );
 }
 
 void LldbEngine2::fetchMemory(MemoryAgent *, QObject *, quint64 addr, quint64 length)
 {
     // TODO
-    qWarning() << "LldbEngine2::fetchMemory not yet implemented";
+    showMessage( "LldbEngine2::fetchMemory not yet implemented", LogWarning );
 }
 
 void LldbEngine2::changeMemory(MemoryAgent *, QObject *, quint64 addr, const QByteArray &data)
 {
     // TODO
-    qWarning() << "LldbEngine2::changeMemory not yet implemented";
+    showMessage( "LldbEngine2::changeMemory not yet implemented", LogWarning );
 }
 
 void LldbEngine2::updateAll()
@@ -331,13 +331,13 @@ void LldbEngine2::runCommand(const DebuggerCommand &cmd)
 {
     QTC_ASSERT(m_lldb.state() == QProcess::Running, notifyEngineIll());
     // TODO
-    qWarning() << "LldbEngine2::runCommand not yet implemented";
+    showMessage( "LldbEngine2::runCommand not yet implemented", LogWarning );
 }
 
 void LldbEngine2::debugLastCommand()
 {
     // TODO
-    qWarning() << "LldbEngine2::debugLastCommand not yet implemented";
+    showMessage( "LldbEngine2::debugLastCommand not yet implemented", LogWarning );
 }
 
 void LldbEngine2::setupEngine()
@@ -528,7 +528,7 @@ void LldbEngine2::executeStepI()
     // TODO
     notifyInferiorRunRequested();
     notifyInferiorRunOk();
-    qWarning() << "LldbEngine2::executeStepI not yet implemented";
+    showMessage( "LldbEngine2::executeStepI not yet implemented", LogWarning );
 }
 
 void LldbEngine2::executeNextI()
@@ -536,7 +536,7 @@ void LldbEngine2::executeNextI()
     // TODO
     notifyInferiorRunRequested();
     notifyInferiorRunOk();
-    qWarning() << "LldbEngine2::executeNextI not yet implemented";
+    showMessage( "LldbEngine2::executeNextI not yet implemented", LogWarning );
 }
 
 void LldbEngine2::executeRunToLine(const ContextData &data)
@@ -544,7 +544,7 @@ void LldbEngine2::executeRunToLine(const ContextData &data)
     // TODO
     notifyInferiorRunRequested();
     notifyInferiorRunOk();
-    qWarning() << "LldbEngine2::executeRunToLine not yet implemented";
+    showMessage( "LldbEngine2::executeRunToLine not yet implemented", LogWarning );
 }
 
 void LldbEngine2::executeRunToFunction(const QString &functionName)
@@ -552,7 +552,7 @@ void LldbEngine2::executeRunToFunction(const QString &functionName)
     // TODO
     notifyInferiorRunRequested();
     notifyInferiorRunOk();
-    qWarning() << "LldbEngine2::executeRunToFunction not yet implemented";
+    showMessage( "LldbEngine2::executeRunToFunction not yet implemented", LogWarning );
 }
 
 void LldbEngine2::executeJumpToLine(const ContextData &data)
@@ -560,7 +560,7 @@ void LldbEngine2::executeJumpToLine(const ContextData &data)
     // TODO
     notifyInferiorRunRequested();
     notifyInferiorRunOk();
-    qWarning() << "LldbEngine2::executeJumpToLine not yet implemented";
+    showMessage( "LldbEngine2::executeJumpToLine not yet implemented", LogWarning );
 }
 
 void LldbEngine2::updateLocals()
@@ -587,7 +587,6 @@ void LldbEngine2::doUpdateLocals(const UpdateParameters &params)
            Add -L for address
            add -g for global and static vars
         */
-        d_frameVar.clear();
         m_lldb.write("frame variable -T -D0\n");
     }else
     {
@@ -596,8 +595,7 @@ void LldbEngine2::doUpdateLocals(const UpdateParameters &params)
             desig = desig.mid(6);
         desig.replace(".>", "->");
         desig.replace(".[", "[");
-        d_frameVar = desig;
-        m_lldb.write("frame variable " + desig + " -T -D1 -P1\n");
+        m_lldb.write("frame variable " + desig + " -T -P1\n"); // before d_ignoreLevel there was -D1
     }
 }
 
@@ -643,7 +641,7 @@ void LldbEngine2::updateStack(QByteArrayList &data)
     StackHandler *handler = stackHandler();
     StackFrames frames;
     int i = 1;
-    bool inReturn = false;
+    int inReturn = 0;
     for( ; i < data.size(); i++ )
     {
         QByteArray line = data[i].trimmed();
@@ -651,7 +649,9 @@ void LldbEngine2::updateStack(QByteArrayList &data)
         if( inReturn )
         {
             if( line.startsWith('}') )
-                inReturn = false;
+                inReturn--;
+            else if( line.endsWith('{') )
+                inReturn++;
             continue;
         }
 
@@ -667,7 +667,7 @@ void LldbEngine2::updateStack(QByteArrayList &data)
         if( line.startsWith("Return value:"))
         {
             if( line.endsWith('{') )
-                inReturn = true;
+                inReturn = 1;
             continue;
         }else if( line.isEmpty() )
             continue;
@@ -725,6 +725,28 @@ void LldbEngine2::updateStack(QByteArrayList &data)
         gotoLocation(handler->frameAt(pos));
 }
 
+static int findRpar( const QByteArray& str )
+{
+    int level = 0;
+    int pos = -1;
+    for(int i = 0; i < str.size(); i++ )
+    {
+        const char ch = str[i];
+        if(ch == '(')
+            level++;
+        else if( ch == ')' )
+        {
+            level--;
+            if( level == 0 )
+            {
+                pos = i;
+                break;
+            }
+        }
+    }
+    return pos;
+}
+
 void LldbEngine2::updateVar(QByteArrayList &data)
 {
     const QByteArray line = data.takeFirst().trimmed();
@@ -739,8 +761,10 @@ void LldbEngine2::updateVar(QByteArrayList &data)
         (QByteArrayList) l ={...}
     or this:
         (QByteArray *) *phello = 0x00000000004f7a25 {
+    type can also be e.g.
+        (QList<QByteArray>::(anonymous union))
     */
-    const int rpar = line.indexOf(')');
+    const int rpar = findRpar(line);
     if( rpar == -1 )
         return; // This is actually a protocol error
 
@@ -752,6 +776,10 @@ void LldbEngine2::updateVar(QByteArrayList &data)
         return; // This is again a protocol error
 
     QByteArray name = line.mid(rpar+1, eq - rpar -1).trimmed();
+    if( name.isEmpty() )
+        name = "<unnamed>";
+    else if( name == v.type )
+        name = "<superclass>";
 
     // name usually repeats the whole desig from "frame variable <desig>", unless
     // desig was e.g. name[n], in which case name is just "[n]", so we use the original <desig> instead
@@ -765,52 +793,32 @@ void LldbEngine2::updateVar(QByteArrayList &data)
     v.iname = "local.";
     if( !d_curDesig.isEmpty() )
         v.iname += d_curDesig;
+    foreach( const QByteArray& n, d_nested )
+        v.iname += n;
     v.iname += name;
 
     if( line.endsWith('{'))
     {
-        d_curDesig = name;
-        if( v.type.endsWith('*') )
-            d_curDesig += ".>";
-        else
-            d_curDesig += ".";
-        return;
+        if( d_curDesig.isEmpty() )
+        {
+            d_curDesig = name;
+            if( v.type.endsWith('*') )
+                d_curDesig += ".>";
+            else
+                d_curDesig += ".";
+            return;
+        }else
+        {
+            QByteArray id = name;
+            if( name == v.type ) 
+                id += ".";
+            else if( v.type.endsWith('*') )
+                id += ".>";
+            else
+                id += ".";
+            d_nested.append(id);
+        }
     }
-
-    // TODO: variables of the superclass currently are represented by
-    // (superclass) superclass ={...}
-    // and further expanding doesn't seem to be supported by LLDB (superclass is not a valid member)
-    // instead frame variable should be called with -D2, but then we get nested {}
-    // possibly use -F and -D2
-    // unfortunately superclasses are nested, so the superclass of the superclasss would appear the same way nested in the {} body;
-    // to resolve these we would have to increase -Dn with n > 2; the max value unfortunately has to be calculated; unfotunately
-    // even the syntax changes for more nested superclasses (like "superclass = ( member = value )").
-    /* example
-        > frame variable map[1] -T -D1 -P1
-        (QMapNode<QByteArray, int>) [1] = {
-          (QMapNodeBase) QMapNodeBase ={...}
-          (QByteArray) key = $62657461${...}
-          (int) value = 44
-        }
-        > frame variable map[1] -T -D2 -P1
-        (QMapNode<QByteArray, int>) [1] = {
-          (QMapNodeBase) QMapNodeBase = {
-            (quintptr) p = 6144384
-            (QMapNodeBase *) left = 0x0000000000000000{...}
-            (QMapNodeBase *) right = 0x0000000000000000{...}
-          }
-          (QByteArray) key = $62657461$
-          (int) value = 44
-        }
-        > frame variable map[1] -T -D2 -P1 -F
-        (quintptr) [1].p = 6144384
-        (QMapNodeBase *) [1].left = 0x0000000000000000{...}
-        (QMapNodeBase *) [1].right = 0x0000000000000000{...}
-        (QByteArray::Data *) [1].key.d = 0x00000000005dc1b0{...}
-        (int) [1].value = 44
-    */
-    // how the hell can we just get the members of QMapNodeBase resolved without introducing an additional nesting level?
-
 
     v.name = v.iname.split('.').last();
     if(v.name.startsWith('>') )
@@ -820,29 +828,6 @@ void LldbEngine2::updateVar(QByteArrayList &data)
     v.value = v.editvalue;
 
     bool isByteArray = false;
-#if 0
-    // NOTE: this perfectly works on Linux, but not on Mac.
-    // on Mac we have issues with missed or delayed output from m_lldb
-    // and waitForReadyRead timeouts; adding QApp::processEvents helps
-    // for the latter but it loses sync with the engine
-    if( v.type == "QByteArray" )
-    {
-        v.editvalue = fetchQByteArray(name);
-        v.value = QString("\"%1\"").arg(QString::fromLatin1(v.editvalue));
-        //v.editformat = DisplayLatin1String;
-        //v.editencoding = Unencoded8Bit;
-    }else if( v.type == "QString" )
-    {
-        const QString str = fetchQString(name);
-        v.value = QString("\"%1\"").arg(str);
-        v.editvalue = str.toUtf8();
-    }else if( v.type == "char *")
-    {
-        v.editvalue = fetchCString(name);
-        v.value = QString::fromLatin1(v.editvalue);
-    }
-    else
-#else
     if( v.editvalue.contains('$') ) // a hex byte string quoted by $$
     {
         const int quote = v.editvalue.indexOf('$');
@@ -866,9 +851,7 @@ void LldbEngine2::updateVar(QByteArrayList &data)
             v.editvalue = v.editvalue.left(brace).trimmed();
         v.value = QString::fromUtf8(v.editvalue);
         v.editvalue = v.editvalue.mid(1,v.editvalue.size()-2); // remove quotes
-    }else
-#endif
-    if( v.editvalue.endsWith("{...}") )
+    }else if( v.editvalue.endsWith("{...}") || line.endsWith('{') )
     {
         v.wantsChildren = !v.editvalue.contains("size=0");
         v.editvalue.chop(5);
@@ -903,172 +886,10 @@ void LldbEngine2::updateVar(QByteArrayList &data)
 
 }
 
-QByteArray LldbEngine2::fetchQByteArray(const QByteArray &desig)
-{
-    disconnect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
-    m_lldb.write("frame variable " + desig + " -F -T -R -P1\n");
-    m_lldb.write("version\n");
-    QByteArray data;
-    while( true )
-    {
-        if( !m_lldb.waitForReadyRead() )
-            break;
-        const QByteArray out = m_lldb.readAllStandardOutput();
-        data += out;
-        if( out.contains("lldb version") )
-            break;
-    }
-    data.replace("\r\n", "\n");
-    QByteArray addr, off, size;
-    QByteArrayList lines = data.split('\n');
-
-    /*
-    (QByteArray::Data *) hello.d = 0x00000000005d9ee0
-    (QAtomicOps<int>::Type) hello.d->ref.atomic._q_value = 1
-    (int) hello.d->size = 5
-    (uint:31) hello.d->alloc = 6
-    (uint:1) hello.d->capacityReserved = 0
-    (qptrdiff) hello.d->offset = 24
-    */
-    foreach( const QByteArray& line, lines )
-    {
-        if( line.startsWith("(QByteArray::Data *)") )
-            addr = line.mid(line.indexOf('=') + 1).trimmed();
-        else if( line.startsWith("(qptrdiff)") )
-            off = line.mid(line.indexOf('=') + 1).trimmed();
-        else if( line.startsWith("(int)") )
-            size = line.mid(line.indexOf('=') + 1).trimmed();
-    }
-
-    data.clear();
-
-    if( size.toInt() > 0 )
-    {
-        // read memory:
-        m_lldb.write("memory read -s1 -fy -c " + size + " -l " + size + " " + addr + "+" + off + " --force\n");
-        m_lldb.write("version\n");
-        while( true )
-        {
-            if( !m_lldb.waitForReadyRead() )
-                break;
-            const QByteArray out = m_lldb.readAllStandardOutput();
-            const int colon = out.indexOf(':');
-            if( colon != -1 )
-            {
-                const int nl = out.indexOf('\n',colon+1);
-                data = out.mid(colon+1, nl - colon - 1);
-            }
-            if( out.contains("lldb version") )
-                break;
-        }
-        data = QByteArray::fromHex(data);
-    }
-
-    connect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
-    return data;
-}
-
-QString LldbEngine2::fetchQString(const QByteArray &desig)
-{
-    disconnect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
-    m_lldb.write("frame variable " + desig + " -F -T -R -P1\n");
-    m_lldb.write("version\n");
-    QByteArray data;
-    while( true )
-    {
-        if( !m_lldb.waitForReadyRead() )
-            break;
-        const QByteArray out = m_lldb.readAllStandardOutput();
-        data += out;
-        if( out.contains("lldb version") )
-            break;
-    }
-    data.replace("\r\n", "\n");
-    QByteArray addr, off, size;
-    QByteArrayList lines = data.split('\n');
-
-    /*
-        (QString::Data *) str.d = 0x00000000005d9f10
-        (QAtomicOps<int>::Type) str.d->ref.atomic._q_value = 1
-        (int) str.d->size = 6
-        (uint:31) str.d->alloc = 13
-        (uint:1) str.d->capacityReserved = 0
-        (qptrdiff) str.d->offset = 24
-    */
-    foreach( const QByteArray& line, lines )
-    {
-        if( line.startsWith("(QString::Data *)") )
-            addr = line.mid(line.indexOf('=') + 1).trimmed();
-        else if( line.startsWith("(qptrdiff)") )
-            off = line.mid(line.indexOf('=') + 1).trimmed();
-        else if( line.startsWith("(int)") )
-            size = line.mid(line.indexOf('=') + 1).trimmed();
-    }
-
-    data.clear();
-
-    const int s = size.toInt();
-    if( s > 0 )
-    {
-        const QByteArray s2 = QByteArray::number(s*2);
-        // read memory:
-        m_lldb.write("memory read -s1 -fy -c " + s2 + " -l " + s2 + " " + addr + "+" + off + " --force\n");
-        m_lldb.write("version\n");
-        while( true )
-        {
-            if( !m_lldb.waitForReadyRead() )
-                break;
-            const QByteArray out = m_lldb.readAllStandardOutput();
-            const int colon = out.indexOf(':');
-            if( colon != -1 )
-            {
-                const int nl = out.indexOf('\n',colon+1);
-                data = out.mid(colon+1, nl - colon - 1);
-            }
-            if( out.contains("lldb version") )
-                break;
-        }
-        data = QByteArray::fromHex(data);
-    }
-
-    connect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
-    return QString::fromUtf16((const ushort*)data.constData(),s);
-}
-
-QByteArray LldbEngine2::fetchCString(const QByteArray &desig)
-{
-    disconnect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
-    m_lldb.write("frame variable " + desig + "\n");
-    m_lldb.write("version\n");
-    QByteArray data;
-    while( true )
-    {
-        if( !m_lldb.waitForReadyRead() )
-            break;
-        const QByteArray out = m_lldb.readAllStandardOutput();
-        data += out;
-        if( out.contains("lldb version") )
-            break;
-    }
-    data.replace("\r\n", "\n");
-    QByteArrayList lines = data.split('\n');
-
-    QByteArray res;
-    foreach( const QByteArray& line, lines )
-    {
-        if( line.startsWith("(const char *)") || line.startsWith("(char *)") )
-        {
-            const int quote = line.indexOf('\"');
-            res = line.mid(quote);
-        }
-    }
-
-    connect(&m_lldb, SIGNAL(readyReadStandardOutput()), this, SLOT(readLldbStandardOutput()));
-    return res;
-}
-
 void LldbEngine2::handleResponse(const QByteArray &data)
 {
+    static const QByteArray test("(lldb) frame variable");
+
     QByteArrayList lines = data.split('\n');
 
     while( !lines.isEmpty() )
@@ -1088,19 +909,24 @@ void LldbEngine2::handleResponse(const QByteArray &data)
         {
             notifyInferiorSetupOk(); // causes runEngine
             lines.pop_front();
+        }else if( first.startsWith(test) )
+        {
+            const int pos = first.indexOf("-T");
+            if( pos != -1 )
+                d_frameVar = first.mid(test.size(), pos - test.size() ).trimmed();
+            else
+                d_frameVar.clear();
+            lines.pop_front();
         }else if( first.startsWith("(lldb)") )
             lines.pop_front();
         else if( first.startsWith('(') )
             updateVar(lines);
         else if( first.startsWith('}') )
         {
-            /*
-            QByteArrayList parts = d_curDesig.split('.');
-            parts.pop_back();
-            parts.pop_back();
-            d_curDesig = parts.join('.');
-            */
-            d_curDesig.clear();
+            if( d_nested.isEmpty() )
+                d_curDesig.clear();
+            else
+                d_nested.pop_back();
             lines.pop_front();
         }
         else
@@ -1195,7 +1021,7 @@ void LldbEngine2::readLldbStandardError()
 void LldbEngine2::fetchFullBacktrace()
 {
     // TODO
-    qWarning() << "LldbEngine2::fetchFullBacktrace not yet implemented";
+    showMessage( "LldbEngine2::fetchFullBacktrace not yet implemented", LogWarning );
 }
 
 void LldbEngine2::stdoutReady()

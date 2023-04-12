@@ -134,9 +134,6 @@ protected:
     void updateBreakpoint(QByteArrayList &data);
     void updateStack(QByteArrayList &data);
     void updateVar(QByteArrayList &data);
-    QByteArray fetchQByteArray(const QByteArray& desig);
-    QString fetchQString(const QByteArray& desig);
-    QByteArray fetchCString(const QByteArray& desig);
 
 private slots:
     void handleResponse(const QByteArray& data);
@@ -156,6 +153,7 @@ private:
     QFile* d_out;
     QFile* d_err;
     QByteArray d_curDesig;
+    QByteArrayList d_nested;
     QByteArray d_frameVar;
 };
 
