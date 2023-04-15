@@ -3,8 +3,7 @@
 
 let lib_conf : Config {
 	.defines += [ "QTCREATOR_UTILS_STATIC_LIB" # TODO QTCREATOR_UTILS_LIB
-					"QT_NO_JSENGINE"
-					"QTC_REL_TOOLS_PATH=\"TODO\""
+                    "QT_NO_JSENGINE"
 				]
 	.include_dirs += ..
 	.configs += ^cpp11conf

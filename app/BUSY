@@ -16,6 +16,16 @@ let run_rcc : Rcc {
 	]
 }
 
+let stub * : Executable {
+    .name = "leancreator_process_stub"
+    if target_os == `win32 {
+        .sources += ../utils/process_stub_win.c
+    }else{
+        .sources += ../utils/process_stub_unix.c
+    }
+    .configs += ^qt.core_client_config
+}
+
 let exe * : Executable {
 	.name = "LeanCreator"
 	.sources += [
@@ -34,7 +44,7 @@ let exe * : Executable {
 				^resourceeditor.lib ^genericprojectmanager.lib ^cplusplus.lib ^cpptools.lib ^cppeditor.lib
                 ^classview.lib ^debugger.lib ^bineditor.lib ^busytools.lib ^busyprojectmanager.lib
                 ^wizards.lib ^help.lib
-				run_moc run_rcc 
+                run_moc run_rcc stub
 	]
 	if target_os == `win32 {
 		.deps += ^qt.libqtwinmain

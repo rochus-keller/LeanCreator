@@ -1,23 +1,16 @@
 /****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
-** Contact: http://www.qt.io/licensing
+** Copyright (C) 2023 Rochus Keller (me@rochus-keller.ch) for LeanCreator
 **
 ** This file is part of LeanCreator.
 **
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company.  For licensing terms and
-** conditions see http://www.qt.io/terms-conditions.  For further information
-** use the contact form at http://www.qt.io/contact-us.
-**
+** $QT_BEGIN_LICENSE:LGPL21$
 ** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
+** This file may be used under the terms of the GNU Lesser
 ** General Public License version 2.1 or version 3 as published by the Free
 ** Software Foundation and appearing in the file LICENSE.LGPLv21 and
-** LICENSE.LGPLv3 included in the packaging of this file.  Please review the
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
 ** following information to ensure the GNU Lesser General Public License
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
@@ -139,7 +132,7 @@ bool ConsoleProcess::start(const QString &program, const QString &args)
              << msgPromptToClose();
 
     const QString cmdLine = createWinCommandline(
-            QCoreApplication::applicationDirPath() + QLatin1String("/qtcreator_process_stub.exe"), stubArgs);
+            QCoreApplication::applicationDirPath() + QLatin1String("/leancreator_process_stub.exe"), stubArgs);
 
     bool success = CreateProcessW(0, (WCHAR*)cmdLine.utf16(),
                                   0, 0, FALSE, CREATE_NEW_CONSOLE,
