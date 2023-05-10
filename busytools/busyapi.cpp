@@ -946,6 +946,7 @@ static void BuildJobForkGroup(int n, void* data)
         ctx->group++;
     ctx->inGroup = n >= 0;
 }
+
 }
 
 static void dumpOps( const Builder::OpList& ops )

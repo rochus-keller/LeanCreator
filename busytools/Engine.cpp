@@ -395,6 +395,7 @@ bool Engine::visit(BSBeginOp b, BSOpParam p, BSEndOp e, BSForkGroup g, void* dat
         ctx->d_param = p;
         ctx->d_fork = g;
         ctx->d_log = d_imp->logger;
+        ctx->d_loggerData = d_imp->loggerData;
         res = d_imp->call(2,0);
         if( !res )
         {

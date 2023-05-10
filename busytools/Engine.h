@@ -68,7 +68,7 @@ public:
     bool build( const QByteArrayList& targets, BSRunCmd, void* data );
     QByteArrayList generateBuildCommands(const QByteArrayList& targets = QByteArrayList());
     bool createBuildDirs();
-    bool visit(BSBeginOp,BSOpParam,BSEndOp,BSForkGroup,void* data, const QByteArrayList& targets = QByteArrayList());
+    bool visit(BSBeginOp, BSOpParam, BSEndOp, BSForkGroup, void* data, const QByteArrayList& targets = QByteArrayList());
     int getRootModule() const;
     int findModule(const QString& path) const; // TODO: path can point to more than one module
     QList<int> findDeclByPos(const QString& path, int row, int col ) const;
