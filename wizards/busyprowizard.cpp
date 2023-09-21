@@ -80,13 +80,13 @@ Core::GeneratedFiles BusyProWizardFactory::generateFiles(const QWizard *w, QStri
 
     QString text =
             "let config : Config {\n"
-            "    if (target_os == `linux) || (target_os == `macos) {\n"
+            "    if target_toolchain == `gcc {\n"
             "        .lib_names += [ \"m\" \"stdc++\" ]\n"
             "        .ldflags += \"-shared-libgcc\"\n"
-            "    }else if target_os == `win32 {\n"
-            "        .lib_names = [ \"Gdi32\" \"User32\" \"Shell32\" \"Comdlg32\" ]\n"
+            "    }else if target_toolchain == `msvc {\n"
+            "        # nothing to do\n"
             "    }else {\n"
-            "        error(\"target os not supported\")\n"
+            "        error(\"target toolchain not supported\")\n"
             "    }\n"
             "}\n\n";
 

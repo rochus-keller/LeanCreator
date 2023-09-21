@@ -58,6 +58,7 @@
 #include <utils/fileutils.h>
 #include <utils/qtcassert.h>
 #include <utils/mimetypes/mimedatabase.h>
+#include <genericprojectmanager/customexecutablerunconfiguration.h>
 
 #include <QAction>
 #include <QtPlugin>
@@ -111,6 +112,7 @@ bool BusyProjectManagerPlugin::initialize(const QStringList &arguments, QString 
     addAutoReleasedObject(new BusyInstallStepFactory);
     addAutoReleasedObject(new BusyDeployConfigurationFactory);
     addAutoReleasedObject(new BusyRunConfigurationFactory);
+    addAutoReleasedObject(new GenericProjectManager::CustomExecutableRunConfigurationFactory);
     // addAutoReleasedObject(new BusyProfilesSettingsPage);
 
     //menus

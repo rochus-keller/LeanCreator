@@ -57,6 +57,7 @@ extern "C" {
 #include <projectexplorer/taskhub.h>
 #include <projectexplorer/toolchain.h>
 #include <projectexplorer/headerpath.h>
+#include <genericprojectmanager/customexecutablerunconfiguration.h>
 #if 0
 #include <qtsupport/qtkitinformation.h>
 #include <qtsupport/uicodemodelsupport.h>
@@ -591,6 +592,14 @@ Project::RestoreResult BusyProject::fromMap(const QVariantMap &map, QString *err
         addTarget(t);
     }
 
+    QList<Target *> targetList = targets();
+    if (targetList.isEmpty())
+        return RestoreResult::Error;
+
+    foreach (Target *t, targetList) {
+        if (!t->activeRunConfiguration())
+            t->addRunConfiguration(new GenericProjectManager::CustomExecutableRunConfiguration(t));
+    }
     return RestoreResult::Ok;
 }
 
