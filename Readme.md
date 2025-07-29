@@ -97,7 +97,7 @@ To build LeanCreator using LeanQt and the BUSY build system (with no other depen
 1. Download https://github.com/rochus-keller/LeanQt/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "LeanQt".
 1. Download https://github.com/rochus-keller/LeanCreator/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "LeanCreator".
 1. Download https://github.com/rochus-keller/BUSY/archive/refs/heads/master.zip and unpack it to the root directory; rename the resulting directory to "BUSY".
-1. Open a command line in the BUSY directory and type `cc *.c -O2 -lm -O2 -o lua` or `cl /O2 /MD /Fe:lua.exe *.c` depending on whether you are on a Unix or Windows machine; wait a few seconds until the Lua executable is built.
+1. Open a command line in the BUSY directory and type `cc *.c -O2 -lm -o lua` or `cl /O2 /MD /Fe:lua.exe *.c` depending on whether you are on a Unix or Windows machine; wait a few seconds until the Lua executable is built.
 1. Now type `./lua build.lua ../LeanCreator` (or `lua build.lua ../LeanCreator` on Windows); wait until the LeanCreator executable is built (about an hour); you find it in the output/app subdirectory.
 
 NOTE that if you build on Windows you have to first open a console and run vcvars32.bat or vcvars64.bat provided e.g. by VisualStudio (see e.g. [here](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-170) for more information).
