@@ -27,7 +27,7 @@ extern "C" {
 static void  Builder_lua_reporter(const char* msg, void* data)
 {
     QStringList* out = (QStringList*)data;
-    out->append(QString::fromUtf8(msg));
+    out->append(QString::fromUtf8(msg).split('\n'));
 }
 }
 using namespace busy;
@@ -63,13 +63,6 @@ public:
         return res;
     }
 
-    static bool isHeader( const QByteArray& file )
-    {
-        return file.endsWith(".h") || file.endsWith(".hh") || file.endsWith(".h") ||
-                file.endsWith(".H") || file.endsWith(".HPP") || file.endsWith(".hpp") ||
-                file.endsWith(".h++") || file.endsWith(".hp") || file.endsWith(".hxx");
-    }
-
     void prepare( const Operation& op )
     {
         d_stdErr.clear();
@@ -102,6 +95,8 @@ public:
             {
             case BS_gcc:
             case BS_clang:
+            case BS_tcc:
+            case BS_slimcc:
                 params << "-c" << "-o";
                 params << QString::fromUtf8(op.getOutfile());
                 params << QString::fromUtf8(op.getInfile());
@@ -123,6 +118,8 @@ public:
                 {
                 case BS_gcc:
                 case BS_clang:
+                case BS_tcc:
+                case BS_slimcc:
                     if( op.os == BS_mac )
                         params << "-dynamiclib";
                     else
@@ -133,10 +130,6 @@ public:
                     break;
                 }
             }
-            values = op.getParams(BS_ldflag);
-            foreach(const QByteArray& v, values )
-                params << QString::fromUtf8(v);
-
             if( op.os == BS_windows )
             {
                 // NOTE: on Windows QProcess::start internally calls CreateProcess which only supports command
@@ -172,7 +165,7 @@ public:
                 }
             }
 
-            values = op.getParams(BS_lib_file);
+            values = op.getParams(BS_ldflag);
             foreach(const QByteArray& v, values )
                 params << QString::fromUtf8(v);
             values = op.getParams(BS_lib_dir);
@@ -191,6 +184,9 @@ public:
                 else
                     params << QString("-l%1").arg(QString::fromUtf8(v));
             }
+            values = op.getParams(BS_lib_file);
+            foreach(const QByteArray& v, values )
+                params << QString::fromUtf8(v);
             values = op.getParams(BS_framework);
             foreach(const QByteArray& v, values )
                 params << "-framework" << QString::fromUtf8(v);
@@ -207,6 +203,8 @@ public:
             {
             case BS_gcc:
             case BS_clang:
+            case BS_tcc:
+            case BS_slimcc:
                 params << "-o" << QString::fromUtf8(value);
                 break;
             case BS_msvc:
@@ -221,6 +219,8 @@ public:
             switch(op.tc)
             {
             case BS_gcc:
+            case BS_tcc:
+            case BS_slimcc:
                 params << "r" << QString::fromUtf8(value);
                 break;
             case BS_clang:
@@ -267,17 +267,9 @@ public:
                 values = op.getParams(BS_define);
                 foreach(const QByteArray& v, values )
                     params << "-D" << toDefine(v);
-                if( isHeader(infile) )
-                {
-                    QFileInfo info(QString::fromUtf8(infile));
-                    const QString privheader = info.absoluteDir().absoluteFilePath(
-                                QString("%1_p.h").arg(info.completeBaseName()));
-                    if( QFileInfo(privheader).exists() )
-                    {
-                        params << "-p" << info.absolutePath();
-                        params << "-b" << QString("%1_p.h").arg(info.completeBaseName());
-                    }
-                }
+                values = op.getParams(BS_moc_arg);
+                foreach(const QByteArray& v, values )
+                    params << QString::fromUtf8(v);
             }
             break;
         case BS_RunRcc:
@@ -331,8 +323,8 @@ public:
                 argv[i+1] = args[i].constData();
             argv[argc] = 0;
 
-            d_success == (lua_main_with_reporter(argc, const_cast<char**>(argv.data()),
-                                                Builder_lua_reporter, &d_stdErr ) == 0);
+            d_success = (lua_main_with_reporter(argc, const_cast<char**>(argv.data()),
+                                               Builder_lua_reporter, &d_stdErr ) == 0);
         }else
         {
             QProcess proc;
@@ -451,7 +443,7 @@ void Builder::select()
         for( int i = 0; i < d_pool.size(); i++ )
             d_pool[i]->wait();
         // now all onFinished signals are in the queue
-        QMetaObject::invokeMethod(this,"onQuit");
+        QMetaObject::invokeMethod(this,"onQuit",Qt::QueuedConnection);
         return;
     }
 
@@ -486,7 +478,7 @@ void Builder::select()
     {
         // we get here if non of the work was due and no work is left
         d_quitting = true;
-        QMetaObject::invokeMethod(this,"onQuit");
+        QMetaObject::invokeMethod(this,"onQuit",Qt::QueuedConnection);
     }
 }
 

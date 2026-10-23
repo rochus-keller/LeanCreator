@@ -390,8 +390,12 @@ void BusyBuildStep::build()
     QString error;
     if( busyProject()->lastParseOk() )
         m_job = busyProject()->build(options, m_products, error);
-    else
+    else {
+        foreach (const busy::ErrorItem &item, busyProject()->busyProject().errors().items())
+            createTaskAndOutput(ProjectExplorer::Task::Error, item.description(),
+                                item.codeLocation().filePath(), item.codeLocation().line());
         error = "cannot start build with BUSY errors; reparse and fix the BUSY files";
+    }
     if (!m_job) {
         emit addOutput(error, ErrorMessageOutput);
         m_fi->reportResult(false);

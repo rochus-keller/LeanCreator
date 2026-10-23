@@ -282,7 +282,8 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
     else
         d_imp->params.build_mode = "optimized";
 
-    if( !( in.toolchain == "gcc" || in.toolchain == "clang" || in.toolchain == "msvc" ) )
+    if( !( in.toolchain == "gcc" || in.toolchain == "clang" || in.toolchain == "msvc" ||
+           in.toolchain == "tcc" || in.toolchain == "slimcc" ) )
     {
         err.d_msg = "toolchain not supported: " + in.toolchain;
         d_imp->d_errs.d_errs.append(err);
@@ -301,6 +302,10 @@ bool Project::parse(const SetupProjectParameters& in, ILogSink* logSink)
     if( in.toolchain == "gcc" )
         // gcc or g++
         d_imp->params.toolchain_prefix.chop(3);
+    else if( in.toolchain == "tcc" )
+        d_imp->params.toolchain_prefix.chop(3);
+    else if( in.toolchain == "slimcc" )
+        d_imp->params.toolchain_prefix.chop(6);
     else if( in.toolchain == "clang" )
     {
         if( d_imp->params.toolchain_prefix.endsWith("clang++") )
@@ -1020,6 +1025,30 @@ static void dumpOps( const Builder::OpList& ops )
                 break;
             case BS_lib_name:
                 prefix = "  LIBNAME: ";
+                break;
+            case BS_lib_file:
+                prefix = "  LIBFILE: ";
+                break;
+            case BS_framework:
+                prefix = "  FRAMEWORK: ";
+                break;
+            case BS_defFile:
+                prefix = "  DEFFILE: ";
+                break;
+            case BS_name:
+                prefix = "  NAME: ";
+                break;
+            case BS_arg:
+                prefix = "  ARG: ";
+                break;
+            case BS_moc_arg:
+                prefix = "  MOCARG: ";
+                break;
+            case BS_depfile:
+                prefix = "  DEPFILE: ";
+                break;
+            case BS_stampfile:
+                prefix = "  STAMPFILE: ";
                 break;
             default:
                 prefix = "  PARAM: ";

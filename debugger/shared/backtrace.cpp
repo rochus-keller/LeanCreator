@@ -32,7 +32,7 @@
 #include <QDebug>
 #include <QProcess>
 
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) && defined(__GLIBC__)
 #include <stdio.h>
 #include <signal.h>
 #include <execinfo.h>
@@ -45,7 +45,7 @@ void dumpBacktrace(int maxdepth)
 {
     if (maxdepth == -1)
         maxdepth = 200;
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) && defined(__GLIBC__)
     void *bt[200] = {0};
     qDebug() << "BACKTRACE:";
     int size = backtrace(bt, sizeof(bt) / sizeof(bt[0]));

@@ -666,8 +666,23 @@ bool BusyProject::parse(const QVariantMap &config, const Environment &env, const
             params.toolchain = "msvc";
         else if( id == ProjectExplorer::Constants::MINGW_TOOLCHAIN_TYPEID )
             params.toolchain = "gcc";
+        else if( id == ProjectExplorer::Constants::CUSTOM_TOOLCHAIN_TYPEID )
+            params.toolchain = "gcc";
+        if( id == ProjectExplorer::Constants::GCC_TOOLCHAIN_TYPEID ||
+                id == ProjectExplorer::Constants::MINGW_TOOLCHAIN_TYPEID ||
+                id == ProjectExplorer::Constants::CUSTOM_TOOLCHAIN_TYPEID )
+        {
+            const QString base = QFileInfo(tc->compilerCommand().toString()).baseName();
+            if( base.endsWith("slimcc") )
+                params.toolchain = "slimcc";
+            else if( base.endsWith("tcc") )
+                params.toolchain = "tcc";
+        }
         params.compilerCommand = tc->compilerCommand().toString();
         params.abi = tc->targetAbi();
+        if( ( params.toolchain == "tcc" || params.toolchain == "slimcc" ) &&
+                params.abi.architecture() == ProjectExplorer::Abi::UnknownArchitecture )
+            params.abi = ProjectExplorer::Abi::hostAbi();
         params.version = tc->version();
         Environment tmp = env;
         tc->addToEnvironment(tmp);

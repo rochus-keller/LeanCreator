@@ -54,8 +54,6 @@ NOTE:
 - [ ] Lua automation
 - [ ] Designer integration
 - [ ] Support current LLDB versions (full support)
-- [ ] Oberon+, Verilog and Lola integration
-- [ ] Ninja builds
 
 
 ### No support planned
@@ -72,7 +70,7 @@ NOTE:
 
 #### Precompiled versions
 
-The following precompiled versions are available at this time:
+The following precompiled versions are available at this time (not the most recent commit):
 
 - [Windows x86](http://software.rochus-keller.ch/leancreator_windows_x86.zip)
 - [Windows x86_64](http://software.rochus-keller.ch/leancreator_windows_x64.zip)
